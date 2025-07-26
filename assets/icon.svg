@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#4285f4" stroke="#1a73e8" stroke-width="2"/>
+  
+  <!-- Mouse icon -->
+  <rect x="52" y="40" width="24" height="36" rx="12" ry="12" fill="white" stroke="#1a73e8" stroke-width="2"/>
+  <circle cx="64" cy="52" r="2" fill="#1a73e8"/>
+  
+  <!-- Gesture arrows -->
+  <!-- Left arrow -->
+  <path d="M 35 64 L 25 64 L 30 59 M 25 64 L 30 69" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Right arrow -->
+  <path d="M 93 64 L 103 64 L 98 59 M 103 64 L 98 69" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Up arrow -->
+  <path d="M 64 35 L 64 25 L 59 30 M 64 25 L 69 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Down arrow -->
+  <path d="M 64 93 L 64 103 L 59 98 M 64 103 L 69 98" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Gesture trail -->
+  <path d="M 40 85 Q 50 75 64 80 T 88 85" stroke="#ffd700" stroke-width="2" fill="none" stroke-dasharray="3,2"/>
+</svg>

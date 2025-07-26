@@ -1,0 +1,53 @@
+{
+  "name": "ba-mouse-gesture",
+  "version": "1.0.0",
+  "description": "Mouse Gesture Tool for Chrome - A secure and simple mouse gesture extension",
+  "main": "manifest.json",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext .js,.html",
+    "lint:fix": "eslint . --ext .js,.html --fix",
+    "build": "node scripts/build.js",
+    "dev": "node scripts/dev.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "mouse-gesture",
+    "browser-extension"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.54.1",
+    "@types/chrome": "^0.0.254",
+    "@types/jest": "^29.5.14",
+    "eslint": "^9.32.0",
+    "jest": "^29.7.0",
+    "jest-chrome": "^0.8.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "playwright": "^1.54.1"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "collectCoverageFrom": [
+      "content_scripts/**/*.js",
+      "background/**/*.js",
+      "popup/**/*.js",
+      "!**/*.test.js",
+      "!**/node_modules/**"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js"
+    }
+  }
+}

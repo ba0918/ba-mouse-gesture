@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マウスジェスチャーツール - テストページ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            border-bottom: 3px solid #4285f4;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        .gesture-info {
+            background-color: #e8f0fe;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .gesture-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .gesture-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .gesture-pattern {
+            font-weight: bold;
+            color: #1a73e8;
+            font-size: 1.1em;
+        }
+        
+        .gesture-action {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .test-area {
+            min-height: 300px;
+            border: 2px solid #4285f4;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .content-sections {
+            margin: 40px 0;
+        }
+        
+        .content-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .long-content {
+            height: 800px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+            background: white;
+            border-radius: 4px;
+        }
+        
+        .navigation-links {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .navigation-links a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .navigation-links a:hover {
+            background: #1a73e8;
+        }
+        
+        .status-display {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖱️ マウスジェスチャーツール テストページ</h1>
+        
+        <div class="gesture-info">
+            <h2>📋 テスト可能なジェスチャー</h2>
+            <p>このページでマウスジェスチャーの動作をテストできます。右クリックを押しながらマウスを動かしてください。</p>
+            
+            <div class="gesture-list">
+                <div class="gesture-item">
+                    <div class="gesture-pattern">← (左へ)</div>
+                    <div class="gesture-action">ブラウザの戻る</div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-pattern">→ (右へ)</div>
+                    <div class="gesture-action">ブラウザの進む</div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-pattern">↑ (上へ)</div>
+                    <div class="gesture-action">ページトップへスクロール</div>
+                </div>
+                <div class="gesture-item">
+                    <div class="gesture-pattern">↓ (下へ)</div>
+                    <div class="gesture-action">ページボトムへスクロール</div>
+                </div>
+                <div class="gesture-item" style="border-left-color: #ff6b35;">
+                    <div class="gesture-pattern">↓→ (下→右) 🆕</div>
+                    <div class="gesture-action">タブを閉じる</div>
+                </div>
+                <div class="gesture-item" style="border-left-color: #ff6b35;">
+                    <div class="gesture-pattern">↑→ (上→右) 🆕</div>
+                    <div class="gesture-action">新しいタブを開く</div>
+                </div>
+                <div class="gesture-item" style="border-left-color: #ff6b35;">
+                    <div class="gesture-pattern">→↓ (右→下) 🆕</div>
+                    <div class="gesture-action">タブを更新</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎯 ジェスチャーテストエリア</h3>
+            <p>この領域で右クリック + マウス移動を試してください。軌跡が表示されるはずです。</p>
+            <div class="test-area" id="testArea">
+                <p style="text-align: center; color: #666; margin-top: 120px;">
+                    ここでマウスジェスチャーをテストしてください<br>
+                    右クリックを押しながらマウスを動かすと軌跡が表示されます
+                </p>
+            </div>
+        </div>
+        
+        <div class="content-sections">
+            <div class="content-section">
+                <h3>📄 ナビゲーションテスト用コンテンツ</h3>
+                <div class="navigation-links">
+                    <a href="#section1">セクション1へ</a>
+                    <a href="#section2">セクション2へ</a>
+                    <a href="#section3">セクション3へ</a>
+                    <a href="https://www.google.com" target="_blank">Google（新しいタブ）</a>
+                </div>
+            </div>
+            
+            <div class="content-section" id="section1">
+                <h3>📝 セクション1 - スクロールテスト用ロングコンテンツ</h3>
+                <div class="long-content">
+                    <h4>長いコンテンツのサンプル</h4>
+                    <p>このコンテンツは上下スクロールのジェスチャーをテストするためのものです。</p>
+                    
+                    <div style="height: 200px; background: linear-gradient(to bottom, #ff9a9e, #fecfef); margin: 20px 0; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                        <h4>カラフルなセクション 1</h4>
+                    </div>
+                    
+                    <p>ここで上向きジェスチャー（↑）を試すとページトップに移動します。</p>
+                    <p>下向きジェスチャー（↓）を試すとページ最下部に移動します。</p>
+                    
+                    <div style="height: 200px; background: linear-gradient(to bottom, #a8edea, #fed6e3); margin: 20px 0; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                        <h4>カラフルなセクション 2</h4>
+                    </div>
+                    
+                    <p>このようにコンテンツを増やすことで、スクロール機能をテストできます。</p>
+                    
+                    <div style="height: 200px; background: linear-gradient(to bottom, #ffecd2, #fcb69f); margin: 20px 0; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                        <h4>カラフルなセクション 3</h4>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-section" id="section2">
+                <h3>🔄 セクション2 - 更新テスト</h3>
+                <p>このセクションで「→↓」（右→下）のジェスチャーを実行するとページが更新されます。</p>
+                <p>更新時刻: <span id="timestamp"></span></p>
+            </div>
+            
+            <div class="content-section" id="section3">
+                <h3>📂 セクション3 - タブ操作テスト</h3>
+                <p>「↑→」（上→右）のジェスチャーで新しいタブが開きます。</p>
+                <p>「↓→」（下→右）のジェスチャーでこのタブが閉じられます。</p>
+                <p><strong>注意:</strong> タブを閉じるジェスチャーは慎重にテストしてください。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status-display" id="statusDisplay">
+        ジェスチャー: 待機中
+    </div>
+    
+    <script>
+        // ページロード時刻の表示
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('ja-JP');
+        
+        // 簡単なジェスチャー状態表示（実際の実装前の準備）
+        let isGesturing = false;
+        let statusDisplay = document.getElementById('statusDisplay');
+        
+        document.addEventListener('contextmenu', function(e) {
+            // 右クリックメニューを無効化（ジェスチャー実装時に必要）
+            // e.preventDefault();
+        });
+        
+        // テスト用の基本的なマウスイベントリスナー
+        document.addEventListener('mousedown', function(e) {
+            if (e.button === 2) { // 右クリック
+                statusDisplay.textContent = 'ジェスチャー: 開始';
+                isGesturing = true;
+            }
+        });
+        
+        document.addEventListener('mouseup', function(e) {
+            if (e.button === 2 && isGesturing) {
+                statusDisplay.textContent = 'ジェスチャー: 完了';
+                setTimeout(() => {
+                    statusDisplay.textContent = 'ジェスチャー: 待機中';
+                }, 1000);
+                isGesturing = false;
+            }
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (isGesturing) {
+                statusDisplay.textContent = `ジェスチャー: 移動中 (${e.clientX}, ${e.clientY})`;
+            }
+        });
+    </script>
+</body>
+</html>
