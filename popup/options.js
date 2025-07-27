@@ -8,6 +8,23 @@ class OptionsManager {
       strokeWidth: 3,
       gestureThreshold: 15,
       excludeList: [],
+      // デフォルトジェスチャーの有効/無効状態
+      defaultGestureStates: {
+        // 基本ジェスチャー
+        left: true,
+        right: true,
+        up: true,
+        down: true,
+        // 複合ジェスチャー
+        downright: true,
+        upright: true,
+        rightdown: true,
+        updown: true,
+        // Phase 10 新機能
+        super_refresh: true,
+        prev_tab: true,
+        next_tab: true
+      },
       // デバッグ設定
       debugSettings: {
         enabled: true, // 開発時はデフォルトでON
@@ -930,6 +947,9 @@ class OptionsManager {
 
   // デフォルトジェスチャーの定義
   getDefaultGestures() {
+    // 設定から状態を取得（存在しない場合はデフォルトでtrue）
+    const gestureStates = this.currentSettings?.defaultGestureStates || this.defaultSettings.defaultGestureStates
+    
     return [
       // 基本ジェスチャー
       {
@@ -940,7 +960,7 @@ class OptionsManager {
         type: 'default',
         category: 'basic',
         description: '前のページに戻ります',
-        enabled: true
+        enabled: gestureStates.left !== undefined ? gestureStates.left : true
       },
       {
         id: 'right',
@@ -950,7 +970,7 @@ class OptionsManager {
         type: 'default',
         category: 'basic',
         description: '次のページに進みます',
-        enabled: true
+        enabled: gestureStates.right !== undefined ? gestureStates.right : true
       },
       {
         id: 'up',
@@ -960,7 +980,7 @@ class OptionsManager {
         type: 'default',
         category: 'basic',
         description: 'ページの最上部にスクロールします',
-        enabled: true
+        enabled: gestureStates.up !== undefined ? gestureStates.up : true
       },
       {
         id: 'down',
@@ -970,7 +990,7 @@ class OptionsManager {
         type: 'default',
         category: 'basic',
         description: 'ページの最下部にスクロールします',
-        enabled: true
+        enabled: gestureStates.down !== undefined ? gestureStates.down : true
       },
       // 複合ジェスチャー
       {
@@ -981,7 +1001,7 @@ class OptionsManager {
         type: 'default',
         category: 'advanced',
         description: '現在のタブを閉じます',
-        enabled: true
+        enabled: gestureStates.downright !== undefined ? gestureStates.downright : true
       },
       {
         id: 'upright',
@@ -991,7 +1011,7 @@ class OptionsManager {
         type: 'default',
         category: 'advanced',
         description: '新しいタブを開きます',
-        enabled: true
+        enabled: gestureStates.upright !== undefined ? gestureStates.upright : true
       },
       {
         id: 'rightdown',
@@ -1001,7 +1021,7 @@ class OptionsManager {
         type: 'default',
         category: 'advanced',
         description: '現在のタブを複製します',
-        enabled: true
+        enabled: gestureStates.rightdown !== undefined ? gestureStates.rightdown : true
       },
       {
         id: 'updown',
@@ -1011,7 +1031,7 @@ class OptionsManager {
         type: 'default',
         category: 'advanced',
         description: 'ページをリロードします',
-        enabled: true
+        enabled: gestureStates.updown !== undefined ? gestureStates.updown : true
       },
       // Phase 10 新機能
       {
@@ -1022,7 +1042,7 @@ class OptionsManager {
         type: 'default',
         category: 'new',
         description: 'キャッシュをクリアしてページをリロードします',
-        enabled: true,
+        enabled: gestureStates.super_refresh !== undefined ? gestureStates.super_refresh : true,
         isNew: true
       },
       {
@@ -1033,7 +1053,7 @@ class OptionsManager {
         type: 'default',
         category: 'new',
         description: '前のタブに切り替えます',
-        enabled: true,
+        enabled: gestureStates.prev_tab !== undefined ? gestureStates.prev_tab : true,
         isNew: true
       },
       {
@@ -1044,7 +1064,7 @@ class OptionsManager {
         type: 'default',
         category: 'new',
         description: '次のタブに切り替えます',
-        enabled: true,
+        enabled: gestureStates.next_tab !== undefined ? gestureStates.next_tab : true,
         isNew: true
       }
     ]
@@ -1299,11 +1319,21 @@ class OptionsManager {
         gesture.enabled = !gesture.enabled // ロールバック
       }
     } else {
-      // デフォルトジェスチャーの場合は設定に保存（将来的に実装）
-      this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+      // デフォルトジェスチャーの場合は設定に保存
+      try {
+        if (!this.currentSettings.defaultGestureStates) {
+          this.currentSettings.defaultGestureStates = {}
+        }
+        this.currentSettings.defaultGestureStates[gestureId] = gesture.enabled
+        await this.saveSettings()
+        this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+        this.filterAndRenderGestures() // UIを更新
+      } catch (error) {
+        console.error('Failed to save default gesture state:', error)
+        this.showSaveStatus('ジェスチャー状態の保存に失敗しました', false)
+        gesture.enabled = !gesture.enabled // ロールバック
+      }
     }
-
-    this.filterAndRenderGestures()
   }
 
   // カスタムジェスチャー編集（既存のフォームを使用）
