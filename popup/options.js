@@ -46,6 +46,9 @@ class OptionsManager {
     
     // 学習統計を読み込み
     await this.loadLearningStats()
+    
+    // ジェスチャー一覧を初期化
+    await this.initGesturesList()
   }
   
   initCustomGestureManager() {
@@ -157,6 +160,9 @@ class OptionsManager {
     
     // デバッグ設定のイベントリスナーを追加
     this.setupDebugListeners()
+    
+    // ジェスチャー一覧のイベントリスナーを追加
+    this.setupGestureListEventListeners()
   }
   
   setupCustomGestureListeners() {
@@ -408,12 +414,79 @@ class OptionsManager {
   }
   
   showConfirm(message) {
-    // ESLint警告回避のためconfirmを使用（ユーザー操作なので安全）
-    // eslint-disable-next-line no-alert
-    return confirm(message)
+    return new Promise((resolve) => {
+      const dialog = document.getElementById('confirmDialog')
+      const messageElement = document.getElementById('confirmMessage')
+      const okButton = document.getElementById('confirmOk')
+      const cancelButton = document.getElementById('confirmCancel')
+      const overlay = dialog.querySelector('.confirm-overlay')
+
+      // メッセージを設定
+      messageElement.textContent = message
+
+      // ダイアログを表示
+      dialog.style.display = 'flex'
+
+      // イベントリスナーを設定
+      const handleOk = () => {
+        dialog.style.display = 'none'
+        cleanup()
+        resolve(true)
+      }
+
+      const handleCancel = () => {
+        dialog.style.display = 'none'
+        cleanup()
+        resolve(false)
+      }
+
+      const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+          handleCancel()
+        }
+      }
+
+      const handleKeydown = (e) => {
+        if (e.key === 'Escape') {
+          handleCancel()
+        } else if (e.key === 'Enter') {
+          handleOk()
+        }
+      }
+
+      // イベントリスナーを追加
+      okButton.addEventListener('click', handleOk)
+      cancelButton.addEventListener('click', handleCancel)
+      overlay.addEventListener('click', handleOverlayClick)
+      document.addEventListener('keydown', handleKeydown)
+
+      // クリーンアップ関数
+      const cleanup = () => {
+        okButton.removeEventListener('click', handleOk)
+        cancelButton.removeEventListener('click', handleCancel)
+        overlay.removeEventListener('click', handleOverlayClick)
+        document.removeEventListener('keydown', handleKeydown)
+      }
+
+      // OKボタンにフォーカス
+      setTimeout(() => okButton.focus(), 100)
+    })
   }
   
   // === カスタムジェスチャー管理メソッド ===
+
+  // 全てのジェスチャー表示を更新する統一メソッド
+  async refreshAllGestureDisplays() {
+    console.log('Refreshing all gesture displays...')
+    
+    // 従来のカスタムジェスチャー管理セクションを更新
+    this.renderCustomGestureList()
+    
+    // 新しいジェスチャー一覧画面を更新
+    await this.renderAllGesturesList()
+    
+    console.log('All gesture displays refreshed')
+  }
   
   async loadCustomGestures() {
     if (!this.customGestureManager) return
@@ -453,11 +526,21 @@ class OptionsManager {
       const item = document.createElement('div')
       item.className = `gesture-item ${gesture.enabled ? '' : 'disabled'}`
       
+      // パターンの表示を安全に処理
+      let patternDisplay
+      if (Array.isArray(gesture.pattern)) {
+        patternDisplay = gesture.pattern.join(' → ')
+      } else if (typeof gesture.pattern === 'string') {
+        patternDisplay = gesture.pattern
+      } else {
+        patternDisplay = String(gesture.pattern || '')
+      }
+
       item.innerHTML = `
         <div class="gesture-info">
           <div class="gesture-name">${this.escapeHtml(gesture.name)}</div>
           <div>
-            <span class="gesture-pattern">${gesture.pattern.join(' → ')}</span>
+            <span class="gesture-pattern">${patternDisplay}</span>
             <span class="gesture-action">${this.getActionDisplayName(gesture.action)}</span>
           </div>
         </div>
@@ -478,35 +561,59 @@ class OptionsManager {
   }
   
   setupGestureItemListeners() {
+    console.log('Setting up gesture item listeners...')
+    
     // 有効/無効切り替え
-    document.querySelectorAll('.gesture-toggle').forEach(btn => {
+    const toggleButtons = document.querySelectorAll('.gesture-toggle')
+    console.log('Found toggle buttons:', toggleButtons.length)
+    toggleButtons.forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id
+        console.log('Toggle clicked for gesture:', id)
         const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
         if (gesture) {
           await this.customGestureManager.updateCustomGesture(id, { enabled: !gesture.enabled })
-          this.renderCustomGestureList()
+          await this.refreshAllGestureDisplays()
         }
       })
     })
     
     // 編集ボタン
-    document.querySelectorAll('.edit-btn').forEach(btn => {
+    const editButtons = document.querySelectorAll('.edit-btn')
+    console.log('Found edit buttons:', editButtons.length)
+    editButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id
+        console.log('Edit clicked for gesture:', id)
         this.editCustomGesture(id)
       })
     })
     
     // 削除ボタン
-    document.querySelectorAll('.delete-btn').forEach(btn => {
+    const deleteButtons = document.querySelectorAll('.delete-btn')
+    console.log('Found delete buttons:', deleteButtons.length)
+    deleteButtons.forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id
+        console.log('Delete clicked for gesture:', id)
         const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
-        if (gesture && this.showConfirm(`「${gesture.name}」を削除しますか？`)) {
-          await this.customGestureManager.deleteCustomGesture(id)
-          this.renderCustomGestureList()
-          this.showSaveStatus('カスタムジェスチャーを削除しました', true)
+        console.log('Found gesture for deletion:', gesture)
+        if (gesture) {
+          const confirmMessage = `「${gesture.name}」を削除しますか？`
+          console.log('Showing confirm dialog with message:', confirmMessage)
+          const confirmed = await this.showConfirm(confirmMessage)
+          console.log('User confirmation result:', confirmed)
+          
+          if (confirmed) {
+            console.log('Deletion confirmed, proceeding...')
+            await this.customGestureManager.deleteCustomGesture(id)
+            await this.refreshAllGestureDisplays()
+            this.showSaveStatus('カスタムジェスチャーを削除しました', true)
+          } else {
+            console.log('Deletion cancelled by user')
+          }
+        } else {
+          console.log('Gesture not found')
         }
       })
     })
@@ -560,7 +667,7 @@ class OptionsManager {
       
       if (result.success) {
         this.showSaveStatus('カスタムジェスチャーを追加しました', true)
-        this.renderCustomGestureList()
+        await this.refreshAllGestureDisplays()
         
         // フォームをクリア
         document.getElementById('gestureName').value = ''
@@ -611,7 +718,7 @@ class OptionsManager {
       
       if (result.success) {
         this.showSaveStatus('カスタムジェスチャーを更新しました', true)
-        this.renderCustomGestureList()
+        await this.refreshAllGestureDisplays()
         this.resetAddForm()
       } else {
         this.showSaveStatus(result.error || 'ジェスチャーの更新に失敗しました', false)
@@ -749,7 +856,8 @@ class OptionsManager {
   
   // 学習データをリセット
   async resetLearningData() {
-    if (!this.showConfirm('学習データを完全にリセットしますか？この操作は元に戻せません。')) {
+    const confirmed = await this.showConfirm('学習データを完全にリセットしますか？この操作は元に戻せません。')
+    if (!confirmed) {
       return
     }
     
@@ -774,6 +882,465 @@ class OptionsManager {
     } catch (error) {
       console.error('Failed to reset learning data:', error)
       this.showSaveStatus('学習データのリセットに失敗しました', false)
+    }
+  }
+
+  // ジェスチャー一覧の初期化
+  async initGesturesList() {
+    this.currentViewMode = 'list' // 'list' または 'grid' または 'compact'
+    this.currentFilter = 'all'
+    this.searchQuery = ''
+    
+    await this.renderAllGesturesList()
+  }
+
+  // ジェスチャー一覧のイベントリスナー設定
+  setupGestureListEventListeners() {
+    // 検索
+    const searchInput = document.getElementById('gestureSearch')
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.searchQuery = e.target.value.toLowerCase()
+        this.filterAndRenderGestures()
+      })
+    }
+
+    // フィルター
+    const filterSelect = document.getElementById('gestureFilter')
+    if (filterSelect) {
+      filterSelect.addEventListener('change', (e) => {
+        this.currentFilter = e.target.value
+        this.filterAndRenderGestures()
+      })
+    }
+
+    // 表示モード切り替え
+    const toggleViewBtn = document.getElementById('toggleViewMode')
+    if (toggleViewBtn) {
+      toggleViewBtn.addEventListener('click', () => {
+        this.toggleViewMode()
+      })
+    }
+  }
+
+  // デフォルトジェスチャーの定義
+  getDefaultGestures() {
+    return [
+      // 基本ジェスチャー
+      {
+        id: 'left',
+        name: 'ブラウザの戻る',
+        pattern: '←',
+        action: 'back',
+        type: 'default',
+        category: 'basic',
+        description: '前のページに戻ります',
+        enabled: true
+      },
+      {
+        id: 'right',
+        name: 'ブラウザの進む',
+        pattern: '→',
+        action: 'forward',
+        type: 'default',
+        category: 'basic',
+        description: '次のページに進みます',
+        enabled: true
+      },
+      {
+        id: 'up',
+        name: 'ページトップへスクロール',
+        pattern: '↑',
+        action: 'scroll_up',
+        type: 'default',
+        category: 'basic',
+        description: 'ページの最上部にスクロールします',
+        enabled: true
+      },
+      {
+        id: 'down',
+        name: 'ページボトムへスクロール',
+        pattern: '↓',
+        action: 'scroll_down',
+        type: 'default',
+        category: 'basic',
+        description: 'ページの最下部にスクロールします',
+        enabled: true
+      },
+      // 複合ジェスチャー
+      {
+        id: 'downright',
+        name: 'タブを閉じる',
+        pattern: '↓→',
+        action: 'close_tab',
+        type: 'default',
+        category: 'advanced',
+        description: '現在のタブを閉じます',
+        enabled: true
+      },
+      {
+        id: 'upright',
+        name: '新しいタブ',
+        pattern: '↑→',
+        action: 'new_tab',
+        type: 'default',
+        category: 'advanced',
+        description: '新しいタブを開きます',
+        enabled: true
+      },
+      {
+        id: 'rightdown',
+        name: 'タブを複製',
+        pattern: '→↓',
+        action: 'duplicate_tab',
+        type: 'default',
+        category: 'advanced',
+        description: '現在のタブを複製します',
+        enabled: true
+      },
+      {
+        id: 'updown',
+        name: 'ページ更新',
+        pattern: '↑↓',
+        action: 'refresh',
+        type: 'default',
+        category: 'advanced',
+        description: 'ページをリロードします',
+        enabled: true
+      },
+      // Phase 10 新機能
+      {
+        id: 'super_refresh',
+        name: 'スーパーリロード',
+        pattern: '↑↓↑',
+        action: 'super_refresh',
+        type: 'default',
+        category: 'new',
+        description: 'キャッシュをクリアしてページをリロードします',
+        enabled: true,
+        isNew: true
+      },
+      {
+        id: 'prev_tab',
+        name: '前のタブ',
+        pattern: '←→',
+        action: 'prev_tab',
+        type: 'default',
+        category: 'new',
+        description: '前のタブに切り替えます',
+        enabled: true,
+        isNew: true
+      },
+      {
+        id: 'next_tab',
+        name: '次のタブ',
+        pattern: '→←',
+        action: 'next_tab',
+        type: 'default',
+        category: 'new',
+        description: '次のタブに切り替えます',
+        enabled: true,
+        isNew: true
+      }
+    ]
+  }
+
+  // 全ジェスチャー一覧の表示
+  async renderAllGesturesList() {
+    const container = document.getElementById('allGesturesList')
+    if (!container) {
+      console.error('allGesturesList container not found')
+      return
+    }
+
+    try {
+      console.log('Starting renderAllGesturesList...')
+      
+      // デフォルトジェスチャー
+      const defaultGestures = this.getDefaultGestures()
+      console.log('Default gestures loaded:', defaultGestures.length)
+      
+      // カスタムジェスチャー
+      let customGestures = []
+      if (this.customGestureManager) {
+        console.log('CustomGestureManager available, loading custom gestures...')
+        customGestures = this.customGestureManager.getCustomGestures() || []
+        console.log('Custom gestures loaded:', customGestures.length)
+        console.log('Raw custom gestures:', customGestures)
+        
+        customGestures = customGestures.map(gesture => {
+          // patternが文字列かどうかチェック
+          let displayPattern = gesture.pattern
+          if (typeof gesture.pattern === 'string') {
+            displayPattern = gesture.pattern
+              .replace(/UP/g, '↑')
+              .replace(/DOWN/g, '↓')
+              .replace(/LEFT/g, '←')
+              .replace(/RIGHT/g, '→')
+          } else if (Array.isArray(gesture.pattern)) {
+            // パターンが配列の場合は結合
+            displayPattern = gesture.pattern.join('')
+              .replace(/UP/g, '↑')
+              .replace(/DOWN/g, '↓')
+              .replace(/LEFT/g, '←')
+              .replace(/RIGHT/g, '→')
+          } else {
+            console.warn('Unknown pattern format for gesture:', gesture)
+            displayPattern = String(gesture.pattern || '')
+          }
+          
+          return {
+            ...gesture,
+            type: 'custom',
+            category: 'custom',
+            pattern: displayPattern
+          }
+        })
+      } else {
+        console.log('CustomGestureManager not available')
+      }
+
+      // 全ジェスチャーをマージ
+      this.allGestures = [...defaultGestures, ...customGestures]
+      console.log('Total gestures:', this.allGestures.length)
+      
+      this.filterAndRenderGestures()
+    } catch (error) {
+      console.error('Failed to render gestures list:', error)
+      container.innerHTML = '<div style="padding: 32px; text-align: center; color: #ea4335;">ジェスチャー一覧の読み込みに失敗しました</div>'
+    }
+  }
+
+  // フィルタリングして表示
+  filterAndRenderGestures() {
+    console.log('Starting filterAndRenderGestures...')
+    const container = document.getElementById('allGesturesList')
+    if (!container) {
+      console.error('allGesturesList container not found in filterAndRenderGestures')
+      return
+    }
+    if (!this.allGestures) {
+      console.error('allGestures not available')
+      return
+    }
+    console.log('Filtering', this.allGestures.length, 'gestures')
+
+    // フィルタリング
+    const filteredGestures = this.allGestures.filter(gesture => {
+      // 検索クエリでフィルタリング
+      const matchesSearch = !this.searchQuery || 
+        gesture.name.toLowerCase().includes(this.searchQuery) ||
+        gesture.description.toLowerCase().includes(this.searchQuery) ||
+        gesture.pattern.includes(this.searchQuery)
+
+      // カテゴリでフィルタリング
+      const matchesFilter = this.currentFilter === 'all' ||
+        (this.currentFilter === 'default' && gesture.type === 'default') ||
+        (this.currentFilter === 'custom' && gesture.type === 'custom') ||
+        (this.currentFilter === 'new' && gesture.isNew)
+
+      return matchesSearch && matchesFilter
+    })
+
+    // カテゴリ別にグループ化
+    const groupedGestures = {}
+    filteredGestures.forEach(gesture => {
+      if (!groupedGestures[gesture.category]) {
+        groupedGestures[gesture.category] = []
+      }
+      groupedGestures[gesture.category].push(gesture)
+    })
+
+    // HTML生成
+    let html = ''
+    const categoryNames = {
+      'basic': '基本ジェスチャー',
+      'advanced': '複合ジェスチャー',
+      'new': '新機能 (Phase 10)',
+      'custom': 'カスタムジェスチャー'
+    }
+
+    Object.keys(groupedGestures).forEach(category => {
+      const gestures = groupedGestures[category]
+      if (gestures.length === 0) return
+
+      html += `<div class="gesture-category">
+        <div class="category-header">${categoryNames[category] || category}</div>`
+
+      gestures.forEach(gesture => {
+        html += this.generateGestureItemHTML(gesture)
+      })
+
+      html += '</div>'
+    })
+
+    if (html === '') {
+      html = '<div style="padding: 32px; text-align: center; color: #5f6368;">該当するジェスチャーが見つかりません</div>'
+    }
+
+    container.innerHTML = html
+    container.className = `all-gestures-container ${this.currentViewMode}-view`
+
+    console.log('filterAndRenderGestures completed successfully. HTML length:', html.length)
+
+    // イベントリスナーを再設定
+    this.setupAllGestureItemListeners()
+  }
+
+  // 個別ジェスチャーアイテムのHTML生成
+  generateGestureItemHTML(gesture) {
+    const badges = []
+    if (gesture.isNew) {
+      badges.push('<span class="new-badge">New</span>')
+    }
+    if (gesture.type === 'custom') {
+      badges.push('<span class="custom-badge">Custom</span>')
+    }
+
+    const highlightedName = this.highlightSearchText(gesture.name)
+    const highlightedDescription = this.highlightSearchText(gesture.description)
+
+    return `
+      <div class="all-gesture-item ${gesture.enabled ? '' : 'disabled'}" data-gesture-id="${gesture.id}">
+        <div class="gesture-visual">
+          <div class="gesture-pattern-large">${gesture.pattern}</div>
+          <div class="gesture-pattern-text">${gesture.pattern}</div>
+        </div>
+        <div class="gesture-details">
+          <div class="gesture-title">
+            ${highlightedName}
+            ${badges.join('')}
+          </div>
+          <div class="gesture-description">${highlightedDescription}</div>
+        </div>
+        <div class="gesture-actions">
+          <button class="gesture-status-toggle ${gesture.enabled ? 'enabled' : ''}" 
+                  data-gesture-id="${gesture.id}" 
+                  title="${gesture.enabled ? '無効にする' : '有効にする'}">
+          </button>
+          ${gesture.type === 'custom' ? `
+            <button class="edit-btn" data-gesture-id="${gesture.id}" title="編集">編集</button>
+            <button class="delete-btn" data-gesture-id="${gesture.id}" title="削除">削除</button>
+          ` : ''}
+        </div>
+      </div>
+    `
+  }
+
+  // 検索テキストのハイライト
+  highlightSearchText(text) {
+    if (!this.searchQuery) return text
+    const regex = new RegExp(`(${this.searchQuery})`, 'gi')
+    return text.replace(regex, '<span class="search-highlight">$1</span>')
+  }
+
+  // ジェスチャーアイテムのイベントリスナー設定
+  setupAllGestureItemListeners() {
+    // 有効/無効切り替え
+    document.querySelectorAll('.gesture-status-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const gestureId = e.target.dataset.gestureId
+        this.toggleGestureStatus(gestureId)
+      })
+    })
+
+    // カスタムジェスチャーの編集
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const gestureId = e.target.dataset.gestureId
+        this.editCustomGestureFromList(gestureId)
+      })
+    })
+
+    // カスタムジェスチャーの削除
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const gestureId = e.target.dataset.gestureId
+        this.deleteCustomGesture(gestureId)
+      })
+    })
+  }
+
+  // 表示モード切り替え
+  toggleViewMode() {
+    const modes = ['list', 'compact', 'grid']
+    const currentIndex = modes.indexOf(this.currentViewMode)
+    this.currentViewMode = modes[(currentIndex + 1) % modes.length]
+    
+    const toggleBtn = document.getElementById('toggleViewMode')
+    if (toggleBtn) {
+      const modeNames = { list: 'リスト', compact: 'コンパクト', grid: 'グリッド' }
+      toggleBtn.textContent = modeNames[this.currentViewMode]
+    }
+    
+    this.filterAndRenderGestures()
+  }
+
+  // ジェスチャー有効/無効切り替え
+  async toggleGestureStatus(gestureId) {
+    const gesture = this.allGestures.find(g => g.id === gestureId)
+    if (!gesture) return
+
+    gesture.enabled = !gesture.enabled
+
+    if (gesture.type === 'custom' && this.customGestureManager) {
+      try {
+        await this.customGestureManager.updateCustomGesture(gestureId, gesture)
+        this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+        await this.refreshAllGestureDisplays()
+      } catch (error) {
+        console.error('Failed to update gesture:', error)
+        this.showSaveStatus('ジェスチャーの更新に失敗しました', false)
+        gesture.enabled = !gesture.enabled // ロールバック
+      }
+    } else {
+      // デフォルトジェスチャーの場合は設定に保存（将来的に実装）
+      this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+    }
+
+    this.filterAndRenderGestures()
+  }
+
+  // カスタムジェスチャー編集（既存のフォームを使用）
+  editCustomGestureFromList(gestureId) {
+    const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
+    if (!gesture) return
+
+    // 既存のフォームに値を設定
+    document.getElementById('gestureName').value = gesture.name
+    document.getElementById('gesturePatternDisplay').value = gesture.pattern
+    document.getElementById('gestureAction').value = gesture.action
+
+    // 編集モードを示すため、フォームをスクロール表示
+    document.querySelector('.add-gesture-form').scrollIntoView({ behavior: 'smooth' })
+    
+    // 一時的に編集中のIDを保存
+    this.editingGestureId = gestureId
+    
+    const addBtn = document.getElementById('addGestureBtn')
+    if (addBtn) {
+      addBtn.textContent = 'ジェスチャーを更新'
+    }
+  }
+
+  // カスタムジェスチャー削除
+  async deleteCustomGesture(gestureId) {
+    const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
+    if (!gesture) return
+
+    if (!confirm(`"${gesture.name}"を削除しますか？この操作は元に戻せません。`)) {
+      return
+    }
+
+    if (this.customGestureManager) {
+      try {
+        await this.customGestureManager.deleteCustomGesture(gestureId)
+        this.showSaveStatus(`${gesture.name}を削除しました`, true)
+        await this.refreshAllGestureDisplays() // 全ての表示を更新
+      } catch (error) {
+        console.error('Failed to delete gesture:', error)
+        this.showSaveStatus('ジェスチャーの削除に失敗しました', false)
+      }
     }
   }
 }
