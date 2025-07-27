@@ -148,8 +148,18 @@ jobs:
       - name: Check for sensitive files
         run: |
           echo "=== Checking for sensitive files ==="
-          if find . -name "*.key" -o -name "*.pem" -o -name ".env*" | grep -v node_modules | head -10; then
-            echo "⚠️ Potential sensitive files found"
+          # より厳密にチェック - node_modules、test-results、playwright-report、.gitを除外
+          SENSITIVE_FILES=$(find . -type f \( -name "*.key" -o -name "*.pem" -o -name ".env*" -o -name "*secret*" -o -name "*credential*" \) \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            -not -path "./test-results/*" \
+            -not -path "./playwright-report/*" \
+            -not -path "./coverage/*" \
+            -not -path "./dist/*" | head -10)
+          
+          if [ -n "$SENSITIVE_FILES" ]; then
+            echo "⚠️ Potential sensitive files found:"
+            echo "$SENSITIVE_FILES"
             exit 1
           else
             echo "✅ No sensitive files detected"
