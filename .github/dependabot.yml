@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "ba0918"
+    assignees:
+      - "ba0918"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Auto-merge minor updates
+    allow:
+      - dependency-type: "direct"
+        update-type: "version-update:semver-patch"
+      - dependency-type: "direct"
+        update-type: "version-update:semver-minor"
+      - dependency-type: "indirect"
+        
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "ba0918"
+    assignees:
+      - "ba0918"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
