@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running full test suite before push..."
+npm test
+echo "✅ All tests passed! Ready to push."

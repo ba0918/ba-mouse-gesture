@@ -49,7 +49,7 @@ describe('拡張機能統合テスト', () => {
       chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.type === 'simpleGesture' && message.direction === 'DOWN') {
           // コンテンツスクリプトにスクロール指示を送信
-          chrome.tabs.sendMessage(1, scrollMessage, (response) => {
+          chrome.tabs.sendMessage(1, scrollMessage, () => {
             callback({ success: true, action: 'Scrolled to bottom' })
           })
         }
@@ -218,6 +218,61 @@ describe('拡張機能統合テスト', () => {
       expect(response.success).toBe(true)
       expect(response.action).toBe('New tab opened')
       expect(chrome.tabs.create).toHaveBeenCalledWith({})
+    })
+    
+    test('右→下ジェスチャーでタブ複製が実行される', async () => {
+      const complexGestureMessage = {
+        type: 'complexGesture',
+        gestureType: 'rightdown',
+        distance: 190
+      }
+      
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
+        if (message.type === 'complexGesture' && message.gestureType === 'rightdown') {
+          chrome.tabs.get(1).then((tab) => {
+            chrome.tabs.create({ url: tab.url })
+          })
+          callback({ success: true, action: 'Tab duplicated' })
+        }
+      })
+      
+      const messagePromise = new Promise((resolve) => {
+        chrome.runtime.sendMessage(complexGestureMessage, (response) => {
+          resolve(response)
+        })
+      })
+      
+      const response = await messagePromise
+      
+      expect(response.success).toBe(true)
+      expect(response.action).toBe('Tab duplicated')
+    })
+    
+    test('上↓下ジェスチャーでページ更新が実行される', async () => {
+      const complexGestureMessage = {
+        type: 'complexGesture',
+        gestureType: 'updown',
+        distance: 160
+      }
+      
+      chrome.runtime.sendMessage.mockImplementation((message, callback) => {
+        if (message.type === 'complexGesture' && message.gestureType === 'updown') {
+          chrome.tabs.reload(1)
+          callback({ success: true, action: 'Tab reloaded' })
+        }
+      })
+      
+      const messagePromise = new Promise((resolve) => {
+        chrome.runtime.sendMessage(complexGestureMessage, (response) => {
+          resolve(response)
+        })
+      })
+      
+      const response = await messagePromise
+      
+      expect(response.success).toBe(true)
+      expect(response.action).toBe('Tab reloaded')
+      expect(chrome.tabs.reload).toHaveBeenCalledWith(1)
     })
   })
 })

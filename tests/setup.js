@@ -47,6 +47,7 @@ global.chrome = {
     remove: jest.fn(() => Promise.resolve()),
     create: jest.fn(() => Promise.resolve({ id: 1 })),
     reload: jest.fn(() => Promise.resolve()),
+    get: jest.fn(() => Promise.resolve({ url: 'https://example.com' })),
     sendMessage: jest.fn((tabId, message, callback) => {
       if (callback) callback({ success: true })
       return Promise.resolve({ success: true })

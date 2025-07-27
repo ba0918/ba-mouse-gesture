@@ -181,7 +181,7 @@ describe('パフォーマンステスト', () => {
       const sendStart = performance.now()
       
       await new Promise(resolve => {
-        chrome.runtime.sendMessage(message, response => {
+        chrome.runtime.sendMessage(message, () => {
           const sendEnd = performance.now()
           const sendTime = sendEnd - sendStart
           

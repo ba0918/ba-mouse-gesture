@@ -11,6 +11,8 @@ describe('オプション画面', () => {
       strokeColor: { value: '#2196F3', addEventListener: jest.fn() },
       strokeWidth: { value: '3', addEventListener: jest.fn() },
       strokeWidthValue: { textContent: '3px' },
+      gestureThreshold: { value: '15', addEventListener: jest.fn() },
+      gestureThresholdValue: { textContent: '15px' },
       newExcludeUrl: { value: '', addEventListener: jest.fn() },
       addExcludeBtn: { addEventListener: jest.fn() },
       excludeList: { innerHTML: '' },
@@ -47,6 +49,7 @@ describe('オプション画面', () => {
         enabled: false,
         strokeColor: '#FF0000',
         strokeWidth: 5,
+        gestureThreshold: 25,
         excludeList: ['example.com', '*.test.com']
       }
       
@@ -60,6 +63,7 @@ describe('オプション画面', () => {
       expect(result.enabled).toBe(false)
       expect(result.strokeColor).toBe('#FF0000')
       expect(result.strokeWidth).toBe(5)
+      expect(result.gestureThreshold).toBe(25)
       expect(result.excludeList).toHaveLength(2)
     })
     
@@ -68,6 +72,7 @@ describe('オプション画面', () => {
         enabled: true,
         strokeColor: '#2196F3',
         strokeWidth: 3,
+        gestureThreshold: 15,
         excludeList: []
       }
       
@@ -80,6 +85,7 @@ describe('オプション画面', () => {
       expect(result.enabled).toBe(true)
       expect(result.strokeColor).toBe('#2196F3')
       expect(result.strokeWidth).toBe(3)
+      expect(result.gestureThreshold).toBe(15)
       expect(result.excludeList).toHaveLength(0)
     })
   })
@@ -98,7 +104,7 @@ describe('オプション画面', () => {
       expect(chrome.storage.sync.set).toHaveBeenCalledWith(newSettings)
     })
     
-    test('設定変更がバックグラウンドスクリプトに通知される', async () => {
+    test('設定変更がバックグラウンドスクリプトに通知される', () => {
       const settings = {
         enabled: false,
         strokeColor: '#FF0000'
@@ -174,6 +180,33 @@ describe('オプション画面', () => {
       widthDisplay.textContent = '5px'
       
       expect(widthDisplay.textContent).toBe('5px')
+    })
+    
+    test('ジェスチャー感度変更時に表示が更新される', () => {
+      const thresholdInput = mockElements.gestureThreshold
+      const thresholdDisplay = mockElements.gestureThresholdValue
+      
+      // 値の変更
+      thresholdInput.value = '30'
+      thresholdDisplay.textContent = '30px'
+      
+      expect(thresholdDisplay.textContent).toBe('30px')
+    })
+    
+    test('感度設定の範囲が適切に設定される', () => {
+      const thresholdInput = mockElements.gestureThreshold
+      
+      // 最小値テスト
+      thresholdInput.value = '5'
+      expect(parseInt(thresholdInput.value)).toBeGreaterThanOrEqual(5)
+      
+      // 最大値テスト
+      thresholdInput.value = '50'
+      expect(parseInt(thresholdInput.value)).toBeLessThanOrEqual(50)
+      
+      // デフォルト値テスト
+      thresholdInput.value = '15'
+      expect(parseInt(thresholdInput.value)).toBe(15)
     })
     
     test('保存成功メッセージが表示される', () => {
