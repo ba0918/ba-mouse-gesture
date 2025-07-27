@@ -1,4 +1,4 @@
-// 設定対応マウスジェスチャー検出 - husky品質ゲートテスト
+// 設定対応マウスジェスチャー検出 - TODO自動更新ルール改善テスト
 DebugLogger.info('Mouse Gesture: Settings-enabled version loaded')
 
 // カスタムジェスチャー機能をインポート
