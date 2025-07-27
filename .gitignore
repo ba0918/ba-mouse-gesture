@@ -58,10 +58,10 @@ temp/
 .env.test.local
 .env.production.local
 
-# Package lock files
+# Package lock files (keep pnpm-lock.yaml for CI/CD)
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+# pnpm-lock.yaml - Keep this for deterministic builds in CI
 
 # E2E test artifacts
 test-results/
