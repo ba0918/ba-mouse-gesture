@@ -7,7 +7,7 @@
 describe('UI同期統合テスト', () => {
   let optionsManager
   let mockCustomGestureManager
-  let customConfirmResolve
+  // let customConfirmResolve
 
   beforeEach(() => {
     // DOM環境をセットアップ
@@ -60,7 +60,6 @@ describe('UI同期統合テスト', () => {
     // カスタム確認ダイアログのモック用ヘルパー
     const setupCustomConfirm = () => {
       return new Promise((resolve) => {
-        customConfirmResolve = resolve
         // 確認ダイアログがすぐにOKされるようにモック
         setTimeout(() => resolve(true), 10)
       })
@@ -115,7 +114,7 @@ describe('UI同期統合テスト', () => {
         })
       }
 
-      async renderAllGesturesList() {
+      renderAllGesturesList() {
         const container = document.getElementById('allGesturesList')
         const defaultGestures = this.getDefaultGestures()
         const customGestures = this.customGestureManager.getCustomGestures()
@@ -178,7 +177,7 @@ describe('UI同期統合テスト', () => {
         }
       }
 
-      async showConfirm(message) {
+      showConfirm(message) {
         const dialog = document.getElementById('confirmDialog')
         const messageElement = document.getElementById('confirmMessage')
         

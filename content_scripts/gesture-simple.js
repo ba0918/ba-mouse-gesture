@@ -11,7 +11,23 @@ let settings = {
   strokeColor: '#2563eb',
   strokeWidth: 3,
   excludeList: [],
-  gestureThreshold: 15 // ジェスチャー検出の最小距離（px）
+  gestureThreshold: 15, // ジェスチャー検出の最小距離（px）
+  defaultGestureStates: {
+    // 基本ジェスチャー
+    left: true,
+    right: true,
+    up: true,
+    down: true,
+    // 複合ジェスチャー
+    downright: true,
+    upright: true,
+    rightdown: true,
+    updown: true,
+    // Phase 10 新機能
+    super_refresh: true,
+    prev_tab: true,
+    next_tab: true
+  }
 }
 
 // 現在のページが除外対象かチェック
@@ -32,6 +48,20 @@ function isExcludedSite() {
     // 部分マッチ
     return currentHost.includes(pattern)
   })
+}
+
+// ジェスチャーが有効かチェック
+function isGestureEnabled(gestureId) {
+  // カスタムジェスチャーは有効/無効フラグで管理されているので個別にチェック
+  // デフォルトジェスチャーは設定から状態を確認
+  if (!settings.defaultGestureStates) {
+    DebugLogger.debug('defaultGestureStates not found, assuming enabled')
+    return true
+  }
+  
+  const enabled = settings.defaultGestureStates[gestureId]
+  DebugLogger.debug(`Gesture ${gestureId} enabled:`, enabled)
+  return enabled !== false // 未設定の場合はデフォルトで有効
 }
 
 // 設定を読み込む
@@ -86,6 +116,12 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       } else {
         DebugLogger.showStatus('マウスジェスチャーが有効になりました')
       }
+    }
+    
+    // ジェスチャー個別状態の変更通知
+    if (changes.defaultGestureStates) {
+      DebugLogger.info('Gesture states updated:', changes.defaultGestureStates.newValue)
+      DebugLogger.showStatus('ジェスチャー状態が更新されました')
     }
         
     // 軌跡設定が変更された場合
@@ -373,6 +409,14 @@ function handleSimpleGesture(direction, distance) {
   }
 
   // デフォルトの単純ジェスチャー処理
+  // ジェスチャー状態をチェック
+  const gestureId = direction.toLowerCase()
+  if (!isGestureEnabled(gestureId)) {
+    DebugLogger.info(`Gesture ${direction} is disabled`)
+    DebugLogger.showStatus(`ジェスチャー ${direction} は無効です`, DebugLogger.LOG_LEVELS.WARN)
+    return
+  }
+  
   DebugLogger.showStatus(`Gesture: ${direction} (${distance.toFixed(0)}px)`)
     
   // バックグラウンドスクリプトに送信
@@ -418,6 +462,13 @@ function handleComplexGesture(gestureResult, distance) {
     })
   } else {
     // デフォルトの複合ジェスチャーの場合
+    // ジェスチャー状態をチェック
+    if (!isGestureEnabled(gestureResult.action)) {
+      DebugLogger.info(`Complex gesture ${gestureResult.action} is disabled`)
+      DebugLogger.showStatus(`ジェスチャー ${gestureResult.action} は無効です`, DebugLogger.LOG_LEVELS.WARN)
+      return
+    }
+    
     DebugLogger.debug('Sending default complex gesture:', gestureResult.action)
     DebugLogger.showStatus(`Complex Gesture: ${gestureResult.action} (${distance.toFixed(0)}px)`)
     

@@ -348,6 +348,7 @@ describe('ジェスチャー一覧UI', () => {
         const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
         if (!gesture) return
         
+        // eslint-disable-next-line no-alert
         if (!confirm(`"${gesture.name}"を削除しますか？この操作は元に戻せません。`)) {
           return
         }
@@ -417,7 +418,7 @@ describe('ジェスチャー一覧UI', () => {
   })
   
   describe('エラーハンドリング', () => {
-    test('カスタムジェスチャー読み込みエラーが処理される', async () => {
+    test('カスタムジェスチャー読み込みエラーが処理される', () => {
       const errorManager = {
         customGestureManager: {
           getCustomGestures: jest.fn(() => { throw new Error('読み込みエラー') })
@@ -530,6 +531,7 @@ describe('ジェスチャー一覧UI', () => {
         const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
         if (!gesture) return
         
+        // eslint-disable-next-line no-alert
         if (!confirm(`"${gesture.name}"を削除しますか？`)) return
         
         if (this.customGestureManager) {
@@ -570,7 +572,7 @@ describe('ジェスチャー一覧UI', () => {
     })
 
     test('カスタム確認ダイアログが正しく動作する', async () => {
-      const showConfirm = function (message) {
+      const showConfirm = function () {
         return new Promise((resolve) => {
           // モックで即座にtrueを返す
           setTimeout(() => resolve(true), 10)

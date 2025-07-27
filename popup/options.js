@@ -65,7 +65,7 @@ class OptionsManager {
     await this.loadLearningStats()
     
     // ジェスチャー一覧を初期化
-    await this.initGesturesList()
+    this.initGesturesList()
   }
   
   initCustomGestureManager() {
@@ -79,11 +79,19 @@ class OptionsManager {
   
   initLearningManager() {
     // 学習マネージャーとパターンマッチャーを初期化
-    if (typeof GestureLearningManager !== 'undefined' && this.customGestureManager) {
+    console.log('Checking learning manager availability:')
+    console.log('- GestureLearningManager:', typeof GestureLearningManager !== 'undefined')
+    console.log('- CustomPatternMatcher:', typeof CustomPatternMatcher !== 'undefined')
+    console.log('- customGestureManager:', Boolean(this.customGestureManager))
+    
+    if (typeof GestureLearningManager !== 'undefined' && 
+        typeof CustomPatternMatcher !== 'undefined' && 
+        this.customGestureManager) {
       this.learningManager = new GestureLearningManager()
       this.patternMatcher = new CustomPatternMatcher(this.customGestureManager)
+      console.log('Learning managers initialized successfully')
     } else {
-      console.warn('Learning managers not available')
+      console.warn('Learning managers not available - some dependencies missing')
     }
   }
     
@@ -209,8 +217,22 @@ class OptionsManager {
     // 学習統計の更新ボタン
     const refreshStatsBtn = document.getElementById('refreshStats')
     if (refreshStatsBtn) {
-      refreshStatsBtn.addEventListener('click', () => {
-        this.loadLearningStats()
+      refreshStatsBtn.addEventListener('click', async () => {
+        const originalText = refreshStatsBtn.textContent
+        refreshStatsBtn.textContent = '更新中...'
+        refreshStatsBtn.disabled = true
+        
+        try {
+          await this.loadLearningStats()
+          this.updateLastUpdatedTime()
+          this.showStatsStatus('✅ 統計を更新しました', 'success')
+        } catch (error) {
+          console.error('Failed to refresh stats:', error)
+          this.showStatsStatus('❌ 統計の更新に失敗しました', 'error')
+        } finally {
+          refreshStatsBtn.textContent = originalText
+          refreshStatsBtn.disabled = false
+        }
       })
     }
     
@@ -429,6 +451,51 @@ class OptionsManager {
       statusElement.style.display = 'none'
     }, 3000)
   }
+
+  // 統計セクション専用のステータス表示
+  showStatsStatus(message, type) {
+    const statusElement = document.getElementById('statsStatus')
+    if (!statusElement) return
+
+    statusElement.textContent = message
+    statusElement.style.display = 'block'
+    
+    // スタイルを設定
+    if (type === 'success') {
+      statusElement.style.backgroundColor = '#e8f5e8'
+      statusElement.style.color = '#137333'
+      statusElement.style.border = '1px solid #81c995'
+    } else if (type === 'error') {
+      statusElement.style.backgroundColor = '#fce8e6'
+      statusElement.style.color = '#d93025'
+      statusElement.style.border = '1px solid #f28b82'
+    } else {
+      statusElement.style.backgroundColor = '#e3f2fd'
+      statusElement.style.color = '#1565c0'
+      statusElement.style.border = '1px solid #90caf9'
+    }
+    
+    // 3秒後に非表示
+    setTimeout(() => {
+      statusElement.style.display = 'none'
+    }, 3000)
+  }
+
+  // 最終更新時刻を表示
+  updateLastUpdatedTime() {
+    const lastUpdatedElement = document.getElementById('lastUpdated')
+    if (!lastUpdatedElement) return
+
+    const now = new Date()
+    const timeString = now.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+    
+    lastUpdatedElement.textContent = `最終更新: ${timeString}`
+    lastUpdatedElement.style.display = 'block'
+  }
   
   showConfirm(message) {
     return new Promise((resolve) => {
@@ -505,7 +572,7 @@ class OptionsManager {
     this.renderCustomGestureList()
     
     // 新しいジェスチャー一覧画面を更新（最新データで再構築）
-    await this.renderAllGesturesList()
+    this.renderAllGesturesList()
     
     console.log('All gesture displays refreshed with latest data')
   }
@@ -787,6 +854,7 @@ class OptionsManager {
   async loadLearningStats() {
     if (!this.patternMatcher || !this.learningManager) {
       console.warn('Learning managers not initialized')
+      this.renderEmptyLearningStats()
       return
     }
     
@@ -797,10 +865,12 @@ class OptionsManager {
       // 統計データを取得
       const stats = this.patternMatcher.getLearningStats()
       
-      if (stats) {
+      if (stats && stats.gestureStats && stats.gestureStats.length > 0) {
         this.renderLearningStats(stats)
+        this.updateLastUpdatedTime()
       } else {
         this.renderEmptyLearningStats()
+        this.updateLastUpdatedTime()
       }
     } catch (error) {
       console.error('Failed to load learning stats:', error)
@@ -899,21 +969,22 @@ class OptionsManager {
       
       // 統計表示を更新
       this.renderEmptyLearningStats()
+      this.updateLastUpdatedTime()
       
-      this.showSaveStatus('学習データをリセットしました', true)
+      this.showStatsStatus('🗑️ 学習データをリセットしました', 'success')
     } catch (error) {
       console.error('Failed to reset learning data:', error)
-      this.showSaveStatus('学習データのリセットに失敗しました', false)
+      this.showStatsStatus('❌ 学習データのリセットに失敗しました', 'error')
     }
   }
 
   // ジェスチャー一覧の初期化
-  async initGesturesList() {
+  initGesturesList() {
     this.currentViewMode = 'list' // 'list' または 'grid' または 'compact'
     this.currentFilter = 'all'
     this.searchQuery = ''
     
-    await this.renderAllGesturesList()
+    this.renderAllGesturesList()
   }
 
   // ジェスチャー一覧のイベントリスナー設定
@@ -1071,7 +1142,7 @@ class OptionsManager {
   }
 
   // 全ジェスチャー一覧の表示
-  async renderAllGesturesList() {
+  renderAllGesturesList() {
     const container = document.getElementById('allGesturesList')
     if (!container) {
       console.error('allGesturesList container not found')

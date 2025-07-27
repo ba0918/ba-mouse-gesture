@@ -897,6 +897,12 @@
                             <div id="gestureStatsList" class="stats-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #e8eaed; border-radius: 4px; background: white;"></div>
                         </div>
                         
+                        <!-- 統計セクション専用のステータス表示 -->
+                        <div id="statsStatus" style="display: none; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 13px; text-align: center;"></div>
+                        
+                        <!-- 最終更新時刻表示 -->
+                        <div id="lastUpdated" style="text-align: center; font-size: 11px; color: #5f6368; margin: 8px 0; display: none;"></div>
+                        
                         <div style="display: flex; gap: 8px; margin-top: 12px;">
                             <button id="refreshStats" style="flex: 1; background: #1a73e8; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">統計を更新</button>
                             <button id="resetLearning" style="flex: 1; background: #ea4335; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">学習データをリセット</button>
@@ -1005,6 +1011,7 @@
     <script src="../content_scripts/debug-logger.js"></script>
     <script src="../content_scripts/custom-gesture-manager.js"></script>
     <script src="../content_scripts/gesture-learning-manager.js"></script>
+    <script src="../content_scripts/custom-pattern-matcher.js"></script>
     <script src="options.js"></script>
 </body>
 </html>

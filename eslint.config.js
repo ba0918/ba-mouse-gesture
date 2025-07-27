@@ -3,7 +3,7 @@ const js = require('@eslint/js')
 
 module.exports = [
   {
-    ignores: ['**/*.html', 'node_modules/**', 'dist/**', 'build/**', 'coverage/**']
+    ignores: ['**/*.html', 'node_modules/**', 'dist/**', 'build/**', 'coverage/**', 'playwright-report/**', 'test-results/**']
   },
   js.configs.recommended,
   {
@@ -22,10 +22,10 @@ module.exports = [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         performance: 'readonly',
-        
+
         // Chrome拡張機能API
         chrome: 'readonly',
-        
+
         // プロジェクト固有のグローバル変数
         DebugLogger: 'readonly',
         CustomGestureManager: 'readonly',
@@ -35,7 +35,7 @@ module.exports = [
         OptionsManager: 'readonly',
         confirm: 'readonly',
         alert: 'readonly',
-        
+
         // Jest テスト環境
         describe: 'readonly',
         test: 'readonly',
@@ -47,7 +47,7 @@ module.exports = [
         jest: 'readonly',
         global: 'readonly',
         HTMLCanvasElement: 'readonly',
-        
+
         // Node.js (設定ファイル用)
         module: 'readonly',
         require: 'readonly',
@@ -60,14 +60,14 @@ module.exports = [
       'no-unused-vars': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
-      
+
       // セキュリティ関連のルール
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
       'no-with': 'error',
-      
+
       // ベストプラクティス
       'no-alert': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
@@ -76,7 +76,7 @@ module.exports = [
       'no-return-await': 'warn',
       'require-await': 'warn',
       'no-prototype-builtins': 'warn',
-      
+
       // スタイル関連
       'indent': ['error', 2],
       'quotes': ['error', 'single', { avoidEscape: true }],
