@@ -12,7 +12,8 @@
     "lint:fix": "eslint . --ext .js,.html --fix",
     "build": "node scripts/build.js --prod",
     "build:dev": "node scripts/build.js",
-    "build:watch": "node scripts/build.js --watch"
+    "build:watch": "node scripts/build.js --watch",
+    "prepare": "husky"
   },
   "keywords": [
     "chrome-extension",
@@ -28,9 +29,11 @@
     "@types/jest": "^29.5.14",
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-chrome": "^0.8.0",
     "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^16.1.2",
     "playwright": "^1.54.1"
   },
   "jest": {
@@ -51,5 +54,14 @@
     "moduleNameMapper": {
       "\\.(css|less|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js"
     }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "jest --findRelatedTests --passWithNoTests"
+    ],
+    "*.html": [
+      "eslint --fix"
+    ]
   }
 }
