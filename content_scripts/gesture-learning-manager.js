@@ -175,7 +175,7 @@ class PatternAnalyzer {
 
     // 共通要素を抽出（閾値以上の頻度）
     const commonElements = Array.from(elementCount.entries())
-      .filter(([_, count]) => count / totalPatterns >= this.commonThreshold)
+      .filter(([, count]) => count / totalPatterns >= this.commonThreshold)
       .map(([element]) => element)
 
     // パターンクラスタリング（簡易版）

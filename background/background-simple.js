@@ -30,20 +30,20 @@ function debugLog(level, message, ...args) {
   if (!debugEnabled || level > debugLogLevel) return
   
   switch (level) {
-    case LOG_LEVELS.ERROR:
-      console.error('🚨 [ERROR]', message, ...args)
-      break
-    case LOG_LEVELS.WARN:
-      console.warn('⚠️ [WARN]', message, ...args)
-      break
-    case LOG_LEVELS.INFO:
-      console.log('ℹ️ [INFO]', message, ...args)
-      break
-    case LOG_LEVELS.DEBUG:
-      console.log('🔧 [DEBUG]', message, ...args)
-      break
-    default:
-      console.log(message, ...args)
+  case LOG_LEVELS.ERROR:
+    console.error('🚨 [ERROR]', message, ...args)
+    break
+  case LOG_LEVELS.WARN:
+    console.warn('⚠️ [WARN]', message, ...args)
+    break
+  case LOG_LEVELS.INFO:
+    console.log('ℹ️ [INFO]', message, ...args)
+    break
+  case LOG_LEVELS.DEBUG:
+    console.log('🔧 [DEBUG]', message, ...args)
+    break
+  default:
+    console.log(message, ...args)
   }
 }
 
@@ -99,7 +99,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
         
     // カスタムアクション実行
-    executeCustomAction(action, tabId, request)
+    executeCustomAction(action, tabId)
       .then(result => {
         debugLog(LOG_LEVELS.INFO, 'Custom action completed:', result)
         sendResponse({ success: true, action: result, gestureType: 'custom', name: name })
@@ -199,11 +199,12 @@ async function executeComplexAction(gestureType, tabId) {
       await chrome.tabs.create({})
       return 'New tab opened'
                 
-    case 'rightdown':
+    case 'rightdown': {
       debugLog(LOG_LEVELS.DEBUG, 'Duplicating tab (→↓)')
       const currentTab = await chrome.tabs.get(tabId)
       await chrome.tabs.create({ url: currentTab.url })
       return 'Tab duplicated'
+    }
                 
     case 'updown':
       debugLog(LOG_LEVELS.DEBUG, 'Reloading tab (↑↓) - tabId:', tabId)
@@ -226,7 +227,7 @@ async function executeComplexAction(gestureType, tabId) {
 }
 
 // カスタムアクション実行関数
-async function executeCustomAction(action, tabId, request) {
+async function executeCustomAction(action, tabId) {
   debugLog(LOG_LEVELS.DEBUG, `Executing custom action: ${action} for tab ${tabId}`)
     
   try {
@@ -260,11 +261,12 @@ async function executeCustomAction(action, tabId, request) {
       await chrome.tabs.reload(tabId)
       return 'Tab reloaded (custom)'
       
-    case 'duplicate_tab':
+    case 'duplicate_tab': {
       debugLog(LOG_LEVELS.DEBUG, 'Custom: Duplicating tab')
       const currentTab = await chrome.tabs.get(tabId)
       await chrome.tabs.create({ url: currentTab.url })
       return 'Tab duplicated'
+    }
       
     case 'close_tab':
       debugLog(LOG_LEVELS.DEBUG, 'Custom: Closing tab')

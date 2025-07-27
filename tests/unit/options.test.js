@@ -98,7 +98,7 @@ describe('オプション画面', () => {
       expect(chrome.storage.sync.set).toHaveBeenCalledWith(newSettings)
     })
     
-    test('設定変更がバックグラウンドスクリプトに通知される', async () => {
+    test('設定変更がバックグラウンドスクリプトに通知される', () => {
       const settings = {
         enabled: false,
         strokeColor: '#FF0000'

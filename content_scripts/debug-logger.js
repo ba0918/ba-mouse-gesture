@@ -159,20 +159,20 @@ class DebugLogger {
    */
   static log(level, message, ...args) {
     switch (level) {
-      case this.LOG_LEVELS.ERROR:
-        this.error(message, ...args)
-        break
-      case this.LOG_LEVELS.WARN:
-        this.warn(message, ...args)
-        break
-      case this.LOG_LEVELS.INFO:
-        this.info(message, ...args)
-        break
-      case this.LOG_LEVELS.DEBUG:
-        this.debug(message, ...args)
-        break
-      default:
-        this.info(message, ...args)
+    case this.LOG_LEVELS.ERROR:
+      this.error(message, ...args)
+      break
+    case this.LOG_LEVELS.WARN:
+      this.warn(message, ...args)
+      break
+    case this.LOG_LEVELS.INFO:
+      this.info(message, ...args)
+      break
+    case this.LOG_LEVELS.DEBUG:
+      this.debug(message, ...args)
+      break
+    default:
+      this.info(message, ...args)
     }
   }
 

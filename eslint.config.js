@@ -26,6 +26,16 @@ module.exports = [
         // Chrome拡張機能API
         chrome: 'readonly',
         
+        // プロジェクト固有のグローバル変数
+        DebugLogger: 'readonly',
+        CustomGestureManager: 'readonly',
+        CustomPatternMatcher: 'readonly',
+        GestureLearningManager: 'readonly',
+        AdaptiveThresholdManager: 'readonly',
+        OptionsManager: 'readonly',
+        confirm: 'readonly',
+        alert: 'readonly',
+        
         // Jest テスト環境
         describe: 'readonly',
         test: 'readonly',

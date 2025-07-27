@@ -144,8 +144,6 @@ async function build() {
       }
     }
     
-    // ビルドサイズを確認
-    const stats = await fs.stat(distDir)
     console.log('✅ ビルド完了!')
     
     // distディレクトリのサイズを計算

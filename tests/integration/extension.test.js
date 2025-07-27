@@ -49,7 +49,7 @@ describe('拡張機能統合テスト', () => {
       chrome.runtime.sendMessage.mockImplementation((message, callback) => {
         if (message.type === 'simpleGesture' && message.direction === 'DOWN') {
           // コンテンツスクリプトにスクロール指示を送信
-          chrome.tabs.sendMessage(1, scrollMessage, (response) => {
+          chrome.tabs.sendMessage(1, scrollMessage, () => {
             callback({ success: true, action: 'Scrolled to bottom' })
           })
         }

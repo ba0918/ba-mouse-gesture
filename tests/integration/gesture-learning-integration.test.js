@@ -255,7 +255,7 @@ describe('ジェスチャー学習機能統合テスト', () => {
       }).not.toThrow()
     })
 
-    test('破損した学習データの読み込みが安全に処理される', async () => {
+    test('破損した学習データの読み込みが安全に処理される', () => {
       // 破損データをモック
       global.chrome.storage.sync.get.mockResolvedValue({
         gestureLearningData: {

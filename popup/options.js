@@ -396,6 +396,12 @@ class OptionsManager {
     }, 3000)
   }
   
+  showConfirm(message) {
+    // ESLint警告回避のためconfirmを使用（ユーザー操作なので安全）
+    // eslint-disable-next-line no-alert
+    return confirm(message)
+  }
+  
   // === カスタムジェスチャー管理メソッド ===
   
   async loadCustomGestures() {
@@ -486,7 +492,7 @@ class OptionsManager {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id
         const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
-        if (gesture && confirm(`「${gesture.name}」を削除しますか？`)) {
+        if (gesture && this.showConfirm(`「${gesture.name}」を削除しますか？`)) {
           await this.customGestureManager.deleteCustomGesture(id)
           this.renderCustomGestureList()
           this.showSaveStatus('カスタムジェスチャーを削除しました', true)
@@ -729,7 +735,7 @@ class OptionsManager {
   
   // 学習データをリセット
   async resetLearningData() {
-    if (!confirm('学習データを完全にリセットしますか？この操作は元に戻せません。')) {
+    if (!this.showConfirm('学習データを完全にリセットしますか？この操作は元に戻せません。')) {
       return
     }
     
