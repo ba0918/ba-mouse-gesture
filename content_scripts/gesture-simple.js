@@ -1,5 +1,5 @@
 // 設定対応マウスジェスチャー検出
-console.log('🚀 Mouse Gesture: Settings-enabled version loaded')
+DebugLogger.info('Mouse Gesture: Settings-enabled version loaded')
 
 // カスタムジェスチャー機能をインポート
 const customGestureManager = new CustomGestureManager()
@@ -39,29 +39,29 @@ async function loadSettings() {
   try {
     const result = await chrome.storage.sync.get(settings)
     settings = { ...settings, ...result }
-    console.log('📋 Settings loaded:', settings)
+    DebugLogger.info('Settings loaded:', settings)
     
     // カスタムジェスチャー設定も読み込み
     await customGestureManager.loadCustomGestures()
-    console.log('📋 Custom gestures loaded:', customGestureManager.getCustomGestures().length + ' gestures')
+    DebugLogger.info('Custom gestures loaded:', customGestureManager.getCustomGestures().length + ' gestures')
         
     // 除外サイトチェック
     if (isExcludedSite()) {
-      console.log('🚫 Site excluded, disabling mouse gestures')
-      showStatus('マウスジェスチャーは無効です（除外サイト）')
+      DebugLogger.warn('Site excluded, disabling mouse gestures')
+      DebugLogger.showStatus('マウスジェスチャーは無効です（除外サイト）', DebugLogger.LOG_LEVELS.WARN)
       return false
     }
         
     // 機能が無効の場合
     if (!settings.enabled) {
-      console.log('🔇 Mouse gestures disabled in settings')
-      showStatus('マウスジェスチャーは無効です')
+      DebugLogger.warn('Mouse gestures disabled in settings')
+      DebugLogger.showStatus('マウスジェスチャーは無効です', DebugLogger.LOG_LEVELS.WARN)
       return false
     }
         
     return true
   } catch (error) {
-    console.error('❌ Failed to load settings:', error)
+    DebugLogger.error('Failed to load settings:', error)
     return true // デフォルトで有効
   }
 }
@@ -69,7 +69,7 @@ async function loadSettings() {
 // 設定変更の監視
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'sync') {
-    console.log('📋 Settings changed:', changes)
+    DebugLogger.info('Settings changed:', changes)
         
     // 設定を更新
     Object.keys(changes).forEach(key => {
@@ -82,9 +82,9 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     if (changes.enabled || changes.excludeList) {
       if (!settings.enabled || isExcludedSite()) {
         removeTrailCanvas()
-        showStatus('マウスジェスチャーが無効になりました')
+        DebugLogger.showStatus('マウスジェスチャーが無効になりました')
       } else {
-        showStatus('マウスジェスチャーが有効になりました')
+        DebugLogger.showStatus('マウスジェスチャーが有効になりました')
       }
     }
         
@@ -97,58 +97,19 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 
 // 拡張機能が正しく読み込まれたかの確認
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-  console.log('✅ Chrome extension API available')
-  console.log('Extension ID:', chrome.runtime.id)
+  DebugLogger.info('Chrome extension API available')
+  DebugLogger.info('Extension ID:', chrome.runtime.id)
 } else {
   console.error('❌ Chrome extension API not available')
 }
 
 // ページ読み込み完了の確認
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('📄 DOM loaded')
-  showStatus('Extension loaded successfully')
+  DebugLogger.info('DOM loaded')
+  DebugLogger.showStatus('Extension loaded successfully')
 })
 
-// ステータス表示関数
-function showStatus(message) {
-  console.log('📊 Status:', message)
-    
-  // 既存のステータス要素を削除
-  const existing = document.getElementById('gesture-status')
-  if (existing) {
-    existing.remove()
-  }
-    
-  // 新しいステータス要素を作成
-  const statusDiv = document.createElement('div')
-  statusDiv.id = 'gesture-status'
-  statusDiv.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #2563eb;
-        color: white;
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        z-index: 999999;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.2);
-        max-width: 300px;
-        word-wrap: break-word;
-    `
-  statusDiv.textContent = message
-    
-  document.body.appendChild(statusDiv)
-    
-  // 5秒後に自動で消す
-  setTimeout(() => {
-    if (statusDiv.parentNode) {
-      statusDiv.parentNode.removeChild(statusDiv)
-    }
-  }, 5000)
-}
+// ステータス表示機能はDebugLogger.showStatusに移行済み
 
 // マウスジェスチャーの状態
 let isRightMouseDown = false
@@ -186,7 +147,7 @@ function initTrailCanvas() {
   trailContext.lineJoin = 'round'
     
   document.body.appendChild(trailCanvas)
-  console.log('🎨 Trail canvas initialized')
+  DebugLogger.debug('Trail canvas initialized')
 }
 
 // 軌跡スタイルの更新
@@ -194,7 +155,7 @@ function updateTrailStyle() {
   if (trailContext) {
     trailContext.strokeStyle = settings.strokeColor
     trailContext.lineWidth = settings.strokeWidth
-    console.log('🎨 Trail style updated:', settings.strokeColor, settings.strokeWidth + 'px')
+    DebugLogger.debug('Trail style updated:', settings.strokeColor, settings.strokeWidth + 'px')
   }
 }
 
@@ -220,7 +181,7 @@ function removeTrailCanvas() {
     trailCanvas.parentNode.removeChild(trailCanvas)
     trailCanvas = null
     trailContext = null
-    console.log('🗑️ Trail canvas removed')
+    DebugLogger.debug('Trail canvas removed')
   }
 }
 
@@ -262,15 +223,15 @@ function analyzeComplexGesture() {
     }
   }
     
-  console.log('🔍 Analyzed directions:', cleanDirections)
-  console.log('🔍 Pattern string:', cleanDirections.join(''))
+  DebugLogger.debug('Analyzed directions:', cleanDirections)
+  DebugLogger.debug('Pattern string:', cleanDirections.join(''))
     
   // 最初にカスタムジェスチャーをチェック（優先度高）
   if (cleanDirections.length >= 1) {
     try {
       const customResult = customPatternMatcher.matchPattern(cleanDirections)
       if (customResult.matched) {
-        console.log('✨ Custom gesture matched:', customResult.gestureName, 'confidence:', customResult.confidence)
+        DebugLogger.info('Custom gesture matched:', customResult.gestureName, 'confidence:', customResult.confidence)
         return {
           type: 'custom',
           action: customResult.action,
@@ -286,7 +247,7 @@ function analyzeComplexGesture() {
   // デフォルトの複合ジェスチャーのパターンマッチング
   if (cleanDirections.length >= 2) {
     const pattern = cleanDirections.join('')
-    console.log('🎯 Checking default pattern:', pattern)
+    DebugLogger.debug('Checking default pattern:', pattern)
         
     // 対応する複合ジェスチャーをチェック
     const complexPatterns = {
@@ -298,13 +259,13 @@ function analyzeComplexGesture() {
         
     const defaultGesture = complexPatterns[pattern]
     if (defaultGesture) {
-      console.log('✅ Default pattern matched:', pattern, '=>', defaultGesture)
+      DebugLogger.info('Default pattern matched:', pattern, '=>', defaultGesture)
       return {
         type: 'default',
         action: defaultGesture
       }
     } else {
-      console.log('❌ No default pattern match for:', pattern)
+      DebugLogger.debug('No default pattern match for:', pattern)
       
       // 学習機能: 認識失敗を記録
       try {
@@ -324,8 +285,8 @@ function handleSimpleGesture(direction, distance) {
   try {
     const customResult = customPatternMatcher.matchPattern([direction])
     if (customResult.matched) {
-      console.log('✨ Custom simple gesture matched:', customResult.gestureName)
-      showStatus(`Custom: ${customResult.gestureName} (${distance.toFixed(0)}px)`)
+      DebugLogger.info('Custom simple gesture matched:', customResult.gestureName)
+      DebugLogger.showStatus(`Custom: ${customResult.gestureName} (${distance.toFixed(0)}px)`)
       
       // カスタムアクションを送信
       sendGestureMessage({
@@ -350,7 +311,7 @@ function handleSimpleGesture(direction, distance) {
   }
 
   // デフォルトの単純ジェスチャー処理
-  showStatus(`Gesture: ${direction} (${distance.toFixed(0)}px)`)
+  DebugLogger.showStatus(`Gesture: ${direction} (${distance.toFixed(0)}px)`)
     
   // バックグラウンドスクリプトに送信
   sendGestureMessage({
@@ -366,25 +327,25 @@ function sendGestureMessage(message) {
     chrome.runtime.sendMessage(message, function (response) {
       if (chrome.runtime.lastError) {
         console.error('❌ Message send failed:', chrome.runtime.lastError.message)
-        showStatus('❌ Message failed: ' + chrome.runtime.lastError.message)
+        DebugLogger.showStatus('❌ Message failed: ' + chrome.runtime.lastError.message, DebugLogger.LOG_LEVELS.ERROR)
       } else {
-        console.log('✅ Message sent successfully:', response)
-        showStatus('✅ Action: ' + (response?.action || 'Success'))
+        DebugLogger.debug('Message sent successfully:', response)
+        DebugLogger.showStatus('✅ Action: ' + (response?.action || 'Success'))
       }
     })
   } else {
     console.error('❌ Chrome runtime not available')
-    showStatus('❌ Chrome runtime not available')
+    DebugLogger.showStatus('❌ Chrome runtime not available', DebugLogger.LOG_LEVELS.ERROR)
   }
 }
 
 // 複合ジェスチャーの処理
 function handleComplexGesture(gestureResult, distance) {
-  console.log('🚀 Handling complex gesture:', gestureResult.type, gestureResult.action)
+  DebugLogger.info('Handling complex gesture:', gestureResult.type, gestureResult.action)
   
   if (gestureResult.type === 'custom') {
     // カスタムジェスチャーの場合
-    showStatus(`Custom: ${gestureResult.name} (${distance.toFixed(0)}px, ${(gestureResult.confidence * 100).toFixed(0)}%)`)
+    DebugLogger.showStatus(`Custom: ${gestureResult.name} (${distance.toFixed(0)}px, ${(gestureResult.confidence * 100).toFixed(0)}%)`)
     
     sendGestureMessage({
       type: 'customGesture',
@@ -395,8 +356,8 @@ function handleComplexGesture(gestureResult, distance) {
     })
   } else {
     // デフォルトの複合ジェスチャーの場合
-    console.log('🔄 Sending default complex gesture:', gestureResult.action)
-    showStatus(`Complex Gesture: ${gestureResult.action} (${distance.toFixed(0)}px)`)
+    DebugLogger.debug('Sending default complex gesture:', gestureResult.action)
+    DebugLogger.showStatus(`Complex Gesture: ${gestureResult.action} (${distance.toFixed(0)}px)`)
     
     sendGestureMessage({
       type: 'complexGesture',
@@ -417,8 +378,8 @@ document.addEventListener('mousedown', function (e) {
         
     initTrailCanvas()
         
-    console.log('🖱️ Right mouse down at:', startPos)
-    showStatus('Gesture started')
+    DebugLogger.debug('Right mouse down at:', startPos)
+    DebugLogger.showStatus('Gesture started')
   }
 }, true)
 
@@ -436,7 +397,7 @@ document.addEventListener('mousemove', function (e) {
     drawTrail()
         
     if (distance > 20) { // 小さな動きでも表示
-      showStatus(`Moving: (${deltaX.toFixed(0)}, ${deltaY.toFixed(0)}) Distance: ${distance.toFixed(0)}px`)
+      DebugLogger.showStatus(`Moving: (${deltaX.toFixed(0)}, ${deltaY.toFixed(0)}) Distance: ${distance.toFixed(0)}px`)
     }
   }
 }, true)
@@ -448,14 +409,14 @@ document.addEventListener('mouseup', function (e) {
     const deltaY = e.clientY - startPos.y
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
         
-    console.log('🖱️ Right mouse up. Delta:', deltaX, deltaY, 'Distance:', distance)
+    DebugLogger.debug('Right mouse up. Delta:', deltaX, deltaY, 'Distance:', distance)
         
     if (distance > settings.gestureThreshold) { // 設定可能な閾値
       // 複合ジェスチャーの検出を試行
       const complexGesture = analyzeComplexGesture()
             
       if (complexGesture) {
-        console.log('🎯 Complex gesture detected:', complexGesture)
+        DebugLogger.info('Complex gesture detected:', complexGesture)
         handleComplexGesture(complexGesture, distance)
       } else {
         // 単純なジェスチャーとして処理
@@ -466,7 +427,7 @@ document.addEventListener('mouseup', function (e) {
           direction = deltaY > 0 ? 'DOWN' : 'UP'
         }
                 
-        console.log('🎯 Simple gesture detected:', direction)
+        DebugLogger.info('Simple gesture detected:', direction)
         handleSimpleGesture(direction, distance)
       }
             
@@ -480,7 +441,7 @@ document.addEventListener('mouseup', function (e) {
       }, 300)
             
     } else {
-      showStatus(`Movement too small: ${distance.toFixed(0)}px (need ${settings.gestureThreshold}+)`)
+      DebugLogger.showStatus(`Movement too small: ${distance.toFixed(0)}px (need ${settings.gestureThreshold}+)`)
       // gestureExecuted = false // 将来の機能拡張用
             
       // わずかでも動いた場合は短時間コンテキストメニューをブロック
@@ -507,19 +468,19 @@ document.addEventListener('contextmenu', function (e) {
   if ((isRightMouseDown || preventContextMenu) && settings.enabled && !isExcludedSite()) {
     e.preventDefault()
     e.stopPropagation()
-    console.log('🚫 Context menu blocked', { isRightMouseDown, preventContextMenu })
+    DebugLogger.debug('Context menu blocked', { isRightMouseDown, preventContextMenu })
     return false
   }
 }, true)
 
 // バックグラウンドからのメッセージ処理
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log('📨 Content script received message:', request)
+  DebugLogger.debug('Content script received message:', request)
     
   if (request.type === 'scroll') {
     handleScrollMessage(request.direction)
       .then(result => {
-        console.log('✅ Scroll completed:', result)
+        DebugLogger.debug('Scroll completed:', result)
         sendResponse({ success: true, action: result })
       })
       .catch(error => {
@@ -535,7 +496,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 // スクロール処理
 function handleScrollMessage(direction) {
-  console.log(`📜 Scrolling: ${direction}`)
+  DebugLogger.debug(`Scrolling: ${direction}`)
     
   return new Promise((resolve) => {
     if (direction === 'top') {
@@ -543,14 +504,14 @@ function handleScrollMessage(direction) {
         top: 0,
         behavior: 'smooth'
       })
-      showStatus('⬆️ Scrolled to top')
+      DebugLogger.showStatus('⬆️ Scrolled to top')
       resolve('Scrolled to top')
     } else if (direction === 'bottom') {
       window.scrollTo({
         top: document.body.scrollHeight,
         behavior: 'smooth'
       })
-      showStatus('⬇️ Scrolled to bottom')
+      DebugLogger.showStatus('⬇️ Scrolled to bottom')
       resolve('Scrolled to bottom')
     } else {
       throw new Error(`Unknown scroll direction: ${direction}`)
@@ -561,7 +522,7 @@ function handleScrollMessage(direction) {
 // 初期化
 loadSettings().then(enabled => {
   if (enabled) {
-    console.log('🎯 Mouse Gesture: Event listeners registered')
-    showStatus('Mouse Gesture Tool Ready!')
+    DebugLogger.info('Mouse Gesture: Event listeners registered')
+    DebugLogger.showStatus('Mouse Gesture Tool Ready!')
   }
 })

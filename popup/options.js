@@ -6,7 +6,14 @@ class OptionsManager {
       enabled: true,
       strokeColor: '#2196F3',
       strokeWidth: 3,
-      excludeList: []
+      excludeList: [],
+      // デバッグ設定
+      debugSettings: {
+        enabled: true, // 開発時はデフォルトでON
+        logLevel: 2, // INFO
+        showStatus: true,
+        statusPosition: 'top-right'
+      }
     }
     
     // カスタムジェスチャー管理
@@ -72,6 +79,9 @@ class OptionsManager {
             
       // 除外リストを表示
       this.renderExcludeList()
+      
+      // デバッグ設定をUIに反映
+      this.loadDebugSettings()
             
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error)
@@ -133,6 +143,9 @@ class OptionsManager {
     
     // カスタムジェスチャー関連のイベントリスナーを追加
     this.setupCustomGestureListeners()
+    
+    // デバッグ設定のイベントリスナーを追加
+    this.setupDebugListeners()
   }
   
   setupCustomGestureListeners() {
@@ -174,6 +187,104 @@ class OptionsManager {
         this.resetLearningData()
       })
     }
+  }
+
+  setupDebugListeners() {
+    // デバッグモード有効/無効切り替え
+    const debugEnabled = document.getElementById('debugEnabled')
+    if (debugEnabled) {
+      debugEnabled.addEventListener('change', (e) => {
+        this.currentSettings.debugSettings.enabled = e.target.checked
+        this.updateDebugOptions()
+        this.saveDebugSettings()
+      })
+    }
+
+    // ログレベル変更
+    const debugLogLevel = document.getElementById('debugLogLevel')
+    if (debugLogLevel) {
+      debugLogLevel.addEventListener('change', (e) => {
+        this.currentSettings.debugSettings.logLevel = parseInt(e.target.value)
+        this.saveDebugSettings()
+      })
+    }
+
+    // 画面表示有効/無効切り替え
+    const debugShowStatus = document.getElementById('debugShowStatus')
+    if (debugShowStatus) {
+      debugShowStatus.addEventListener('change', (e) => {
+        this.currentSettings.debugSettings.showStatus = e.target.checked
+        this.saveDebugSettings()
+      })
+    }
+
+    // 表示位置変更
+    const debugStatusPosition = document.getElementById('debugStatusPosition')
+    if (debugStatusPosition) {
+      debugStatusPosition.addEventListener('change', (e) => {
+        this.currentSettings.debugSettings.statusPosition = e.target.value
+        this.saveDebugSettings()
+      })
+    }
+  }
+
+  updateDebugOptions() {
+    const debugOptions = document.getElementById('debugOptions')
+    const debugEnabled = document.getElementById('debugEnabled')
+    
+    if (debugOptions && debugEnabled) {
+      debugOptions.style.display = debugEnabled.checked ? 'block' : 'none'
+    }
+  }
+
+  async saveDebugSettings() {
+    try {
+      // DebugLoggerの設定を更新
+      if (typeof DebugLogger !== 'undefined') {
+        await DebugLogger.updateSettings(this.currentSettings.debugSettings)
+      }
+      
+      // 通常の設定も保存
+      await this.saveSettings()
+      
+      this.showSaveStatus('デバッグ設定を保存しました', true)
+    } catch (error) {
+      console.error('Failed to save debug settings:', error)
+      this.showSaveStatus('デバッグ設定の保存に失敗しました', false)
+    }
+  }
+
+  loadDebugSettings() {
+    // デバッグ設定が存在しない場合はデフォルト値を使用
+    if (!this.currentSettings.debugSettings) {
+      this.currentSettings.debugSettings = this.defaultSettings.debugSettings
+    }
+
+    const settings = this.currentSettings.debugSettings
+
+    // UIに設定を反映
+    const debugEnabled = document.getElementById('debugEnabled')
+    if (debugEnabled) {
+      debugEnabled.checked = settings.enabled
+    }
+
+    const debugLogLevel = document.getElementById('debugLogLevel')
+    if (debugLogLevel) {
+      debugLogLevel.value = settings.logLevel.toString()
+    }
+
+    const debugShowStatus = document.getElementById('debugShowStatus')
+    if (debugShowStatus) {
+      debugShowStatus.checked = settings.showStatus
+    }
+
+    const debugStatusPosition = document.getElementById('debugStatusPosition')
+    if (debugStatusPosition) {
+      debugStatusPosition.value = settings.statusPosition
+    }
+
+    // デバッグオプションの表示/非表示を更新
+    this.updateDebugOptions()
   }
     
   updatePreview() {

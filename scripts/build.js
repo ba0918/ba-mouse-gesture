@@ -18,6 +18,10 @@ const jsFiles = [
     outfile: 'dist/background/background-simple.js'
   },
   {
+    entryPoint: 'content_scripts/debug-logger.js',
+    outfile: 'dist/content_scripts/debug-logger.js'
+  },
+  {
     entryPoint: 'content_scripts/custom-gesture-manager.js',
     outfile: 'dist/content_scripts/custom-gesture-manager.js'
   },
@@ -67,6 +71,26 @@ async function copyDir(src, dest) {
   }
 }
 
+// 本番ビルド時にDebugLoggerの設定を変更
+async function processDebugLogger() {
+  if (!isProduction) return
+
+  const debugLoggerPath = 'content_scripts/debug-logger.js'
+  const content = await fs.readFile(debugLoggerPath, 'utf8')
+  
+  // 本番用設定に変更
+  const productionContent = content
+    .replace('enabled: true, // 開発時はデフォルトでON（本番ビルド時に自動変更）', 'enabled: false, // 本番ビルドでは無効')
+    .replace('showStatus: true, // 開発時はデフォルトで表示', 'showStatus: false, // 本番ビルドでは非表示')
+
+  // 一時ファイルとして保存
+  const tempPath = path.join(distDir, 'content_scripts/debug-logger.js')
+  await ensureDir(path.dirname(tempPath))
+  await fs.writeFile(tempPath, productionContent)
+  
+  console.log('🔧 本番ビルド: デバッグ機能を無効化')
+}
+
 // ビルド実行
 async function build() {
   console.log('🏗️  ビルド開始...')
@@ -82,6 +106,11 @@ async function build() {
     await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
     await copyDir('assets', path.join(distDir, 'assets'))
     
+    // 本番ビルド時にDebugLoggerを処理
+    if (isProduction) {
+      await processDebugLogger()
+    }
+
     // JavaScriptファイルをビルド
     console.log('🔨 JavaScriptファイルをビルド中...')
     
@@ -96,11 +125,23 @@ async function build() {
     // 各ファイルをビルド
     for (const file of jsFiles) {
       await ensureDir(path.dirname(file.outfile))
-      await esbuild.build({
-        ...buildOptions,
-        entryPoints: [file.entryPoint],
-        outfile: file.outfile
-      })
+      
+      // debug-logger.jsの場合は特別処理
+      if (file.entryPoint === 'content_scripts/debug-logger.js' && isProduction) {
+        // 既に処理済みのファイルを使用
+        await esbuild.build({
+          ...buildOptions,
+          entryPoints: [file.outfile], // 既に処理済みのファイルを使用
+          outfile: file.outfile,
+          allowOverwrite: true
+        })
+      } else {
+        await esbuild.build({
+          ...buildOptions,
+          entryPoints: [file.entryPoint],
+          outfile: file.outfile
+        })
+      }
     }
     
     // ビルドサイズを確認

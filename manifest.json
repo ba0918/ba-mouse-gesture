@@ -19,6 +19,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "content_scripts/debug-logger.js",
         "content_scripts/custom-gesture-manager.js",
         "content_scripts/gesture-learning-manager.js",
         "content_scripts/gesture-simple.js"

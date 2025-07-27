@@ -1,22 +1,73 @@
 // 最もシンプルなバックグラウンドスクリプト
-console.log('🔧 Background: Simple version started')
+
+// シンプルなデバッグログ管理
+let debugEnabled = true // 開発時はデフォルトでON（本番ビルド時に自動変更）
+let debugLogLevel = 2 // INFO
+
+// ログレベル定義
+const LOG_LEVELS = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3
+}
+
+// デバッグ設定を読み込み
+async function loadDebugSettings() {
+  try {
+    const result = await chrome.storage.local.get(['debugSettings'])
+    if (result.debugSettings) {
+      debugEnabled = result.debugSettings.enabled
+      debugLogLevel = result.debugSettings.logLevel
+    }
+  } catch (error) {
+    debugLog(LOG_LEVELS.ERROR, 'Failed to load debug settings:', error)
+  }
+}
+
+// 条件付きログ関数
+function debugLog(level, message, ...args) {
+  if (!debugEnabled || level > debugLogLevel) return
+  
+  switch (level) {
+    case LOG_LEVELS.ERROR:
+      console.error('🚨 [ERROR]', message, ...args)
+      break
+    case LOG_LEVELS.WARN:
+      console.warn('⚠️ [WARN]', message, ...args)
+      break
+    case LOG_LEVELS.INFO:
+      console.log('ℹ️ [INFO]', message, ...args)
+      break
+    case LOG_LEVELS.DEBUG:
+      console.log('🔧 [DEBUG]', message, ...args)
+      break
+    default:
+      console.log(message, ...args)
+  }
+}
+
+// 初期化
+loadDebugSettings()
+
+debugLog(LOG_LEVELS.INFO, 'Background: Simple version started')
 
 chrome.runtime.onInstalled.addListener(function (details) {
-  console.log('📦 Extension installed:', details.reason)
+  debugLog(LOG_LEVELS.INFO, 'Extension installed:', details.reason)
 })
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log('📨 Message received:', request)
-  console.log('📨 Sender tab ID:', sender.tab?.id)
+  debugLog(LOG_LEVELS.DEBUG, 'Message received:', request)
+  debugLog(LOG_LEVELS.DEBUG, 'Sender tab ID:', sender.tab?.id)
     
   if (request.type === 'simpleGesture') {
     const direction = request.direction
     const tabId = sender.tab?.id
         
-    console.log(`🎯 Processing gesture: ${direction} for tab ${tabId}`)
+    debugLog(LOG_LEVELS.INFO, `Processing gesture: ${direction} for tab ${tabId}`)
         
     if (!tabId) {
-      console.error('❌ No tab ID available')
+      debugLog(LOG_LEVELS.ERROR, 'No tab ID available')
       sendResponse({ success: false, error: 'No tab ID' })
       return
     }
@@ -24,11 +75,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     // シンプルなアクション実行
     executeSimpleAction(direction, tabId)
       .then(result => {
-        console.log('✅ Action completed:', result)
+        debugLog(LOG_LEVELS.INFO, 'Action completed:', result)
         sendResponse({ success: true, action: result })
       })
       .catch(error => {
-        console.error('❌ Action failed:', error)
+        debugLog(LOG_LEVELS.ERROR, 'Action failed:', error)
         sendResponse({ success: false, error: error.message })
       })
         
@@ -39,10 +90,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const name = request.name
     const tabId = sender.tab?.id
         
-    console.log(`✨ Processing custom gesture: ${name} (${action}) for tab ${tabId}`)
+    debugLog(LOG_LEVELS.INFO, `Processing custom gesture: ${name} (${action}) for tab ${tabId}`)
         
     if (!tabId) {
-      console.error('❌ No tab ID available')
+      debugLog(LOG_LEVELS.ERROR, 'No tab ID available')
       sendResponse({ success: false, error: 'No tab ID' })
       return
     }
@@ -50,11 +101,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     // カスタムアクション実行
     executeCustomAction(action, tabId, request)
       .then(result => {
-        console.log('✅ Custom action completed:', result)
+        debugLog(LOG_LEVELS.INFO, 'Custom action completed:', result)
         sendResponse({ success: true, action: result, gestureType: 'custom', name: name })
       })
       .catch(error => {
-        console.error('❌ Custom action failed:', error)
+        debugLog(LOG_LEVELS.ERROR, 'Custom action failed:', error)
         sendResponse({ success: false, error: error.message })
       })
         
@@ -63,10 +114,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const gestureType = request.gestureType
     const tabId = sender.tab?.id
         
-    console.log(`🎯 Processing complex gesture: ${gestureType} for tab ${tabId}`)
+    debugLog(LOG_LEVELS.INFO, `Processing complex gesture: ${gestureType} for tab ${tabId}`)
         
     if (!tabId) {
-      console.error('❌ No tab ID available')
+      debugLog(LOG_LEVELS.ERROR, 'No tab ID available')
       sendResponse({ success: false, error: 'No tab ID' })
       return
     }
@@ -74,42 +125,42 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     // 複合ジェスチャーアクション実行
     executeComplexAction(gestureType, tabId)
       .then(result => {
-        console.log('✅ Complex action completed:', result)
+        debugLog(LOG_LEVELS.INFO, 'Complex action completed:', result)
         sendResponse({ success: true, action: result })
       })
       .catch(error => {
-        console.error('❌ Complex action failed:', error)
+        debugLog(LOG_LEVELS.ERROR, 'Complex action failed:', error)
         sendResponse({ success: false, error: error.message })
       })
         
     return true // 非同期レスポンス
   } else if (request.type === 'SETTINGS_UPDATED') {
-    console.log('⚙️ Settings updated:', request.settings)
+    debugLog(LOG_LEVELS.INFO, 'Settings updated:', request.settings)
     sendResponse({ success: true, message: 'Settings received' })
     return false
   }
     
-  console.log('⚠️ Unknown message type:', request.type)
+  debugLog(LOG_LEVELS.WARN, 'Unknown message type:', request.type)
   sendResponse({ success: false, error: 'Unknown message type' })
 })
 
 async function executeSimpleAction(direction, tabId) {
-  console.log(`🔄 Executing ${direction} action for tab ${tabId}`)
+  debugLog(LOG_LEVELS.DEBUG, `Executing ${direction} action for tab ${tabId}`)
     
   try {
     switch (direction) {
     case 'LEFT':
-      console.log('⬅️ Going back')
+      debugLog(LOG_LEVELS.DEBUG, 'Going back')
       await chrome.tabs.goBack(tabId)
       return 'Navigated back'
                 
     case 'RIGHT':
-      console.log('➡️ Going forward')
+      debugLog(LOG_LEVELS.DEBUG, 'Going forward')
       await chrome.tabs.goForward(tabId)
       return 'Navigated forward'
                 
     case 'UP':
-      console.log('⬆️ Scrolling to top')
+      debugLog(LOG_LEVELS.DEBUG, 'Scrolling to top')
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'top'
@@ -117,7 +168,7 @@ async function executeSimpleAction(direction, tabId) {
       return 'Scrolled to top'
                 
     case 'DOWN':
-      console.log('⬇️ Scrolling to bottom')
+      debugLog(LOG_LEVELS.DEBUG, 'Scrolling to bottom')
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'bottom'
@@ -128,40 +179,40 @@ async function executeSimpleAction(direction, tabId) {
       throw new Error(`Unknown direction: ${direction}`)
     }
   } catch (error) {
-    console.error(`❌ ${direction} action failed:`, error)
+    debugLog(LOG_LEVELS.ERROR, `${direction} action failed:`, error)
     throw error
   }
 }
 
 async function executeComplexAction(gestureType, tabId) {
-  console.log(`🔄 Executing complex gesture: ${gestureType} for tab ${tabId}`)
+  debugLog(LOG_LEVELS.DEBUG, `Executing complex gesture: ${gestureType} for tab ${tabId}`)
     
   try {
     switch (gestureType) {
     case 'downright':
-      console.log('🗑️ Closing tab (↓→)')
+      debugLog(LOG_LEVELS.DEBUG, 'Closing tab (↓→)')
       await chrome.tabs.remove(tabId)
       return 'Tab closed'
                 
     case 'upright':
-      console.log('➕ Opening new tab (↑→)')
+      debugLog(LOG_LEVELS.DEBUG, 'Opening new tab (↑→)')
       await chrome.tabs.create({})
       return 'New tab opened'
                 
     case 'rightdown':
-      console.log('📄 Duplicating tab (→↓)')
+      debugLog(LOG_LEVELS.DEBUG, 'Duplicating tab (→↓)')
       const currentTab = await chrome.tabs.get(tabId)
       await chrome.tabs.create({ url: currentTab.url })
       return 'Tab duplicated'
                 
     case 'updown':
-      console.log('🔄 Reloading tab (↑↓) - tabId:', tabId)
+      debugLog(LOG_LEVELS.DEBUG, 'Reloading tab (↑↓) - tabId:', tabId)
       try {
         await chrome.tabs.reload(tabId)
-        console.log('✅ Tab reload successful')
+        debugLog(LOG_LEVELS.DEBUG, 'Tab reload successful')
         return 'Tab reloaded'
       } catch (error) {
-        console.error('❌ Tab reload failed:', error)
+        debugLog(LOG_LEVELS.ERROR, 'Tab reload failed:', error)
         throw error
       }
                 
@@ -169,14 +220,14 @@ async function executeComplexAction(gestureType, tabId) {
       throw new Error(`Unknown complex gesture: ${gestureType}`)
     }
   } catch (error) {
-    console.error(`❌ ${gestureType} complex action failed:`, error)
+    debugLog(LOG_LEVELS.ERROR, `${gestureType} complex action failed:`, error)
     throw error
   }
 }
 
 // カスタムアクション実行関数
 async function executeCustomAction(action, tabId, request) {
-  console.log(`✨ Executing custom action: ${action} for tab ${tabId}`)
+  debugLog(LOG_LEVELS.DEBUG, `Executing custom action: ${action} for tab ${tabId}`)
     
   try {
     // デフォルトアクションのマッピング（後方互換性）
@@ -205,23 +256,23 @@ async function executeCustomAction(action, tabId, request) {
     switch (action) {
     case 'reload':
     case 'refresh':
-      console.log('🔄 Custom: Reloading tab')
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Reloading tab')
       await chrome.tabs.reload(tabId)
       return 'Tab reloaded (custom)'
       
     case 'duplicate_tab':
-      console.log('📄 Custom: Duplicating tab')
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Duplicating tab')
       const currentTab = await chrome.tabs.get(tabId)
       await chrome.tabs.create({ url: currentTab.url })
       return 'Tab duplicated'
       
     case 'close_tab':
-      console.log('🗑️ Custom: Closing tab')
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Closing tab')
       await chrome.tabs.remove(tabId)
       return 'Tab closed (custom)'
       
     case 'scroll_top':
-      console.log('⬆️ Custom: Scrolling to top')
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Scrolling to top')
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'top'
@@ -229,7 +280,7 @@ async function executeCustomAction(action, tabId, request) {
       return 'Scrolled to top (custom)'
       
     case 'scroll_bottom':
-      console.log('⬇️ Custom: Scrolling to bottom')
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Scrolling to bottom')
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'bottom'
@@ -237,13 +288,13 @@ async function executeCustomAction(action, tabId, request) {
       return 'Scrolled to bottom (custom)'
       
     default:
-      console.log(`🤖 Unknown custom action: ${action}`)
+      debugLog(LOG_LEVELS.WARN, `Unknown custom action: ${action}`)
       return `Custom action executed: ${action}`
     }
   } catch (error) {
-    console.error(`❌ Custom action ${action} failed:`, error)
+    debugLog(LOG_LEVELS.ERROR, `Custom action ${action} failed:`, error)
     throw error
   }
 }
 
-console.log('🎯 Background: Simple version ready')
+debugLog(LOG_LEVELS.INFO, 'Background: Simple version ready')
