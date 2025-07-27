@@ -967,20 +967,20 @@ Phase 11でのChrome Web Store公開に向けて、万全の準備が整った�
 - [ ] **ビルドシステム更新**（src/ → dist/ 対応）
 - [ ] **基本テスト実行**（214テスト全パス確認）
 
-### Phase 11-2: Domain層実装 🧠
-- [ ] **エンティティ作成**
-  - [ ] `Gesture.js` - ジェスチャーエンティティ
-  - [ ] `Settings.js` - 設定エンティティ  
-  - [ ] `CustomGesture.js` - カスタムジェスチャーエンティティ
-- [ ] **値オブジェクト作成**
-  - [ ] `GesturePattern.js` - ジェスチャーパターン
-  - [ ] `Point.js` - 座標点
-  - [ ] `Threshold.js` - 閾値設定
-- [ ] **ドメインサービス実装**
-  - [ ] `GestureRecognizer.js` - ジェスチャー認識ロジック
-  - [ ] `PatternMatcher.js` - パターンマッチング
-  - [ ] `LearningEngine.js` - AI学習エンジン
-- [ ] **Domain層テスト作成**（純粋関数・ビジネスルールテスト）
+### Phase 11-2: Domain層実装 🧠 ✅ 完了
+- [x] **エンティティ作成**
+  - [x] `Gesture.js` - ジェスチャーエンティティ（基本・複合ジェスチャー）
+  - [x] `Settings.js` - 設定エンティティ（機能制御・除外サイト・デバッグ）  
+  - [x] `CustomGesture.js` - カスタムジェスチャーエンティティ（優先度・使用統計）
+- [x] **値オブジェクト作成**
+  - [x] `GesturePattern.js` - ジェスチャーパターン（レーベンシュタイン・LCS・類似度）
+  - [x] `Point.js` - 座標点（距離・角度・変換・不変性）
+  - [x] `Threshold.js` - 閾値設定（検出・マッチング・信頼度・適応調整）
+- [x] **ドメインサービス実装**
+  - [x] `GestureRecognizer.js` - ジェスチャー認識ロジック（ノイズ除去・履歴管理）
+  - [x] `PatternMatcher.js` - パターンマッチング（複数戦略・適応的調整）
+  - [x] `LearningEngine.js` - AI学習エンジン（バリエーション学習・動的閾値）
+- [x] **Domain層テスト作成**（97テスト・純粋関数・ビジネスルールテスト）
 
 ### Phase 11-3: Infrastructure層実装 🔧
 - [ ] **データアクセス実装**
