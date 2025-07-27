@@ -135,6 +135,163 @@ describe('ジェスチャー検出機能', () => {
     })
   })
   
+  describe('単純ジェスチャー判定', () => {
+    // isSimpleGesturePath関数のテスト用実装（隣接点比較版）
+    function isSimpleGesturePath(trail, debug = false) {
+      if (trail.length < 3) return true
+      
+      const directions = []
+      
+      if (debug) console.log('Trail length:', trail.length)
+      
+      // 隣接する点を比較して方向を検出
+      for (let i = 0; i < trail.length - 1; i++) {
+        const start = trail[i]
+        const end = trail[i + 1]
+        
+        const deltaX = end.x - start.x
+        const deltaY = end.y - start.y
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        
+        if (debug) console.log(`Point ${i} to ${i+1}: (${start.x},${start.y}) -> (${end.x},${end.y}), delta: (${deltaX},${deltaY}), distance: ${distance}`)
+        
+        if (distance > 5) { // 十分な移動距離がある場合のみ
+          let direction = ''
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+          } else {
+            direction = deltaY > 0 ? 'DOWN' : 'UP'
+          }
+          directions.push(direction)
+          if (debug) console.log('Direction detected:', direction)
+        }
+      }
+      
+      // 連続する同じ方向を統合
+      const cleanDirections = []
+      let lastDirection = null
+      for (const dir of directions) {
+        if (dir !== lastDirection) {
+          cleanDirections.push(dir)
+          lastDirection = dir
+        }
+      }
+      
+      const uniqueDirections = [...new Set(cleanDirections)]
+      if (debug) console.log('All directions:', directions, 'Clean directions:', cleanDirections, 'Unique:', uniqueDirections)
+      
+      return uniqueDirections.length <= 1
+    }
+    
+    test('単一方向（右）の軌跡は単純ジェスチャーと判定される', () => {
+      const trail = [
+        { x: 100, y: 100 },
+        { x: 120, y: 100 },
+        { x: 140, y: 100 },
+        { x: 160, y: 100 },
+        { x: 180, y: 100 },
+        { x: 200, y: 100 }
+      ]
+      
+      expect(isSimpleGesturePath(trail)).toBe(true)
+    })
+    
+    test('単一方向（上）の軌跡は単純ジェスチャーと判定される', () => {
+      const trail = [
+        { x: 100, y: 200 },
+        { x: 100, y: 180 },
+        { x: 100, y: 160 },
+        { x: 100, y: 140 },
+        { x: 100, y: 120 },
+        { x: 100, y: 100 }
+      ]
+      
+      expect(isSimpleGesturePath(trail)).toBe(true)
+    })
+    
+    test('複合ジェスチャー（↓→）は単純ジェスチャーではないと判定される', () => {
+      const trail = [
+        { x: 100, y: 100 },
+        { x: 100, y: 130 },
+        { x: 100, y: 160 },
+        { x: 100, y: 190 }, // 下へ
+        { x: 130, y: 190 },
+        { x: 160, y: 190 },
+        { x: 190, y: 190 }  // 右へ
+      ]
+      
+      expect(isSimpleGesturePath(trail)).toBe(false)
+    })
+    
+    test('未登録の複合ジェスチャー（↑↓↑）は単純ジェスチャーではないと判定される', () => {
+      const trail = [
+        { x: 100, y: 200 },
+        { x: 100, y:170 },
+        { x: 100, y: 140 }, // 上へ
+        { x: 100, y: 170 },
+        { x: 100, y: 200 }, // 下へ
+        { x: 100, y: 170 },
+        { x: 100, y: 140 }  // 再び上へ
+      ]
+      
+      console.log('\n=== テストケース: ↑↓↑ ===')
+      expect(isSimpleGesturePath(trail, true)).toBe(false)
+    })
+    
+    test('短い軌跡は単純ジェスチャーと判定される', () => {
+      const trail = [
+        { x: 100, y: 100 },
+        { x: 110, y: 100 }
+      ]
+      
+      expect(isSimpleGesturePath(trail)).toBe(true)
+    })
+    
+    test('ジグザグの軌跡は単純ジェスチャーではないと判定される', () => {
+      const trail = [
+        { x: 100, y: 100 },
+        { x: 120, y: 100 }, // 右
+        { x: 120, y: 120 }, // 下
+        { x: 140, y: 120 }, // 右
+        { x: 140, y: 140 }, // 下
+        { x: 160, y: 140 }  // 右
+      ]
+      
+      // 手動でチェック
+      const trailLength = trail.length
+      const segmentLength = Math.max(2, Math.floor(trailLength / 3))
+      console.log('ジグザグテスト - Trail length:', trailLength, 'Segment length:', segmentLength)
+      
+      const directions = []
+      for (let i = 0; i < trail.length - segmentLength; i += Math.max(1, Math.floor(segmentLength / 2))) {
+        const start = trail[i]
+        const end = trail[Math.min(i + segmentLength, trail.length - 1)]
+        
+        const deltaX = end.x - start.x
+        const deltaY = end.y - start.y
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        
+        console.log(`Segment ${i}: (${start.x},${start.y}) -> (${end.x},${end.y}), delta: (${deltaX},${deltaY}), distance: ${distance}`)
+        
+        if (distance > 5) {
+          let direction = ''
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+          } else {
+            direction = deltaY > 0 ? 'DOWN' : 'UP'
+          }
+          directions.push(direction)
+          console.log('Direction detected:', direction)
+        }
+      }
+      
+      const uniqueDirections = [...new Set(directions)]
+      console.log('All directions:', directions, 'Unique:', uniqueDirections, 'Count:', uniqueDirections.length)
+      
+      expect(isSimpleGesturePath(trail)).toBe(false)
+    })
+  })
+
   describe('複合ジェスチャーの検出', () => {
     test('下→右の複合ジェスチャーが検出される', () => {
       const trail = [

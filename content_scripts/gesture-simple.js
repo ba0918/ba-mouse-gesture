@@ -185,6 +185,50 @@ function removeTrailCanvas() {
   }
 }
 
+// 単純ジェスチャー判定（1方向のみかチェック）
+function isSimpleGesturePath() {
+  if (trail.length < 3) return true // 軌跡が短すぎる場合は単純とみなす
+  
+  const directions = []
+  
+  // 隣接する点を比較して方向を検出
+  for (let i = 0; i < trail.length - 1; i++) {
+    const start = trail[i]
+    const end = trail[i + 1]
+    
+    const deltaX = end.x - start.x
+    const deltaY = end.y - start.y
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+    
+    if (distance > 5) { // 十分な移動距離がある場合のみ
+      let direction = ''
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+      } else {
+        direction = deltaY > 0 ? 'DOWN' : 'UP'
+      }
+      directions.push(direction)
+    }
+  }
+  
+  // 連続する同じ方向を統合
+  const cleanDirections = []
+  let lastDirection = null
+  for (const dir of directions) {
+    if (dir !== lastDirection) {
+      cleanDirections.push(dir)
+      lastDirection = dir
+    }
+  }
+  
+  const uniqueDirections = [...new Set(cleanDirections)]
+  
+  DebugLogger.debug('Simple gesture check - directions:', directions, 'clean:', cleanDirections, 'unique:', uniqueDirections)
+  
+  // 単一方向のみの場合は単純ジェスチャー
+  return uniqueDirections.length <= 1
+}
+
 // 複合ジェスチャーの分析
 function analyzeComplexGesture() {
   if (trail.length < 6) return null // 軌跡が短すぎる場合は分析しない（さらに感度を上げた）
@@ -419,16 +463,23 @@ document.addEventListener('mouseup', function (e) {
         DebugLogger.info('Complex gesture detected:', complexGesture)
         handleComplexGesture(complexGesture, distance)
       } else {
-        // 単純なジェスチャーとして処理
-        let direction = ''
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+        // 軌跡が複合的でないかチェック（単純ジェスチャーのみ許可）
+        if (isSimpleGesturePath()) {
+          // 単純なジェスチャーとして処理
+          let direction = ''
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+          } else {
+            direction = deltaY > 0 ? 'DOWN' : 'UP'
+          }
+                  
+          DebugLogger.info('Simple gesture detected:', direction)
+          handleSimpleGesture(direction, distance)
         } else {
-          direction = deltaY > 0 ? 'DOWN' : 'UP'
+          // 未登録の複合ジェスチャー - 何も実行しない
+          DebugLogger.info('Unregistered complex gesture detected - no action taken')
+          DebugLogger.showStatus('未登録のジェスチャーパターンです', DebugLogger.LOG_LEVELS.WARN)
         }
-                
-        DebugLogger.info('Simple gesture detected:', direction)
-        handleSimpleGesture(direction, distance)
       }
             
       // ジェスチャー実行フラグを設定
