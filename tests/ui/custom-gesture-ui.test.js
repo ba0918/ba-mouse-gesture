@@ -225,6 +225,44 @@ describe('カスタムジェスチャーUI機能', () => {
           
           container.appendChild(item)
         })
+        
+        // イベントリスナーを追加
+        this.setupGestureItemListeners()
+      }
+      
+      setupGestureItemListeners() {
+        // 有効/無効切り替え
+        document.querySelectorAll('.gesture-toggle').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id
+            const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
+            if (gesture) {
+              await this.customGestureManager.updateCustomGesture(id, { enabled: !gesture.enabled })
+              this.renderCustomGestureList()
+            }
+          })
+        })
+        
+        // 編集ボタン
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id
+            this.editCustomGesture(id)
+          })
+        })
+        
+        // 削除ボタン
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id
+            const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
+            if (gesture && this.showConfirm(`「${gesture.name}」を削除しますか？`)) {
+              await this.customGestureManager.deleteCustomGesture(id)
+              this.renderCustomGestureList()
+              this.showSaveStatus('カスタムジェスチャーを削除しました', true)
+            }
+          })
+        })
       }
 
       editCustomGesture(id) {
@@ -309,6 +347,12 @@ describe('カスタムジェスチャーUI機能', () => {
         statusElement.textContent = message
         statusElement.className = `save-status ${isSuccess ? 'success' : 'error'}`
         statusElement.style.display = 'block'
+      }
+      
+      showConfirm(message) {
+        // ESLint警告回避のためconfirmを使用（ユーザー操作なので安全）
+        // eslint-disable-next-line no-alert
+        return confirm(message)
       }
     }
 
@@ -517,8 +561,11 @@ describe('カスタムジェスチャーUI機能', () => {
       
       optionsManager.renderCustomGestureList()
       
-      // 削除ボタンをクリック
+      // 削除ボタンが存在するかチェック
       const deleteBtn = document.querySelector('.delete-btn')
+      expect(deleteBtn).toBeTruthy()
+      
+      // 削除ボタンをクリック
       deleteBtn.click()
       
       // 確認ダイアログが表示されたかチェック
@@ -550,7 +597,15 @@ describe('カスタムジェスチャーUI機能', () => {
       
       // 削除ボタンをクリック
       const deleteBtn = document.querySelector('.delete-btn')
-      await deleteBtn.click()
+      
+      // click()は同期的だが、イベントハンドラ内の処理は非同期なので、Promiseを作成
+      const clickPromise = new Promise(resolve => {
+        // イベントハンドラが終了したらresolveするように設定
+        setTimeout(resolve, 0)
+      })
+      
+      deleteBtn.click()
+      await clickPromise
       
       // 削除メソッドが呼ばれたかチェック
       expect(mockCustomGestureManager.deleteCustomGesture).toHaveBeenCalledWith('test1')
