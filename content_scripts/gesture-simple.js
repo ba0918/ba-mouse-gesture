@@ -347,6 +347,21 @@ function handleSimpleGesture(direction, distance) {
     console.warn('⚠️ Custom simple pattern matching failed:', error)
   }
 
+  // カスタムジェスチャーにマッチしなかった場合、軌跡が真に単純かどうかを再確認
+  if (!isSimpleGesturePath()) {
+    // 複合的な軌跡の場合は未登録ジェスチャーとして何も実行しない
+    DebugLogger.info('Complex pattern detected in simple gesture handler - no action taken')
+    DebugLogger.showStatus('未登録のジェスチャーパターンです', DebugLogger.LOG_LEVELS.WARN)
+    
+    // カスタムジェスチャーにマッチしなかった場合の学習記録
+    try {
+      customPatternMatcher.recordFailedMatch([direction])
+    } catch (error) {
+      console.warn('⚠️ Failed to record simple gesture learning data:', error)
+    }
+    return
+  }
+
   // カスタムジェスチャーにマッチしなかった場合の学習記録
   try {
     customPatternMatcher.recordFailedMatch([direction])
