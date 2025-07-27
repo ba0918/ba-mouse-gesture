@@ -212,6 +212,213 @@
             margin-top: 8px;
             background: white;
         }
+
+        /* カスタムジェスチャー用スタイル */
+        .gesture-list-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e8eaed;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .gesture-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .gesture-item:last-child {
+            border-bottom: none;
+        }
+
+        .gesture-item.disabled {
+            opacity: 0.6;
+            background-color: #f8f9fa;
+        }
+
+        .gesture-info {
+            flex: 1;
+        }
+
+        .gesture-name {
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 4px;
+        }
+
+        .gesture-pattern {
+            font-family: monospace;
+            font-size: 12px;
+            color: #5f6368;
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .gesture-action {
+            font-size: 12px;
+            color: #1a73e8;
+        }
+
+        .gesture-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .gesture-toggle {
+            background: none;
+            border: 1px solid #dadce0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .gesture-toggle.enabled {
+            background: #e8f5e8;
+            border-color: #34a853;
+            color: #137333;
+        }
+
+        .gesture-toggle.disabled {
+            background: #fce8e6;
+            border-color: #ea4335;
+            color: #d33b2c;
+        }
+
+        .edit-btn, .delete-btn {
+            background: none;
+            border: 1px solid #dadce0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .edit-btn {
+            color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
+        .edit-btn:hover {
+            background: #e8f0fe;
+        }
+
+        .delete-btn {
+            color: #ea4335;
+            border-color: #ea4335;
+        }
+
+        .delete-btn:hover {
+            background: #fce8e6;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 4px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .pattern-input-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .pattern-input-container .form-input {
+            flex: 1;
+        }
+
+        .record-btn, .clear-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .record-btn:hover {
+            background: #1557b0;
+        }
+
+        .clear-btn {
+            background: #5f6368;
+        }
+
+        .clear-btn:hover {
+            background: #4a4a4a;
+        }
+
+        .record-btn.recording {
+            background: #ea4335;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .pattern-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .direction-btn {
+            background: #f8f9fa;
+            border: 1px solid #dadce0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            min-width: 40px;
+        }
+
+        .direction-btn:hover {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+        }
+
+        .direction-btn:active {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #5f6368;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
     </style>
 </head>
 <body>
@@ -255,6 +462,106 @@
             </div>
         </div>
         
+        <!-- カスタムジェスチャー -->
+        <div class="section">
+            <h2>カスタムジェスチャー</h2>
+            <div class="setting-item">
+                <div style="width: 100%;">
+                    <div class="setting-label">独自のジェスチャーを作成・管理</div>
+                    <div class="setting-description">
+                        デフォルトジェスチャーをカスタマイズしたり、新しいパターンを追加できます
+                    </div>
+                    
+                    <!-- カスタムジェスチャー一覧 -->
+                    <div class="custom-gesture-list">
+                        <div id="customGestureList" class="gesture-list-container"></div>
+                    </div>
+                    
+                    <!-- 新規ジェスチャー追加フォーム -->
+                    <div class="add-gesture-form" style="margin-top: 16px;">
+                        <h3 style="font-size: 14px; margin: 0 0 12px 0; color: #202124;">新しいジェスチャーを追加</h3>
+                        <div class="form-group">
+                            <label for="gestureName">ジェスチャー名:</label>
+                            <input type="text" id="gestureName" class="form-input" placeholder="例: カスタム戻る">
+                        </div>
+                        <div class="form-group">
+                            <label for="gesturePattern">パターン:</label>
+                            <div class="pattern-input-container">
+                                <input type="text" id="gesturePatternDisplay" class="form-input" placeholder="パターンをクリックして入力" readonly>
+                                <button id="recordPatternBtn" class="record-btn">記録開始</button>
+                                <button id="clearPatternBtn" class="clear-btn">クリア</button>
+                            </div>
+                            <div class="pattern-buttons">
+                                <button class="direction-btn" data-direction="UP">↑</button>
+                                <button class="direction-btn" data-direction="DOWN">↓</button>
+                                <button class="direction-btn" data-direction="LEFT">←</button>
+                                <button class="direction-btn" data-direction="RIGHT">→</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gestureAction">アクション:</label>
+                            <select id="gestureAction" class="form-select">
+                                <option value="back">戻る</option>
+                                <option value="forward">進む</option>
+                                <option value="scroll_up">上スクロール</option>
+                                <option value="scroll_down">下スクロール</option>
+                                <option value="close_tab">タブを閉じる</option>
+                                <option value="new_tab">新しいタブ</option>
+                                <option value="refresh">更新</option>
+                                <option value="duplicate_tab">タブを複製</option>
+                            </select>
+                        </div>
+                        <button id="addGestureBtn" class="add-btn">カスタムジェスチャーを追加</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学習統計 -->
+        <div class="section">
+            <h2>学習統計</h2>
+            <div class="setting-item">
+                <div style="width: 100%;">
+                    <div class="setting-label">AI学習機能によるパフォーマンス向上</div>
+                    <div class="setting-description">
+                        使用パターンを学習してジェスチャー認識を最適化します
+                    </div>
+                    
+                    <div id="learningStats" class="learning-stats-container" style="margin-top: 16px;">
+                        <div class="stats-overview" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div class="stat-item" style="text-align: center; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e8eaed;">
+                                <div style="font-size: 18px; font-weight: bold; color: #1a73e8;" id="learnedGesturesCount">-</div>
+                                <div style="font-size: 12px; color: #5f6368;">学習済み</div>
+                            </div>
+                            <div class="stat-item" style="text-align: center; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e8eaed;">
+                                <div style="font-size: 18px; font-weight: bold; color: #34a853;" id="avgPatternLength">-</div>
+                                <div style="font-size: 12px; color: #5f6368;">平均パターン長</div>
+                            </div>
+                            <div class="stat-item" style="text-align: center; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e8eaed;">
+                                <div style="font-size: 18px; font-weight: bold; color: #ea4335;" id="totalUsage">-</div>
+                                <div style="font-size: 12px; color: #5f6368;">総使用回数</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 13px; font-weight: 500; margin-bottom: 4px;">好みの方向:</div>
+                            <div id="preferredDirections" style="font-size: 12px; color: #5f6368;">-</div>
+                        </div>
+                        
+                        <div class="gesture-stats-list">
+                            <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">ジェスチャー別統計:</div>
+                            <div id="gestureStatsList" class="stats-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #e8eaed; border-radius: 4px; background: white;"></div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button id="refreshStats" style="flex: 1; background: #1a73e8; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">統計を更新</button>
+                            <button id="resetLearning" style="flex: 1; background: #ea4335; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">学習データをリセット</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 除外サイト -->
         <div class="section">
             <h2>除外サイトリスト</h2>
@@ -276,6 +583,8 @@
         <div id="saveStatus" class="save-status" style="display: none;"></div>
     </div>
     
+    <script src="../content_scripts/custom-gesture-manager.js"></script>
+    <script src="../content_scripts/gesture-learning-manager.js"></script>
     <script src="options.js"></script>
 </body>
 </html>

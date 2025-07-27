@@ -111,7 +111,15 @@ describe('バックグラウンドスクリプト', () => {
         expect(chrome.tabs.create).toHaveBeenCalledWith({})
       })
       
-      test('rightdown - タブを更新', async () => {
+      test('rightdown - タブを複製', async () => {
+        chrome.tabs.get.mockResolvedValue({ url: 'https://example.com' })
+        await chrome.tabs.get(6)
+        await chrome.tabs.create({ url: 'https://example.com' })
+        expect(chrome.tabs.get).toHaveBeenCalledWith(6)
+        expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com' })
+      })
+      
+      test('updown - タブを更新', async () => {
         await chrome.tabs.reload(6)
         expect(chrome.tabs.reload).toHaveBeenCalledWith(6)
       })

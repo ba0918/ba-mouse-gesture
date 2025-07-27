@@ -1,12 +1,17 @@
 // 設定対応マウスジェスチャー検出
 console.log('🚀 Mouse Gesture: Settings-enabled version loaded')
 
+// カスタムジェスチャー機能をインポート
+const customGestureManager = new CustomGestureManager()
+const customPatternMatcher = new CustomPatternMatcher(customGestureManager)
+
 // 設定の初期化
 let settings = {
   enabled: true,
   strokeColor: '#2563eb',
   strokeWidth: 3,
-  excludeList: []
+  excludeList: [],
+  gestureThreshold: 15 // ジェスチャー検出の最小距離（px）
 }
 
 // 現在のページが除外対象かチェック
@@ -35,6 +40,10 @@ async function loadSettings() {
     const result = await chrome.storage.sync.get(settings)
     settings = { ...settings, ...result }
     console.log('📋 Settings loaded:', settings)
+    
+    // カスタムジェスチャー設定も読み込み
+    await customGestureManager.loadCustomGestures()
+    console.log('📋 Custom gestures loaded:', customGestureManager.getCustomGestures().length + ' gestures')
         
     // 除外サイトチェック
     if (isExcludedSite()) {
@@ -217,10 +226,10 @@ function removeTrailCanvas() {
 
 // 複合ジェスチャーの分析
 function analyzeComplexGesture() {
-  if (trail.length < 10) return null // 軌跡が短すぎる場合は分析しない
+  if (trail.length < 6) return null // 軌跡が短すぎる場合は分析しない（さらに感度を上げた）
     
   const directions = []
-  const segmentLength = Math.max(5, Math.floor(trail.length / 8)) // セグメントサイズ
+  const segmentLength = Math.max(3, Math.floor(trail.length / 6)) // セグメントサイズ（より細かく）
     
   // 軌跡をセグメントに分割して方向を分析
   for (let i = 0; i < trail.length - segmentLength; i += segmentLength) {
@@ -231,7 +240,7 @@ function analyzeComplexGesture() {
     const deltaY = end.y - start.y
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
         
-    if (distance > 20) { // 十分な移動距離がある場合のみ
+    if (distance > 10) { // 十分な移動距離がある場合のみ（さらに感度を上げた）
       let direction = ''
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
         direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
@@ -254,19 +263,56 @@ function analyzeComplexGesture() {
   }
     
   console.log('🔍 Analyzed directions:', cleanDirections)
+  console.log('🔍 Pattern string:', cleanDirections.join(''))
     
-  // 複合ジェスチャーのパターンマッチング
+  // 最初にカスタムジェスチャーをチェック（優先度高）
+  if (cleanDirections.length >= 1) {
+    try {
+      const customResult = customPatternMatcher.matchPattern(cleanDirections)
+      if (customResult.matched) {
+        console.log('✨ Custom gesture matched:', customResult.gestureName, 'confidence:', customResult.confidence)
+        return {
+          type: 'custom',
+          action: customResult.action,
+          name: customResult.gestureName,
+          confidence: customResult.confidence
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Custom pattern matching failed:', error)
+    }
+  }
+    
+  // デフォルトの複合ジェスチャーのパターンマッチング
   if (cleanDirections.length >= 2) {
     const pattern = cleanDirections.join('')
+    console.log('🎯 Checking default pattern:', pattern)
         
     // 対応する複合ジェスチャーをチェック
     const complexPatterns = {
-      'DOWNRIGHT': 'downright',
-      'UPRIGHT': 'upright', 
-      'RIGHTDOWN': 'rightdown'
+      'DOWNRIGHT': 'downright',  // ↓→: タブを閉じる
+      'UPRIGHT': 'upright',      // ↑→: 新しいタブ
+      'RIGHTDOWN': 'rightdown',  // →↓: タブ複製
+      'UPDOWN': 'updown'         // ↑↓: ページ更新
     }
         
-    return complexPatterns[pattern] || null
+    const defaultGesture = complexPatterns[pattern]
+    if (defaultGesture) {
+      console.log('✅ Default pattern matched:', pattern, '=>', defaultGesture)
+      return {
+        type: 'default',
+        action: defaultGesture
+      }
+    } else {
+      console.log('❌ No default pattern match for:', pattern)
+      
+      // 学習機能: 認識失敗を記録
+      try {
+        customPatternMatcher.recordFailedMatch(cleanDirections)
+      } catch (error) {
+        console.warn('⚠️ Failed to record learning data:', error)
+      }
+    }
   }
     
   return null
@@ -274,15 +320,50 @@ function analyzeComplexGesture() {
 
 // 単純ジェスチャーの処理
 function handleSimpleGesture(direction, distance) {
+  // 最初にカスタムジェスチャーをチェック
+  try {
+    const customResult = customPatternMatcher.matchPattern([direction])
+    if (customResult.matched) {
+      console.log('✨ Custom simple gesture matched:', customResult.gestureName)
+      showStatus(`Custom: ${customResult.gestureName} (${distance.toFixed(0)}px)`)
+      
+      // カスタムアクションを送信
+      sendGestureMessage({
+        type: 'customGesture',
+        action: customResult.action,
+        name: customResult.gestureName,
+        direction: direction,
+        distance: distance,
+        confidence: customResult.confidence
+      })
+      return
+    }
+  } catch (error) {
+    console.warn('⚠️ Custom simple pattern matching failed:', error)
+  }
+
+  // カスタムジェスチャーにマッチしなかった場合の学習記録
+  try {
+    customPatternMatcher.recordFailedMatch([direction])
+  } catch (error) {
+    console.warn('⚠️ Failed to record simple gesture learning data:', error)
+  }
+
+  // デフォルトの単純ジェスチャー処理
   showStatus(`Gesture: ${direction} (${distance.toFixed(0)}px)`)
     
   // バックグラウンドスクリプトに送信
+  sendGestureMessage({
+    type: 'simpleGesture',
+    direction: direction,
+    distance: distance
+  })
+}
+
+// ジェスチャーメッセージ送信の共通関数
+function sendGestureMessage(message) {
   if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.runtime.sendMessage({
-      type: 'simpleGesture',
-      direction: direction,
-      distance: distance
-    }, function (response) {
+    chrome.runtime.sendMessage(message, function (response) {
       if (chrome.runtime.lastError) {
         console.error('❌ Message send failed:', chrome.runtime.lastError.message)
         showStatus('❌ Message failed: ' + chrome.runtime.lastError.message)
@@ -298,27 +379,30 @@ function handleSimpleGesture(direction, distance) {
 }
 
 // 複合ジェスチャーの処理
-function handleComplexGesture(gestureType, distance) {
-  showStatus(`Complex Gesture: ${gestureType} (${distance.toFixed(0)}px)`)
+function handleComplexGesture(gestureResult, distance) {
+  console.log('🚀 Handling complex gesture:', gestureResult.type, gestureResult.action)
+  
+  if (gestureResult.type === 'custom') {
+    // カスタムジェスチャーの場合
+    showStatus(`Custom: ${gestureResult.name} (${distance.toFixed(0)}px, ${(gestureResult.confidence * 100).toFixed(0)}%)`)
     
-  // バックグラウンドスクリプトに送信
-  if (typeof chrome !== 'undefined' && chrome.runtime) {
-    chrome.runtime.sendMessage({
-      type: 'complexGesture',
-      gestureType: gestureType,
-      distance: distance
-    }, function (response) {
-      if (chrome.runtime.lastError) {
-        console.error('❌ Complex gesture message send failed:', chrome.runtime.lastError.message)
-        showStatus('❌ Complex gesture failed: ' + chrome.runtime.lastError.message)
-      } else {
-        console.log('✅ Complex gesture sent successfully:', response)
-        showStatus('✅ Action: ' + (response?.action || 'Success'))
-      }
+    sendGestureMessage({
+      type: 'customGesture',
+      action: gestureResult.action,
+      name: gestureResult.name,
+      distance: distance,
+      confidence: gestureResult.confidence
     })
   } else {
-    console.error('❌ Chrome runtime not available')
-    showStatus('❌ Chrome runtime not available')
+    // デフォルトの複合ジェスチャーの場合
+    console.log('🔄 Sending default complex gesture:', gestureResult.action)
+    showStatus(`Complex Gesture: ${gestureResult.action} (${distance.toFixed(0)}px)`)
+    
+    sendGestureMessage({
+      type: 'complexGesture',
+      gestureType: gestureResult.action,
+      distance: distance
+    })
   }
 }
 
@@ -366,7 +450,7 @@ document.addEventListener('mouseup', function (e) {
         
     console.log('🖱️ Right mouse up. Delta:', deltaX, deltaY, 'Distance:', distance)
         
-    if (distance > 50) {
+    if (distance > settings.gestureThreshold) { // 設定可能な閾値
       // 複合ジェスチャーの検出を試行
       const complexGesture = analyzeComplexGesture()
             
@@ -396,7 +480,7 @@ document.addEventListener('mouseup', function (e) {
       }, 300)
             
     } else {
-      showStatus(`Movement too small: ${distance.toFixed(0)}px (need 50+)`)
+      showStatus(`Movement too small: ${distance.toFixed(0)}px (need ${settings.gestureThreshold}+)`)
       // gestureExecuted = false // 将来の機能拡張用
             
       // わずかでも動いた場合は短時間コンテキストメニューをブロック

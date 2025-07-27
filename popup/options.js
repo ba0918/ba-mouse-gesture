@@ -8,11 +8,22 @@ class OptionsManager {
       strokeWidth: 3,
       excludeList: []
     }
+    
+    // カスタムジェスチャー管理
+    this.customGestureManager = null
+    this.currentPattern = []
+    this.isRecording = false
         
     this.init()
   }
     
   async init() {
+    // カスタムジェスチャーマネージャーを初期化
+    this.initCustomGestureManager()
+    
+    // 学習マネージャーを初期化
+    this.initLearningManager()
+    
     // 現在の設定を読み込み
     await this.loadSettings()
         
@@ -21,6 +32,31 @@ class OptionsManager {
         
     // プレビューの初期化
     this.updatePreview()
+    
+    // カスタムジェスチャーを読み込み
+    await this.loadCustomGestures()
+    
+    // 学習統計を読み込み
+    await this.loadLearningStats()
+  }
+  
+  initCustomGestureManager() {
+    // CustomGestureManagerクラスが利用可能かチェック
+    if (typeof CustomGestureManager !== 'undefined') {
+      this.customGestureManager = new CustomGestureManager()
+    } else {
+      console.warn('CustomGestureManager not available')
+    }
+  }
+  
+  initLearningManager() {
+    // 学習マネージャーとパターンマッチャーを初期化
+    if (typeof GestureLearningManager !== 'undefined' && this.customGestureManager) {
+      this.learningManager = new GestureLearningManager()
+      this.patternMatcher = new CustomPatternMatcher(this.customGestureManager)
+    } else {
+      console.warn('Learning managers not available')
+    }
   }
     
   async loadSettings() {
@@ -94,6 +130,50 @@ class OptionsManager {
         this.addExcludeUrl()
       }
     })
+    
+    // カスタムジェスチャー関連のイベントリスナーを追加
+    this.setupCustomGestureListeners()
+  }
+  
+  setupCustomGestureListeners() {
+    // パターン方向ボタン
+    document.querySelectorAll('.direction-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const direction = btn.dataset.direction
+        this.addDirectionToPattern(direction)
+      })
+    })
+    
+    // パターンクリアボタン
+    document.getElementById('clearPatternBtn').addEventListener('click', () => {
+      this.clearPattern()
+    })
+    
+    // ジェスチャー追加ボタン
+    document.getElementById('addGestureBtn').addEventListener('click', () => {
+      this.addCustomGesture()
+    })
+    
+    // 記録ボタン（将来の拡張用）
+    document.getElementById('recordPatternBtn').addEventListener('click', () => {
+      this.toggleRecording()
+    })
+    
+    // 学習統計の更新ボタン
+    const refreshStatsBtn = document.getElementById('refreshStats')
+    if (refreshStatsBtn) {
+      refreshStatsBtn.addEventListener('click', () => {
+        this.loadLearningStats()
+      })
+    }
+    
+    // 学習データリセットボタン
+    const resetLearningBtn = document.getElementById('resetLearning')
+    if (resetLearningBtn) {
+      resetLearningBtn.addEventListener('click', () => {
+        this.resetLearningData()
+      })
+    }
   }
     
   updatePreview() {
@@ -203,6 +283,367 @@ class OptionsManager {
     setTimeout(() => {
       statusElement.style.display = 'none'
     }, 3000)
+  }
+  
+  // === カスタムジェスチャー管理メソッド ===
+  
+  async loadCustomGestures() {
+    if (!this.customGestureManager) return
+    
+    try {
+      await this.customGestureManager.loadCustomGestures()
+      this.renderCustomGestureList()
+    } catch (error) {
+      console.error('Failed to load custom gestures:', error)
+      this.showSaveStatus('カスタムジェスチャーの読み込みに失敗しました', false)
+    }
+  }
+  
+  renderCustomGestureList() {
+    const container = document.getElementById('customGestureList')
+    if (!this.customGestureManager) {
+      container.innerHTML = '<div class="empty-state">カスタムジェスチャー機能は利用できません</div>'
+      return
+    }
+    
+    const gestures = this.customGestureManager.getCustomGestures()
+    
+    if (gestures.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🖱️</div>
+          <div>カスタムジェスチャーがありません</div>
+          <div style="font-size: 12px; margin-top: 8px;">下のフォームから新しいジェスチャーを追加できます</div>
+        </div>
+      `
+      return
+    }
+    
+    container.innerHTML = ''
+    
+    gestures.forEach(gesture => {
+      const item = document.createElement('div')
+      item.className = `gesture-item ${gesture.enabled ? '' : 'disabled'}`
+      
+      item.innerHTML = `
+        <div class="gesture-info">
+          <div class="gesture-name">${this.escapeHtml(gesture.name)}</div>
+          <div>
+            <span class="gesture-pattern">${gesture.pattern.join(' → ')}</span>
+            <span class="gesture-action">${this.getActionDisplayName(gesture.action)}</span>
+          </div>
+        </div>
+        <div class="gesture-controls">
+          <button class="gesture-toggle ${gesture.enabled ? 'enabled' : 'disabled'}" data-id="${gesture.id}">
+            ${gesture.enabled ? '有効' : '無効'}
+          </button>
+          <button class="edit-btn" data-id="${gesture.id}">編集</button>
+          <button class="delete-btn" data-id="${gesture.id}">削除</button>
+        </div>
+      `
+      
+      container.appendChild(item)
+    })
+    
+    // イベントリスナーを追加
+    this.setupGestureItemListeners()
+  }
+  
+  setupGestureItemListeners() {
+    // 有効/無効切り替え
+    document.querySelectorAll('.gesture-toggle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id
+        const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
+        if (gesture) {
+          await this.customGestureManager.updateCustomGesture(id, { enabled: !gesture.enabled })
+          this.renderCustomGestureList()
+        }
+      })
+    })
+    
+    // 編集ボタン
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id
+        this.editCustomGesture(id)
+      })
+    })
+    
+    // 削除ボタン
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id
+        const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
+        if (gesture && confirm(`「${gesture.name}」を削除しますか？`)) {
+          await this.customGestureManager.deleteCustomGesture(id)
+          this.renderCustomGestureList()
+          this.showSaveStatus('カスタムジェスチャーを削除しました', true)
+        }
+      })
+    })
+  }
+  
+  addDirectionToPattern(direction) {
+    this.currentPattern.push(direction)
+    this.updatePatternDisplay()
+  }
+  
+  clearPattern() {
+    this.currentPattern = []
+    this.updatePatternDisplay()
+  }
+  
+  updatePatternDisplay() {
+    const display = document.getElementById('gesturePatternDisplay')
+    if (this.currentPattern.length === 0) {
+      display.value = ''
+      display.placeholder = 'パターンをクリックして入力'
+    } else {
+      display.value = this.currentPattern.join(' → ')
+    }
+  }
+  
+  async addCustomGesture() {
+    const name = document.getElementById('gestureName').value.trim()
+    const action = document.getElementById('gestureAction').value
+    
+    if (!name) {
+      this.showSaveStatus('ジェスチャー名を入力してください', false)
+      return
+    }
+    
+    if (this.currentPattern.length === 0) {
+      this.showSaveStatus('パターンを入力してください', false)
+      return
+    }
+    
+    if (!this.customGestureManager) {
+      this.showSaveStatus('カスタムジェスチャー機能は利用できません', false)
+      return
+    }
+    
+    try {
+      const result = await this.customGestureManager.addCustomGesture({
+        name: name,
+        pattern: [...this.currentPattern],
+        action: action
+      })
+      
+      if (result.success) {
+        this.showSaveStatus('カスタムジェスチャーを追加しました', true)
+        this.renderCustomGestureList()
+        
+        // フォームをクリア
+        document.getElementById('gestureName').value = ''
+        document.getElementById('gestureAction').selectedIndex = 0
+        this.clearPattern()
+      } else {
+        this.showSaveStatus(result.error || 'ジェスチャーの追加に失敗しました', false)
+      }
+    } catch (error) {
+      console.error('Failed to add custom gesture:', error)
+      this.showSaveStatus('ジェスチャーの追加に失敗しました', false)
+    }
+  }
+  
+  editCustomGesture(id) {
+    const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
+    if (!gesture) return
+    
+    // フォームに既存の値を設定
+    document.getElementById('gestureName').value = gesture.name
+    document.getElementById('gestureAction').value = gesture.action
+    this.currentPattern = [...gesture.pattern]
+    this.updatePatternDisplay()
+    
+    // 追加ボタンを編集モードに変更
+    const addBtn = document.getElementById('addGestureBtn')
+    addBtn.textContent = '変更を保存'
+    addBtn.onclick = () => this.saveEditedGesture(id)
+    
+    this.showSaveStatus('編集モードになりました', true)
+  }
+  
+  async saveEditedGesture(id) {
+    const name = document.getElementById('gestureName').value.trim()
+    const action = document.getElementById('gestureAction').value
+    
+    if (!name || this.currentPattern.length === 0) {
+      this.showSaveStatus('名前とパターンを入力してください', false)
+      return
+    }
+    
+    try {
+      const result = await this.customGestureManager.updateCustomGesture(id, {
+        name: name,
+        pattern: [...this.currentPattern],
+        action: action
+      })
+      
+      if (result.success) {
+        this.showSaveStatus('カスタムジェスチャーを更新しました', true)
+        this.renderCustomGestureList()
+        this.resetAddForm()
+      } else {
+        this.showSaveStatus(result.error || 'ジェスチャーの更新に失敗しました', false)
+      }
+    } catch (error) {
+      console.error('Failed to update custom gesture:', error)
+      this.showSaveStatus('ジェスチャーの更新に失敗しました', false)
+    }
+  }
+  
+  resetAddForm() {
+    document.getElementById('gestureName').value = ''
+    document.getElementById('gestureAction').selectedIndex = 0
+    this.clearPattern()
+    
+    const addBtn = document.getElementById('addGestureBtn')
+    addBtn.textContent = 'カスタムジェスチャーを追加'
+    addBtn.onclick = () => this.addCustomGesture()
+  }
+  
+  toggleRecording() {
+    // 将来の拡張：実際のマウス動作を記録する機能
+    this.showSaveStatus('記録機能は今後のバージョンで対応予定です', false)
+  }
+  
+  getActionDisplayName(action) {
+    const actionNames = {
+      'back': '戻る',
+      'forward': '進む',
+      'scroll_up': '上スクロール',
+      'scroll_down': '下スクロール',
+      'close_tab': 'タブを閉じる',
+      'new_tab': '新しいタブ',
+      'refresh': '更新',
+      'duplicate_tab': 'タブを複製'
+    }
+    return actionNames[action] || action
+  }
+  
+  // 学習統計を読み込み
+  async loadLearningStats() {
+    if (!this.patternMatcher || !this.learningManager) {
+      console.warn('Learning managers not initialized')
+      return
+    }
+    
+    try {
+      // 学習マネージャーのデータを読み込み
+      await this.learningManager.loadLearningData()
+      
+      // 統計データを取得
+      const stats = this.patternMatcher.getLearningStats()
+      
+      if (stats) {
+        this.renderLearningStats(stats)
+      } else {
+        this.renderEmptyLearningStats()
+      }
+    } catch (error) {
+      console.error('Failed to load learning stats:', error)
+      this.renderEmptyLearningStats()
+    }
+  }
+  
+  // 学習統計を表示
+  renderLearningStats(stats) {
+    // 基本統計の表示
+    document.getElementById('learnedGesturesCount').textContent = stats.totalGestures || 0
+    document.getElementById('avgPatternLength').textContent = 
+      stats.userProfile.averagePatternLength ? stats.userProfile.averagePatternLength.toFixed(1) : '-'
+    
+    // 総使用回数を計算
+    const totalUsage = stats.gestureStats.reduce((sum, stat) => sum + stat.usage, 0)
+    document.getElementById('totalUsage').textContent = totalUsage
+    
+    // 好みの方向を表示
+    const preferredDirs = stats.userProfile.preferredDirections
+    const directionDisplay = preferredDirs && preferredDirs.length > 0 ? 
+      preferredDirs.join(', ') : 'データなし'
+    document.getElementById('preferredDirections').textContent = directionDisplay
+    
+    // ジェスチャー別統計を表示
+    this.renderGestureStatsList(stats.gestureStats)
+  }
+  
+  // 空の学習統計を表示
+  renderEmptyLearningStats() {
+    document.getElementById('learnedGesturesCount').textContent = '0'
+    document.getElementById('avgPatternLength').textContent = '-'
+    document.getElementById('totalUsage').textContent = '0'
+    document.getElementById('preferredDirections').textContent = 'データなし'
+    
+    const statsList = document.getElementById('gestureStatsList')
+    statsList.innerHTML = '<div style="padding: 16px; text-align: center; color: #5f6368;">学習データがありません</div>'
+  }
+  
+  // ジェスチャー別統計リストを表示
+  renderGestureStatsList(gestureStats) {
+    const container = document.getElementById('gestureStatsList')
+    
+    if (!gestureStats || gestureStats.length === 0) {
+      container.innerHTML = '<div style="padding: 16px; text-align: center; color: #5f6368;">学習データがありません</div>'
+      return
+    }
+    
+    const html = gestureStats.map(stat => {
+      const successRate = stat.successRate * 100
+      const successColor = successRate >= 80 ? '#34a853' : successRate >= 60 ? '#fbbc04' : '#ea4335'
+      
+      return `
+        <div style="padding: 8px 12px; border-bottom: 1px solid #f1f3f4; display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1;">
+            <div style="font-weight: 500; font-size: 13px;">${stat.name}</div>
+            <div style="font-size: 11px; color: #5f6368;">
+              使用: ${stat.usage}回 | 
+              閾値: ${stat.threshold.toFixed(2)} | 
+              学習済み: ${stat.learnedVariations}種類
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: bold; color: ${successColor};">
+              ${successRate.toFixed(1)}%
+            </div>
+            <div style="font-size: 10px; color: #5f6368;">成功率</div>
+          </div>
+        </div>
+      `
+    }).join('')
+    
+    container.innerHTML = html
+  }
+  
+  // 学習データをリセット
+  async resetLearningData() {
+    if (!confirm('学習データを完全にリセットしますか？この操作は元に戻せません。')) {
+      return
+    }
+    
+    try {
+      // Chrome storageから学習データを削除
+      await chrome.storage.sync.remove('gestureLearningData')
+      
+      // 学習マネージャーをリセット
+      if (this.learningManager) {
+        this.learningManager = new GestureLearningManager()
+      }
+      
+      // パターンマッチャーを再初期化
+      if (this.patternMatcher) {
+        this.patternMatcher = new CustomPatternMatcher(this.customGestureManager)
+      }
+      
+      // 統計表示を更新
+      this.renderEmptyLearningStats()
+      
+      this.showSaveStatus('学習データをリセットしました', true)
+    } catch (error) {
+      console.error('Failed to reset learning data:', error)
+      this.showSaveStatus('学習データのリセットに失敗しました', false)
+    }
   }
 }
 
