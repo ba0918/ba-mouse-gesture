@@ -1,5 +1,9 @@
 name: CI/CD Pipeline
 
+# 注意: GitHub Actions storage quota制限のため、
+# アーティファクトアップロードを一時的に無効化中
+# 制限リセット後（6-12時間）に再有効化予定
+
 on:
   push:
     branches: [ main, develop ]
@@ -61,13 +65,14 @@ jobs:
           CI: true
         continue-on-error: true
         
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: failure() && matrix.node-version == '20.x'
-        with:
-          name: playwright-report-${{ github.run_number }}
-          path: playwright-report/
-          retention-days: 7  # ストレージ制限を考慮して短縮
+      # - name: Upload Playwright report
+      #   uses: actions/upload-artifact@v4
+      #   if: failure() && matrix.node-version == '20.x'
+      #   with:
+      #     name: playwright-report-${{ github.run_number }}
+      #     path: playwright-report/
+      #     retention-days: 7  # ストレージ制限を考慮して短縮
+      #   # 一時的に無効化 - GitHub Actions storage quota制限のため
 
   build:
     name: Build & Package
@@ -105,12 +110,13 @@ jobs:
           echo "=== Production Build Contents ==="
           find dist/ -type f -name "*.js" -exec wc -c {} + | sort -n
           
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: extension-build-${{ github.run_number }}
-          path: dist/
-          retention-days: 7  # ストレージ制限を考慮して短縮
+      # - name: Upload build artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: extension-build-${{ github.run_number }}
+      #     path: dist/
+      #     retention-days: 7  # ストレージ制限を考慮して短縮
+      #   # 一時的に無効化 - GitHub Actions storage quota制限のため
 
   security:
     name: Security Check
