@@ -33,7 +33,7 @@
   },
   
   "options_ui": {
-    "page": "popup/options.html",
+    "page": "popup/options-clean.html",
     "open_in_tab": false
   }
 }
