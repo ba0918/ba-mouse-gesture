@@ -24,7 +24,7 @@ class ChromeMessaging {
    * @param {Object} options - 送信オプション
    * @returns {Promise<*>} レスポンス
    */
-  async sendMessage(message, options = {}) {
+  sendMessage(message, options = {}) {
     const config = {
       timeout: options.timeout || this.defaultTimeout,
       retryAttempts: options.retryAttempts || this.retryAttempts,
@@ -32,7 +32,7 @@ class ChromeMessaging {
       expectResponse: options.expectResponse !== false
     }
 
-    return this.withRetry(async () => {
+    return this.withRetry(() => {
       this.validateChromeApi()
       this.validateMessage(message)
 
@@ -98,7 +98,7 @@ class ChromeMessaging {
 
     this.validateChromeApi()
     
-    const responses = []
+    // 将来の機能拡張用に予約されたresponses配列
     const promises = []
 
     try {
@@ -210,7 +210,7 @@ class ChromeMessaging {
    * @param {Object} options - オプション
    * @returns {Promise<*>} レスポンス
    */
-  async request(messageType, data, options = {}) {
+  request(messageType, data, options = {}) {
     const message = {
       type: messageType,
       data: data,
@@ -245,7 +245,7 @@ class ChromeMessaging {
    * @param {boolean} activeOnly - アクティブタブのみ
    * @returns {Promise<Object[]>}
    */
-  async getAllTabs(activeOnly = false) {
+  getAllTabs(activeOnly = false) {
     this.validateChromeApi()
     
     const query = activeOnly ? { active: true } : {}
@@ -414,7 +414,7 @@ class ChromeMessaging {
    */
   logMessage(action, message, details = {}) {
     if (this.debugMode && typeof console !== 'undefined') {
-      console.debug(`[ChromeMessaging] ${action}:`, {
+      console.log(`[ChromeMessaging] ${action}:`, {
         type: message.type,
         messageId: message.messageId,
         ...details

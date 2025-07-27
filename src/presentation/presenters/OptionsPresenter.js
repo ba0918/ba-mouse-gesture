@@ -82,7 +82,7 @@ class OptionsPresenter extends BasePresenter {
    */
   setupViewModelWatchers() {
     // 設定値の変更を監視して自動保存
-    this.viewModel.onChange((key, newValue, oldValue) => {
+    this.viewModel.onChange((key) => {
       // メタデータの変更は無視
       if (key === 'saveStatus' || key === 'lastModified') {
         return
@@ -352,6 +352,7 @@ class OptionsPresenter extends BasePresenter {
    */
   async resetToDefaults() {
     try {
+      // eslint-disable-next-line no-alert
       const confirmed = confirm('設定をデフォルトに戻しますか？この操作は取り消せません。')
       if (!confirmed) {
         return
@@ -400,6 +401,7 @@ class OptionsPresenter extends BasePresenter {
    */
   async restoreFromBackup(backup) {
     try {
+      // eslint-disable-next-line no-alert
       const confirmed = confirm('バックアップから設定を復元しますか？現在の設定は上書きされます。')
       if (!confirmed) {
         return
@@ -484,7 +486,7 @@ class OptionsPresenter extends BasePresenter {
         await this.saveSettings(false) // ステータス表示なし
       } catch (error) {
         // 自動保存のエラーは無視（ユーザーが手動保存時にエラーが表示される）
-        console.debug('Auto-save failed:', error)
+        console.log('Auto-save failed:', error)
       }
     }, this.autoSaveDelay)
   }
@@ -495,7 +497,7 @@ class OptionsPresenter extends BasePresenter {
    * @param {string} property - プロパティ名
    * @returns {boolean}
    */
-  hasPropertyChanged(property) {
+  hasPropertyChanged() {
     // TODO: 元の値との比較ロジックを実装
     // 現在は常にtrueを返す（実際の実装では元の値を保持しておく）
     return true

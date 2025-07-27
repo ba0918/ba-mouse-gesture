@@ -19,17 +19,23 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア ('sync' | 'local')
    * @returns {Promise<Object>}
    */
-  async get(keys, area = this.defaultArea) {
-    return this.withRetry(async () => {
+  get(keys, area = this.defaultArea) {
+    return this.withRetry(() => {
       this.validateChromeApi()
       
       const storage = this.getStorageArea(area)
-      const result = await storage.get(keys)
       
-      // ログ出力（デバッグ用）
-      this.logOperation('get', { keys, area, resultKeys: Object.keys(result) })
-      
-      return result
+      return new Promise((resolve, reject) => {
+        storage.get(keys, (result) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            // ログ出力（デバッグ用）
+            this.logOperation('get', { keys, area, resultKeys: Object.keys(result) })
+            resolve(result)
+          }
+        })
+      })
     })
   }
 
@@ -39,15 +45,23 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア
    * @returns {Promise<void>}
    */
-  async set(items, area = this.defaultArea) {
-    return this.withRetry(async () => {
+  set(items, area = this.defaultArea) {
+    return this.withRetry(() => {
       this.validateChromeApi()
       this.validateItems(items)
       
       const storage = this.getStorageArea(area)
-      await storage.set(items)
       
-      this.logOperation('set', { keys: Object.keys(items), area })
+      return new Promise((resolve, reject) => {
+        storage.set(items, () => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            this.logOperation('set', { keys: Object.keys(items), area })
+            resolve()
+          }
+        })
+      })
     })
   }
 
@@ -57,14 +71,22 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア
    * @returns {Promise<void>}
    */
-  async remove(keys, area = this.defaultArea) {
-    return this.withRetry(async () => {
+  remove(keys, area = this.defaultArea) {
+    return this.withRetry(() => {
       this.validateChromeApi()
       
       const storage = this.getStorageArea(area)
-      await storage.remove(keys)
       
-      this.logOperation('remove', { keys, area })
+      return new Promise((resolve, reject) => {
+        storage.remove(keys, () => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            this.logOperation('remove', { keys, area })
+            resolve()
+          }
+        })
+      })
     })
   }
 
@@ -73,14 +95,22 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア
    * @returns {Promise<void>}
    */
-  async clear(area = this.defaultArea) {
-    return this.withRetry(async () => {
+  clear(area = this.defaultArea) {
+    return this.withRetry(() => {
       this.validateChromeApi()
       
       const storage = this.getStorageArea(area)
-      await storage.clear()
       
-      this.logOperation('clear', { area })
+      return new Promise((resolve, reject) => {
+        storage.clear(() => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            this.logOperation('clear', { area })
+            resolve()
+          }
+        })
+      })
     })
   }
 
@@ -90,19 +120,32 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア
    * @returns {Promise<number>} バイト数
    */
-  async getBytesInUse(keys = null, area = this.defaultArea) {
-    return this.withRetry(async () => {
+  getBytesInUse(keys = null, area = this.defaultArea) {
+    return this.withRetry(() => {
       this.validateChromeApi()
       
       const storage = this.getStorageArea(area)
       
-      if (!storage.getBytesInUse) {
-        // getBytesInUse が利用できない場合の代替実装
-        const data = await storage.get(keys)
-        return this.calculateDataSize(data)
-      }
-      
-      return await storage.getBytesInUse(keys)
+      return new Promise((resolve, reject) => {
+        if (!storage.getBytesInUse) {
+          // getBytesInUse が利用できない場合の代替実装
+          storage.get(keys, (result) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message))
+            } else {
+              resolve(this.calculateDataSize(result))
+            }
+          })
+        } else {
+          storage.getBytesInUse(keys, (bytesInUse) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message))
+            } else {
+              resolve(bytesInUse)
+            }
+          })
+        }
+      })
     })
   }
 
@@ -141,6 +184,7 @@ class ChromeStorage {
    * @param {string} area - ストレージエリア
    * @returns {Promise<Object>} 更新後のデータ
    */
+  // eslint-disable-next-line require-await
   async update(updates, area = this.defaultArea) {
     return this.withRetry(async () => {
       // 既存データを取得
@@ -275,8 +319,8 @@ class ChromeStorage {
    * @param {Object} details
    */
   logOperation(operation, details) {
-    if (typeof console !== 'undefined' && console.debug) {
-      console.debug(`[ChromeStorage] ${operation}:`, details)
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(`[ChromeStorage] ${operation}:`, details)
     }
   }
 

@@ -81,7 +81,7 @@ class GesturePresenter extends BasePresenter {
    * @protected
    * @returns {Promise<void>}
    */
-  async onDispose() {
+  onDispose() {
     // ジェスチャー記録を停止
     this.stopGestureRecording()
     
@@ -270,7 +270,7 @@ class GesturePresenter extends BasePresenter {
    * @param {Object} result - 認識結果
    * @returns {Promise<void>}
    */
-  async handleRecognitionResult(result) {
+  handleRecognitionResult(result) {
     if (result.success && result.gesture) {
       // 成功した場合
       const gestureInfo = `${result.gesture.name} (${result.gesture.action})`
@@ -484,7 +484,7 @@ class GesturePresenter extends BasePresenter {
    * @param {string} event - イベント名
    * @param {Object} data - データ
    */
-  notifyView(event, data) {
+  notifyView(event) {
     // Viewからのリスナー登録があれば通知
     this.updateStatus(`View notification: ${event}`, 'debug')
   }

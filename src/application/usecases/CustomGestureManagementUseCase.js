@@ -106,7 +106,7 @@ class CustomGestureManagementUseCase {
       const customGesture = new CustomGesture(gestureId, name, pattern, action, true, description)
 
       // 保存
-      const updatedGestures = await this.gestureRepository.addCustomGesture(customGesture)
+      await this.gestureRepository.addCustomGesture(customGesture)
 
       // 学習データを初期化
       await this.initializeLearningForGesture(customGesture, pattern)
@@ -407,7 +407,7 @@ class CustomGestureManagementUseCase {
    * @param {GesturePattern} pattern
    * @param {string} name
    */
-  async checkPatternSimilarity(pattern, name) {
+  async checkPatternSimilarity(pattern) {
     const existingGestures = await this.gestureRepository.getCustomGestures()
     const similarityThreshold = 0.9 // 90%以上類似していたら警告
     

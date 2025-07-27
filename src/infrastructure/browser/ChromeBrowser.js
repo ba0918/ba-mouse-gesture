@@ -18,7 +18,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async goBack(tabId = null) {
+  goBack(tabId = null) {
     return this.executeTabOperation('goBack', async (tab) => {
       this.validateChromeApi()
       
@@ -42,7 +42,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async goForward(tabId = null) {
+  goForward(tabId = null) {
     return this.executeTabOperation('goForward', async (tab) => {
       this.validateChromeApi()
       
@@ -67,7 +67,7 @@ class ChromeBrowser {
    * @param {boolean} bypassCache - キャッシュをバイパスするか
    * @returns {Promise<void>}
    */
-  async reload(tabId = null, bypassCache = false) {
+  reload(tabId = null, bypassCache = false) {
     return this.executeTabOperation('reload', async (tab) => {
       this.validateChromeApi()
       
@@ -93,7 +93,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async superReload(tabId = null) {
+  superReload(tabId = null) {
     return this.reload(tabId, true)
   }
 
@@ -103,8 +103,8 @@ class ChromeBrowser {
    * @param {Object} options - タブ作成オプション
    * @returns {Promise<Object>} 作成されたタブ情報
    */
-  async createTab(url = null, options = {}) {
-    return this.executeOperation('createTab', async () => {
+  createTab(url = null, options = {}) {
+    return this.executeOperation('createTab', () => {
       this.validateChromeApi()
       
       const createProperties = {
@@ -133,7 +133,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async closeTab(tabId = null) {
+  closeTab(tabId = null) {
     return this.executeTabOperation('closeTab', async (tab) => {
       this.validateChromeApi()
       
@@ -157,8 +157,8 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<Object>} 複製されたタブ情報
    */
-  async duplicateTab(tabId = null) {
-    return this.executeTabOperation('duplicateTab', async (tab) => {
+  duplicateTab(tabId = null) {
+    return this.executeTabOperation('duplicateTab', (tab) => {
       this.validateChromeApi()
       
       return new Promise((resolve, reject) => {
@@ -180,7 +180,7 @@ class ChromeBrowser {
    * タブ操作: 前のタブに切り替え
    * @returns {Promise<Object>} 切り替え先タブ情報
    */
-  async switchToPreviousTab() {
+  switchToPreviousTab() {
     return this.executeOperation('switchToPreviousTab', async () => {
       const tabs = await this.getAllTabs()
       const currentTab = await this.getActiveTab()
@@ -202,7 +202,7 @@ class ChromeBrowser {
    * タブ操作: 次のタブに切り替え
    * @returns {Promise<Object>} 切り替え先タブ情報
    */
-  async switchToNextTab() {
+  switchToNextTab() {
     return this.executeOperation('switchToNextTab', async () => {
       const tabs = await this.getAllTabs()
       const currentTab = await this.getActiveTab()
@@ -225,8 +225,8 @@ class ChromeBrowser {
    * @param {number} tabId - タブID
    * @returns {Promise<Object>} アクティブになったタブ情報
    */
-  async activateTab(tabId) {
-    return this.executeOperation('activateTab', async () => {
+  activateTab(tabId) {
+    return this.executeOperation('activateTab', () => {
       this.validateChromeApi()
       
       return new Promise((resolve, reject) => {
@@ -249,7 +249,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async scrollToTop(tabId = null) {
+  scrollToTop(tabId = null) {
     return this.executeScriptInTab(tabId, () => {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
@@ -260,7 +260,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID（省略時は現在のタブ）
    * @returns {Promise<void>}
    */
-  async scrollToBottom(tabId = null) {
+  scrollToBottom(tabId = null) {
     return this.executeScriptInTab(tabId, () => {
       window.scrollTo({ 
         top: document.documentElement.scrollHeight, 
@@ -275,7 +275,7 @@ class ChromeBrowser {
    * @param {Function} script - 実行するスクリプト
    * @returns {Promise<*>} スクリプトの実行結果
    */
-  async executeScriptInTab(tabId, script) {
+  executeScriptInTab(tabId, script) {
     return this.executeTabOperation('executeScript', async (tab) => {
       this.validateChromeApi()
       
@@ -296,8 +296,8 @@ class ChromeBrowser {
    * 現在のアクティブタブを取得
    * @returns {Promise<Object>} タブ情報
    */
-  async getActiveTab() {
-    return this.executeOperation('getActiveTab', async () => {
+  getActiveTab() {
+    return this.executeOperation('getActiveTab', () => {
       this.validateChromeApi()
       
       return new Promise((resolve, reject) => {
@@ -326,8 +326,8 @@ class ChromeBrowser {
    * @param {Object} query - クエリ条件
    * @returns {Promise<Object[]>} タブ配列
    */
-  async getAllTabs(query = {}) {
-    return this.executeOperation('getAllTabs', async () => {
+  getAllTabs(query = {}) {
+    return this.executeOperation('getAllTabs', () => {
       this.validateChromeApi()
       
       return new Promise((resolve, reject) => {
@@ -350,8 +350,8 @@ class ChromeBrowser {
    * @param {number} tabId - タブID
    * @returns {Promise<Object>} タブ情報
    */
-  async getTab(tabId) {
-    return this.executeOperation('getTab', async () => {
+  getTab(tabId) {
+    return this.executeOperation('getTab', () => {
       this.validateChromeApi()
       
       return new Promise((resolve, reject) => {
@@ -376,7 +376,7 @@ class ChromeBrowser {
    * @param {number} tabId - タブID
    * @returns {Promise<*>}
    */
-  async executeTabOperation(operation, executor, tabId = null) {
+  executeTabOperation(operation, executor, tabId = null) {
     return this.executeOperation(operation, async () => {
       const tab = tabId ? await this.getTab(tabId) : await this.getActiveTab()
       return executor(tab)
@@ -441,7 +441,7 @@ class ChromeBrowser {
    */
   logOperation(level, operation, details = {}) {
     if (this.debugMode && typeof console !== 'undefined') {
-      console.debug(`[ChromeBrowser] ${operation} ${level}:`, details)
+      console.log(`[ChromeBrowser] ${operation} ${level}:`, details)
     }
   }
 

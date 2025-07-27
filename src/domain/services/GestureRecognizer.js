@@ -132,11 +132,11 @@ class GestureRecognizer {
    * パターンを既知のジェスチャーと照合
    * @param {GesturePattern} pattern
    * @param {Gesture[]} knownGestures
-   * @returns {GestureRecognitionResult}
+   * @returns {MatchResult}
    */
   matchPattern(pattern, knownGestures) {
     if (!pattern || pattern.isEmpty()) {
-      return new GestureRecognitionResult(null, 0, false)
+      return new MatchResult(null, 0, false)
     }
 
     let bestMatch = null
@@ -158,7 +158,7 @@ class GestureRecognizer {
     const isConfident = bestConfidence > 0 && 
                        this.threshold.isConfident(bestConfidence)
 
-    return new GestureRecognitionResult(bestMatch, bestSimilarity, isConfident)
+    return new MatchResult(bestMatch, bestSimilarity, isConfident)
   }
 
   /**
@@ -323,9 +323,9 @@ class GestureRecognizer {
 }
 
 /**
- * ジェスチャー認識結果
+ * パターンマッチング結果
  */
-class GestureRecognitionResult {
+class MatchResult {
   constructor(gesture, similarity, isConfident) {
     this.gesture = gesture
     this.similarity = similarity
@@ -348,9 +348,10 @@ class GestureRecognitionResult {
   getConfidenceScore() {
     return this.isConfident ? this.similarity : 0
   }
+
 }
 
 // ES6 Module export
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { GestureRecognizer, GestureRecognitionResult }
+  module.exports = { GestureRecognizer, MatchResult }
 }

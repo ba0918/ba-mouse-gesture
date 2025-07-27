@@ -282,6 +282,14 @@ class GesturePattern {
   }
 
   /**
+   * パターンを複製
+   * @returns {GesturePattern}
+   */
+  clone() {
+    return new GesturePattern([...this._directions])
+  }
+
+  /**
    * 文字列表現
    * @returns {string}
    */
@@ -362,7 +370,7 @@ class GesturePattern {
       
       if (distance >= minDistance) {
         const angle = current.angleTo(next)
-        const direction = this.angleToDirection(angle)
+        const direction = GesturePattern.angleToDirection(angle)
         
         // 連続する同じ方向は無視
         if (directions.length === 0 || directions[directions.length - 1] !== direction) {

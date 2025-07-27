@@ -6,14 +6,16 @@ class Point {
   /**
    * @param {number} x - X座標
    * @param {number} y - Y座標
+   * @param {number} [timestamp] - タイムスタンプ（オプション）
    */
-  constructor(x, y) {
+  constructor(x, y, timestamp) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
       throw new Error('Point coordinates must be finite numbers')
     }
     
     this._x = x
     this._y = y
+    this._timestamp = timestamp
     Object.freeze(this) // 不変性保証
   }
 
@@ -31,6 +33,14 @@ class Point {
    */
   get y() {
     return this._y
+  }
+
+  /**
+   * タイムスタンプを取得
+   * @returns {number}
+   */
+  get timestamp() {
+    return this._timestamp
   }
 
   /**

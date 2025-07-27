@@ -384,7 +384,7 @@ class SettingsManagementUseCase {
    * @param {Object} data - 変更データ
    * @returns {Promise<void>}
    */
-  async notifySettingsChange(type, data) {
+  notifySettingsChange(type, data) {
     try {
       // Chrome runtime メッセージによる通知（必要に応じて）
       if (typeof chrome !== 'undefined' && chrome.runtime) {
@@ -395,7 +395,7 @@ class SettingsManagementUseCase {
           timestamp: new Date().toISOString()
         }).catch(error => {
           // エラーは無視（リスナーがない場合は正常）
-          console.debug('Settings change notification failed:', error)
+          console.log('Settings change notification failed:', error)
         })
       }
     } catch (error) {

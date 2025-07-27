@@ -369,6 +369,14 @@ class MatchResult {
   getConfidence() {
     return this.isMatch ? this.similarity : 0
   }
+
+  /**
+   * マッチが成功したかチェック
+   * @returns {boolean}
+   */
+  isSuccess() {
+    return this.isMatch
+  }
 }
 
 /**

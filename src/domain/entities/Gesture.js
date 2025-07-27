@@ -4,12 +4,11 @@
  */
 
 // 依存関係のインポート
-let GesturePattern, Threshold
+let GesturePattern
 if (typeof require !== 'undefined') {
   const GesturePatternModule = require('../valueObjects/GesturePattern')
   GesturePattern = GesturePatternModule.GesturePattern
-  const ThresholdModule = require('../valueObjects/Threshold')
-  Threshold = ThresholdModule.Threshold
+  // Thresholdは現在使用されていないためコメント化
 }
 class Gesture {
   /**

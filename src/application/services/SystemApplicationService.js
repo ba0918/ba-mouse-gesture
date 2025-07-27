@@ -208,7 +208,7 @@ class SystemApplicationService {
    * @param {Object} newConfig - 新しい設定
    * @returns {Promise<Object>}
    */
-  async updateSystemConfiguration(newConfig) {
+  updateSystemConfiguration(newConfig) {
     try {
       // 設定の検証
       this.validateSystemConfig(newConfig)

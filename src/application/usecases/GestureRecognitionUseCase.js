@@ -4,13 +4,14 @@
  */
 
 // 依存関係のインポート
-let GestureRecognizer, PatternMatcher, LearningEngine, Point, GesturePattern
+let GestureRecognizer, PatternMatcher, LearningEngine, Point, GesturePattern, Gesture
 if (typeof require !== 'undefined') {
   ({ GestureRecognizer } = require('../../domain/services/GestureRecognizer'));
   ({ PatternMatcher } = require('../../domain/services/PatternMatcher'));
   ({ LearningEngine } = require('../../domain/services/LearningEngine'));
   ({ Point } = require('../../domain/valueObjects/Point'));
-  ({ GesturePattern } = require('../../domain/valueObjects/GesturePattern'))
+  ({ GesturePattern } = require('../../domain/valueObjects/GesturePattern'));
+  ({ Gesture } = require('../../domain/entities/Gesture'))
 }
 
 class GestureRecognitionUseCase {
@@ -244,21 +245,19 @@ class GestureRecognitionUseCase {
    */
   getDefaultGestureDefinitions() {
     // この実装は設定ファイルやレジストリから読み込むべき
-    const { Gesture } = require('../../domain/entities/Gesture')
-    const { GesturePattern } = require('../../domain/valueObjects/GesturePattern')
     
     return [
-      new Gesture('left', 'Back', new GesturePattern(['L']), 'browser_back'),
-      new Gesture('right', 'Forward', new GesturePattern(['R']), 'browser_forward'),
-      new Gesture('up', 'Scroll to Top', new GesturePattern(['U']), 'scroll_top'),
-      new Gesture('down', 'Scroll to Bottom', new GesturePattern(['D']), 'scroll_bottom'),
-      new Gesture('downright', 'Close Tab', new GesturePattern(['D', 'R']), 'close_tab'),
-      new Gesture('upright', 'New Tab', new GesturePattern(['U', 'R']), 'new_tab'),
-      new Gesture('rightdown', 'Duplicate Tab', new GesturePattern(['R', 'D']), 'duplicate_tab'),
-      new Gesture('updown', 'Refresh', new GesturePattern(['U', 'D']), 'refresh'),
-      new Gesture('super_refresh', 'Super Refresh', new GesturePattern(['U', 'D', 'U']), 'super_refresh'),
-      new Gesture('prev_tab', 'Previous Tab', new GesturePattern(['L', 'R']), 'prev_tab'),
-      new Gesture('next_tab', 'Next Tab', new GesturePattern(['R', 'L']), 'next_tab')
+      new Gesture('left', 'Back', new GesturePattern(['left']), 'browser_back'),
+      new Gesture('right', 'Forward', new GesturePattern(['right']), 'browser_forward'),
+      new Gesture('up', 'Scroll to Top', new GesturePattern(['up']), 'scroll_top'),
+      new Gesture('down', 'Scroll to Bottom', new GesturePattern(['down']), 'scroll_bottom'),
+      new Gesture('downright', 'Close Tab', new GesturePattern(['down', 'right']), 'close_tab'),
+      new Gesture('upright', 'New Tab', new GesturePattern(['up', 'right']), 'new_tab'),
+      new Gesture('rightdown', 'Duplicate Tab', new GesturePattern(['right', 'down']), 'duplicate_tab'),
+      new Gesture('updown', 'Refresh', new GesturePattern(['up', 'down']), 'refresh'),
+      new Gesture('super_refresh', 'Super Refresh', new GesturePattern(['up', 'down', 'up']), 'super_refresh'),
+      new Gesture('prev_tab', 'Previous Tab', new GesturePattern(['left', 'right']), 'prev_tab'),
+      new Gesture('next_tab', 'Next Tab', new GesturePattern(['right', 'left']), 'next_tab')
     ]
   }
 

@@ -311,6 +311,26 @@ class LearningEngine {
   }
 
   /**
+   * パターンを学習 (GestureRecognitionUseCase用)
+   * @param {string} gestureId
+   * @param {GesturePattern} pattern
+   * @param {boolean} success
+   */
+  learnPattern(gestureId, pattern, success) {
+    this.recordGestureUsage(gestureId, pattern, success)
+  }
+
+  /**
+   * 学習データを読み込み (GestureRecognitionUseCase用)
+   * @param {Object} learningData
+   */
+  loadLearningData(learningData) {
+    if (learningData && typeof learningData === 'object') {
+      this.importLearningData(learningData)
+    }
+  }
+
+  /**
    * 学習データをリセット
    * @param {string} gestureId - 特定ジェスチャーのリセット（省略時は全体）
    */

@@ -202,7 +202,7 @@ class OptionsView {
     // ViewModelの変更を監視
     const viewModel = this.presenter.getViewModel()
     if (viewModel) {
-      viewModel.onChange((key, newValue, oldValue) => {
+      viewModel.onChange((key, newValue) => {
         this.updateDisplayForProperty(key, newValue)
       })
     }
