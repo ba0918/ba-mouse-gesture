@@ -456,6 +456,16 @@
             </div>
             <div class="setting-item">
                 <div>
+                    <div class="setting-label">ジェスチャー感度</div>
+                    <div class="setting-description">ジェスチャーとして認識される最小移動距離（低いほど敏感）</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <input type="range" id="gestureThreshold" class="range-input" min="5" max="50" value="15">
+                    <span class="range-value" id="gestureThresholdValue">15px</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <div>
                     <div class="setting-label">軌跡のプレビュー</div>
                     <canvas id="previewCanvas" class="preview-canvas" width="200" height="100"></canvas>
                 </div>

@@ -6,6 +6,7 @@ class OptionsManager {
       enabled: true,
       strokeColor: '#2196F3',
       strokeWidth: 3,
+      gestureThreshold: 15,
       excludeList: [],
       // デバッグ設定
       debugSettings: {
@@ -76,6 +77,8 @@ class OptionsManager {
       document.getElementById('strokeColor').value = this.currentSettings.strokeColor
       document.getElementById('strokeWidth').value = this.currentSettings.strokeWidth
       document.getElementById('strokeWidthValue').textContent = `${this.currentSettings.strokeWidth}px`
+      document.getElementById('gestureThreshold').value = this.currentSettings.gestureThreshold
+      document.getElementById('gestureThresholdValue').textContent = `${this.currentSettings.gestureThreshold}px`
             
       // 除外リストを表示
       this.renderExcludeList()
@@ -126,6 +129,14 @@ class OptionsManager {
       this.currentSettings.strokeWidth = width
       document.getElementById('strokeWidthValue').textContent = `${width}px`
       this.updatePreview()
+      this.saveSettings()
+    })
+        
+    // ジェスチャー感度変更
+    document.getElementById('gestureThreshold').addEventListener('input', (e) => {
+      const threshold = parseInt(e.target.value)
+      this.currentSettings.gestureThreshold = threshold
+      document.getElementById('gestureThresholdValue').textContent = `${threshold}px`
       this.saveSettings()
     })
         

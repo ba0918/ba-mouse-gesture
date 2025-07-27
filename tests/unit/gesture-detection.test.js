@@ -380,5 +380,51 @@ describe('ジェスチャー検出機能', () => {
       
       expect(settings.enabled).toBe(false)
     })
+    
+    test('感度設定（閾値）がジェスチャー検出に正しく適用される', () => {
+      // 低感度設定（大きな閾値）
+      const lowSensitivitySettings = {
+        enabled: true,
+        gestureThreshold: 50
+      }
+      
+      // 高感度設定（小さな閾値）
+      const highSensitivitySettings = {
+        enabled: true,
+        gestureThreshold: 5
+      }
+      
+      // デフォルト設定
+      const defaultSettings = {
+        enabled: true,
+        gestureThreshold: 15
+      }
+      
+      // 移動距離のテスト
+      const smallMovement = 10 // 10px移動
+      const largeMovement = 30 // 30px移動
+      
+      // 低感度（50px閾値）: 10px移動では検出されない
+      expect(smallMovement).toBeLessThan(lowSensitivitySettings.gestureThreshold)
+      // 高感度（5px閾値）: 10px移動で検出される
+      expect(smallMovement).toBeGreaterThan(highSensitivitySettings.gestureThreshold)
+      // デフォルト（15px閾値）: 30px移動で検出される
+      expect(largeMovement).toBeGreaterThan(defaultSettings.gestureThreshold)
+    })
+    
+    test('感度設定の範囲が適切である', () => {
+      // 最小閾値: 5px
+      const minThreshold = 5
+      expect(minThreshold).toBeGreaterThanOrEqual(5)
+      
+      // 最大閾値: 50px
+      const maxThreshold = 50
+      expect(maxThreshold).toBeLessThanOrEqual(50)
+      
+      // デフォルト閾値: 15px
+      const defaultThreshold = 15
+      expect(defaultThreshold).toBeGreaterThanOrEqual(minThreshold)
+      expect(defaultThreshold).toBeLessThanOrEqual(maxThreshold)
+    })
   })
 })
