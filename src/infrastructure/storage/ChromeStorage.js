@@ -288,8 +288,13 @@ class ChromeStorage {
       } catch (error) {
         lastError = error
         
-        // Chrome runtime エラーは即座に諦める
-        if (error.message && error.message.includes('Extension context invalidated')) {
+        // Chrome runtime エラーやvalidationエラーは即座に諦める
+        if (error.message && (
+          error.message.includes('Extension context invalidated') ||
+          error.message.includes('Items must be an object') ||
+          error.message.includes('Data size') ||
+          error.message.includes('Invalid storage area')
+        )) {
           throw error
         }
         
