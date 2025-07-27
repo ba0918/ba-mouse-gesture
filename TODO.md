@@ -312,7 +312,46 @@ Chrome拡張機能のマウスジェスチャーツールを段階的に開発�
 
 ---
 
-## 🚀 今後の展望（Phase 5以降）
+## 🏗️ Phase 5: ビルドシステム構築 🆕 進行中
+
+### 背景と目的
+- **問題**: Chrome拡張機能として読み込むと65.7MBという巨大なサイズになる
+- **原因**: node_modules（100MB）が含まれているため
+- **解決**: esbuildを使用したビルドシステムで必要ファイルのみを`dist/`に出力
+
+### 実装計画
+- [ ] **esbuildの導入**
+  - [ ] esbuildパッケージのインストール
+  - [ ] ビルド設定の作成
+  
+- [ ] **ビルドスクリプトの実装**
+  - [ ] `scripts/build.js`の作成
+  - [ ] 以下のファイルをdist/にコピー・処理:
+    - [ ] manifest.json（そのままコピー）
+    - [ ] background/background-simple.js（minify）
+    - [ ] content_scripts/*.js（minify）
+    - [ ] popup/options.html（そのままコピー）
+    - [ ] popup/options.js（minify）
+    - [ ] assets/*（そのままコピー）
+
+- [ ] **package.jsonへのスクリプト追加**
+  - [ ] `build`: 本番ビルド（minify有効）
+  - [ ] `build:dev`: 開発ビルド（minifyなし）
+  - [ ] `build:watch`: ファイル監視・自動ビルド
+
+- [ ] **開発環境の整備**
+  - [ ] dist/を.gitignoreに追加
+  - [ ] ビルド成果物のサイズ確認
+  - [ ] Chrome拡張機能としての動作確認
+
+### 期待される成果
+- 拡張機能サイズ: 65.7MB → 約2MB以下
+- ビルド時間: 数秒以内
+- 開発効率の向上（watchモード）
+
+---
+
+## 🚀 今後の展望（Phase 6以降）
 
 ### 品質向上・運用（優先度: 中）
 
