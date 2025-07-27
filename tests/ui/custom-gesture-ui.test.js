@@ -496,6 +496,99 @@ describe('カスタムジェスチャーUI機能', () => {
     })
   })
 
+  describe('削除機能', () => {
+    test('削除ボタンクリックで確認ダイアログが表示される', () => {
+      // テスト用ジェスチャーデータを設定
+      const testGesture = {
+        id: 'test1',
+        name: 'テストジェスチャー',
+        pattern: ['UP', 'DOWN'],
+        action: 'close_tab',
+        enabled: true
+      }
+      
+      mockCustomGestureManager.getCustomGestures.mockReturnValue([testGesture])
+      
+      // フォームの初期化とマネージャーの設定
+      optionsManager.customGestureManager = mockCustomGestureManager
+      
+      // confirmのモック
+      const mockConfirm = jest.spyOn(window, 'confirm').mockReturnValue(false)
+      
+      optionsManager.renderCustomGestureList()
+      
+      // 削除ボタンをクリック
+      const deleteBtn = document.querySelector('.delete-btn')
+      deleteBtn.click()
+      
+      // 確認ダイアログが表示されたかチェック
+      expect(mockConfirm).toHaveBeenCalledWith('「テストジェスチャー」を削除しますか？')
+      
+      mockConfirm.mockRestore()
+    })
+    
+    test('削除確認でOKを選択すると削除処理が実行される', async () => {
+      // テスト用ジェスチャーデータを設定
+      const testGesture = {
+        id: 'test1',
+        name: 'テストジェスチャー',
+        pattern: ['UP', 'DOWN'],
+        action: 'close_tab',
+        enabled: true
+      }
+      
+      mockCustomGestureManager.getCustomGestures.mockReturnValue([testGesture])
+      mockCustomGestureManager.deleteCustomGesture.mockResolvedValue()
+      
+      // フォームの初期化とマネージャーの設定
+      optionsManager.customGestureManager = mockCustomGestureManager
+      
+      // confirmのモック（OK選択）
+      const mockConfirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+      
+      optionsManager.renderCustomGestureList()
+      
+      // 削除ボタンをクリック
+      const deleteBtn = document.querySelector('.delete-btn')
+      await deleteBtn.click()
+      
+      // 削除メソッドが呼ばれたかチェック
+      expect(mockCustomGestureManager.deleteCustomGesture).toHaveBeenCalledWith('test1')
+      
+      mockConfirm.mockRestore()
+    })
+    
+    test('削除確認でキャンセルを選択すると削除処理が実行されない', () => {
+      // テスト用ジェスチャーデータを設定
+      const testGesture = {
+        id: 'test1',
+        name: 'テストジェスチャー',
+        pattern: ['UP', 'DOWN'],
+        action: 'close_tab',
+        enabled: true
+      }
+      
+      mockCustomGestureManager.getCustomGestures.mockReturnValue([testGesture])
+      
+      // フォームの初期化とマネージャーの設定
+      optionsManager.customGestureManager = mockCustomGestureManager
+      
+      // confirmのモック（キャンセル選択）
+      const mockConfirm = jest.spyOn(window, 'confirm').mockReturnValue(false)
+      
+      optionsManager.renderCustomGestureList()
+      
+      // 削除ボタンをクリック
+      const deleteBtn = document.querySelector('.delete-btn')
+      deleteBtn.click()
+      
+      // 削除メソッドが呼ばれていないかチェック
+      expect(mockCustomGestureManager.deleteCustomGesture).not.toHaveBeenCalled()
+      
+      mockConfirm.mockRestore()
+    })
+  })
+
   describe('編集機能', () => {
     test('編集ボタンクリックでフォームに値が設定される', () => {
       const mockGesture = {
