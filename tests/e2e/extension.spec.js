@@ -13,13 +13,28 @@ test.describe('マウスジェスチャー拡張機能 E2Eテスト', () => {
   
   test.beforeAll(async () => {
     // Chrome拡張機能を読み込んでブラウザを起動
-    browser = await chromium.launchPersistentContext('', {
-      headless: false, // 拡張機能のテストはヘッドレスモードでは動作しない
-      args: [
-        `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`
-      ]
-    })
+    try {
+      browser = await chromium.launchPersistentContext('', {
+        headless: process.env.CI ? true : false, // CI環境ではヘッドレスモード
+        args: [
+          `--disable-extensions-except=${extensionPath}`,
+          `--load-extension=${extensionPath}`,
+          // CI環境用の追加オプション
+          ...(process.env.CI ? [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security'
+          ] : [])
+        ]
+      })
+    } catch (error) {
+      console.warn('⚠️ Browser launch failed:', error.message)
+      if (process.env.CI) {
+        console.log('🚧 CI environment - skipping E2E tests')
+      }
+      throw error
+    }
   })
   
   test.beforeEach(async () => {
@@ -33,7 +48,9 @@ test.describe('マウスジェスチャー拡張機能 E2Eテスト', () => {
   })
   
   test.afterAll(async () => {
-    await browser.close()
+    if (browser) {
+      await browser.close()
+    }
   })
   
   test('拡張機能が正しく読み込まれる', async () => {
@@ -141,13 +158,28 @@ test.describe('オプション画面のE2Eテスト', () => {
   let page
   
   test.beforeAll(async () => {
-    browser = await chromium.launchPersistentContext('', {
-      headless: false,
-      args: [
-        `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`
-      ]
-    })
+    try {
+      browser = await chromium.launchPersistentContext('', {
+        headless: process.env.CI ? true : false, // CI環境ではヘッドレスモード
+        args: [
+          `--disable-extensions-except=${extensionPath}`,
+          `--load-extension=${extensionPath}`,
+          // CI環境用の追加オプション
+          ...(process.env.CI ? [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security'
+          ] : [])
+        ]
+      })
+    } catch (error) {
+      console.warn('⚠️ Browser launch failed:', error.message)
+      if (process.env.CI) {
+        console.log('🚧 CI environment - skipping E2E tests')
+      }
+      throw error
+    }
   })
   
   test.beforeEach(async () => {
@@ -158,7 +190,9 @@ test.describe('オプション画面のE2Eテスト', () => {
   })
   
   test.afterAll(async () => {
-    await browser.close()
+    if (browser) {
+      await browser.close()
+    }
   })
   
   test('設定の変更と保存', async () => {
