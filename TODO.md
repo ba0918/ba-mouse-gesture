@@ -941,6 +941,127 @@ Phase 11でのChrome Web Store公開に向けて、万全の準備が整った�
 
 ---
 
+## Phase 11: クリーンアーキテクチャ導入 🏗️ 📦 開始予定
+
+### プロジェクト概要
+コードベースの保守性と拡張性を向上させるため、クリーンアーキテクチャを導入。
+現在の4,815行のコードを責務別に適切に分離し、214テストを維持しながら安全にリファクタリング。
+
+### 背景と課題
+- **ファットクラス問題**: `options.js`（1,458行）、`gesture-simple.js`（647行）
+- **責務混在**: UI・ビジネスロジック・データアクセスが同一ファイル内
+- **保守性低下**: 変更時の影響範囲が広い、テストしにくい構造
+- **SOLID原則違反**: 単一責任原則、開放閉鎖原則の違反箇所あり
+
+### Phase 11-1: 基盤準備 🚀
+- [ ] **feature/clean-architecture ブランチ作成**
+- [ ] **新ディレクトリ構造作成**
+  ```
+  src/
+  ├── domain/             # ビジネスルール（Entities, Value Objects）
+  ├── application/        # ユースケース
+  ├── infrastructure/     # データアクセス・Chrome API
+  ├── presentation/       # UI・コントローラー
+  └── shared/            # 共通ユーティリティ
+  ```
+- [ ] **ビルドシステム更新**（src/ → dist/ 対応）
+- [ ] **基本テスト実行**（214テスト全パス確認）
+
+### Phase 11-2: Domain層実装 🧠
+- [ ] **エンティティ作成**
+  - [ ] `Gesture.js` - ジェスチャーエンティティ
+  - [ ] `Settings.js` - 設定エンティティ  
+  - [ ] `CustomGesture.js` - カスタムジェスチャーエンティティ
+- [ ] **値オブジェクト作成**
+  - [ ] `GesturePattern.js` - ジェスチャーパターン
+  - [ ] `Point.js` - 座標点
+  - [ ] `Threshold.js` - 閾値設定
+- [ ] **ドメインサービス実装**
+  - [ ] `GestureRecognizer.js` - ジェスチャー認識ロジック
+  - [ ] `PatternMatcher.js` - パターンマッチング
+  - [ ] `LearningEngine.js` - AI学習エンジン
+- [ ] **Domain層テスト作成**（純粋関数・ビジネスルールテスト）
+
+### Phase 11-3: Infrastructure層実装 🔧
+- [ ] **データアクセス実装**
+  - [ ] `ChromeStorage.js` - chrome.storage統一インターフェース
+  - [ ] `SettingsRepository.js` - 設定データリポジトリ
+  - [ ] `GestureRepository.js` - ジェスチャーデータリポジトリ
+- [ ] **外部インターフェース実装**
+  - [ ] `ChromeMessaging.js` - メッセージング統一
+  - [ ] `ChromeBrowser.js` - ブラウザAPI統一
+- [ ] **Infrastructure層テスト作成**（モック・統合テスト）
+
+### Phase 11-4: Application層実装 📋
+- [ ] **ユースケース実装**
+  - [ ] `GestureRecognitionUseCase.js` - ジェスチャー認識処理
+  - [ ] `SettingsManagementUseCase.js` - 設定管理処理
+  - [ ] `CustomGestureManagementUseCase.js` - カスタムジェスチャー管理
+- [ ] **アプリケーションサービス実装**
+  - [ ] 既存ビジネスロジックの移植・整理
+  - [ ] レイヤー間のインターフェース定義
+- [ ] **Application層テスト作成**（ユースケーステスト）
+
+### Phase 11-5: Presentation層リファクタリング 🎨
+- [ ] **options.js分割実行**
+  - [ ] `OptionsController.js` - UI制御ロジック
+  - [ ] `SettingsView.js` - 設定画面表示
+  - [ ] `CustomGestureView.js` - カスタムジェスチャー管理画面
+  - [ ] `UIComponents.js` - 再利用可能UI部品
+- [ ] **gesture-simple.js分割実行**
+  - [ ] `GestureController.js` - ジェスチャー制御
+  - [ ] `TrailRenderer.js` - 軌跡表示専用
+  - [ ] `GestureDetector.js` - 検出ロジック専用
+  - [ ] `EventHandler.js` - イベント処理専用
+- [ ] **UI/UXテスト実行**（既存38テスト + 新規UIテスト）
+
+### Phase 11-6: 統合・最適化 ⚡
+- [ ] **旧ファイル削除・移行完了**
+  - [ ] レガシーコードの段階的削除
+  - [ ] インポート・エクスポート整理
+- [ ] **全テスト実行・調整**
+  - [ ] 214テスト全パス確認
+  - [ ] 新アーキテクチャ用テスト追加
+  - [ ] アーキテクチャテスト実装（依存関係・レイヤー分離）
+- [ ] **パフォーマンス最適化**
+  - [ ] バンドルサイズ確認・最適化
+  - [ ] 実行パフォーマンス測定
+- [ ] **ドキュメント更新**
+  - [ ] CLAUDE.md更新（新アーキテクチャ反映）
+  - [ ] README.md更新
+  - [ ] コード規約・開発ガイド作成
+
+### 成功基準
+- ✅ **機能**: 既存機能100%維持（10ジェスチャー + カスタム + 学習機能）
+- ✅ **品質**: 214テスト全パス維持
+- ✅ **保守性**: ファイルサイズ適正化（1つのファイル500行以下目標）
+- ✅ **アーキテクチャ**: クリーンアーキテクチャ原則遵守
+- ✅ **パフォーマンス**: 現状のパフォーマンス維持・向上
+
+### リスク軽減策
+- 🔒 **別ブランチ作業**: feature/clean-architecture
+- 🔒 **段階的移行**: 各Phase完了後テスト実行
+- 🔒 **テスト保護**: 214テスト常時維持
+- 🔒 **互換性保証**: 既存APIインターフェース維持
+- 🔒 **小刻みコミット**: 各タスク完了時点でコミット
+
+### 予想工数・期間
+- **Phase 11-1**: 基盤準備（3時間）
+- **Phase 11-2**: Domain層（6時間）  
+- **Phase 11-3**: Infrastructure層（5時間）
+- **Phase 11-4**: Application層（4時間）
+- **Phase 11-5**: Presentation層（8時間）
+- **Phase 11-6**: 統合・最適化（4時間）
+- **合計**: 約30時間（1週間程度）
+
+---
+
+## Phase 12: Chrome Web Store公開準備 📦 将来予定
+
+Phase 11完了後、v2.4.0として新アーキテクチャ版をリリース予定。
+
+---
+
 ### 長期的拡張（アイデア）
 - [ ] ジェスチャー統計・分析機能の高度化
 - [ ] 他ブラウザ対応（Firefox、Edge）

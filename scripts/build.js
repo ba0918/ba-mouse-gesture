@@ -12,7 +12,22 @@ const isWatch = process.argv.includes('--watch')
 const distDir = path.join(__dirname, '..', 'dist')
 
 // ビルド対象のJavaScriptファイル
+// Phase 11: Clean Architecture対応 - 段階的移行（新旧ハイブリッド）
 const jsFiles = [
+  // 新アーキテクチャ（src/配下）
+  {
+    entryPoint: 'src/presentation/background/index.js',
+    outfile: 'dist/background/background.js'
+  },
+  {
+    entryPoint: 'src/presentation/contentScripts/index.js',
+    outfile: 'dist/content_scripts/gesture.js'
+  },
+  {
+    entryPoint: 'src/presentation/popup/index.js',
+    outfile: 'dist/popup/options-new.js'
+  },
+  // 既存アーキテクチャ（レガシー互換性維持）
   {
     entryPoint: 'background/background-simple.js',
     outfile: 'dist/background/background-simple.js'
@@ -115,16 +130,30 @@ async function build() {
     console.log('🔨 JavaScriptファイルをビルド中...')
     
     const buildOptions = {
-      bundle: false, // Chrome拡張機能では個別ファイルのまま
+      bundle: false, // 既存ファイル用：個別ファイルのまま
       minify: isProduction,
       sourcemap: !isProduction,
       target: 'es2020',
       format: 'iife'
     }
     
+    // 新アーキテクチャ用ビルドオプション
+    const newArchBuildOptions = {
+      bundle: true, // 新アーキテクチャ：モジュール依存関係解決
+      minify: isProduction,
+      sourcemap: !isProduction,
+      target: 'es2020',
+      format: 'iife',
+      external: ['chrome'] // Chrome API除外
+    }
+    
     // 各ファイルをビルド
     for (const file of jsFiles) {
       await ensureDir(path.dirname(file.outfile))
+      
+      // 新アーキテクチャ vs 既存アーキテクチャの判定
+      const isNewArch = file.entryPoint.startsWith('src/')
+      const options = isNewArch ? newArchBuildOptions : buildOptions
       
       // debug-logger.jsの場合は特別処理
       if (file.entryPoint === 'content_scripts/debug-logger.js' && isProduction) {
@@ -137,11 +166,13 @@ async function build() {
         })
       } else {
         await esbuild.build({
-          ...buildOptions,
+          ...options,
           entryPoints: [file.entryPoint],
           outfile: file.outfile
         })
       }
+      
+      console.log(`  ✓ ${file.entryPoint} → ${file.outfile}${isNewArch ? ' (新アーキテクチャ)' : ''}`)
     }
     
     console.log('✅ ビルド完了!')
