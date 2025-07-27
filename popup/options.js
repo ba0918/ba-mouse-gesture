@@ -479,13 +479,18 @@ class OptionsManager {
   async refreshAllGestureDisplays() {
     console.log('Refreshing all gesture displays...')
     
+    // カスタムジェスチャーマネージャーの最新データを強制的に再読み込み
+    if (this.customGestureManager) {
+      await this.customGestureManager.loadCustomGestures()
+    }
+    
     // 従来のカスタムジェスチャー管理セクションを更新
     this.renderCustomGestureList()
     
-    // 新しいジェスチャー一覧画面を更新
+    // 新しいジェスチャー一覧画面を更新（最新データで再構築）
     await this.renderAllGesturesList()
     
-    console.log('All gesture displays refreshed')
+    console.log('All gesture displays refreshed with latest data')
   }
   
   async loadCustomGestures() {
@@ -599,7 +604,7 @@ class OptionsManager {
         const gesture = this.customGestureManager.getCustomGestures().find(g => g.id === id)
         console.log('Found gesture for deletion:', gesture)
         if (gesture) {
-          const confirmMessage = `「${gesture.name}」を削除しますか？`
+          const confirmMessage = `「${gesture.name}」を削除しますか？この操作は元に戻せません。`
           console.log('Showing confirm dialog with message:', confirmMessage)
           const confirmed = await this.showConfirm(confirmMessage)
           console.log('User confirmation result:', confirmed)
@@ -1254,9 +1259,9 @@ class OptionsManager {
 
     // カスタムジェスチャーの削除
     document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const gestureId = e.target.dataset.gestureId
-        this.deleteCustomGesture(gestureId)
+        await this.deleteCustomGesture(gestureId)
       })
     })
   }
@@ -1328,7 +1333,8 @@ class OptionsManager {
     const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
     if (!gesture) return
 
-    if (!confirm(`"${gesture.name}"を削除しますか？この操作は元に戻せません。`)) {
+    const confirmed = await this.showConfirm(`"${gesture.name}"を削除しますか？この操作は元に戻せません。`)
+    if (!confirmed) {
       return
     }
 

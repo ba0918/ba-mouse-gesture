@@ -7,7 +7,7 @@
 **シンプルで強力なマウスジェスチャーツール for Chrome**
 
 [![CI/CD](https://github.com/ba0918/ba-mouse-gesture/actions/workflows/ci.yml/badge.svg)](https://github.com/ba0918/ba-mouse-gesture/actions)
-[![Tests](https://img.shields.io/badge/tests-141%20passed-brightgreen)](https://github.com/ba0918/ba-mouse-gesture)
+[![Tests](https://img.shields.io/badge/tests-146%20passed-brightgreen)](https://github.com/ba0918/ba-mouse-gesture)
 [![Chrome Extension](https://img.shields.io/badge/platform-Chrome%20Extension-4285f4?logo=googlechrome)](https://chrome.google.com/webstore)
 [![Security](https://img.shields.io/badge/security-audited-green)](security-checklist.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -24,7 +24,7 @@
 ## ✨ 特徴
 
 ### 🚀 基本機能
-- **7種類のジェスチャー**: 左右上下 + 複合ジェスチャー（↓→、↑→、→↓、↑↓）
+- **10種類のジェスチャー**: 左右上下 + 複合ジェスチャー（↓→、↑→、→↓、↑↓、↑↓↑、←→、→←）
 - **リアルタイム軌跡表示**: ジェスチャー中に美しい軌跡を表示
 - **感度カスタマイズ**: 5-50pxの範囲で個人の使い方に最適化
 - **除外サイト機能**: 特定サイトでの無効化設定
@@ -43,7 +43,7 @@
 ### 🔒 セキュリティ・品質
 - **完全オフライン動作**: 外部通信なし
 - **最小権限設計**: 必要最小限のブラウザ権限
-- **141テスト全パス**: 包括的品質保証
+- **146テスト全パス**: 包括的品質保証
 - **セキュリティ監査済み**: XSS対策・CSP準拠
 
 ## 📊 対応ジェスチャー
@@ -58,6 +58,9 @@
 | **↑→ (上→右)** | 新しいタブ | 新しいタブを開く |
 | **→↓ (右→下)** | タブ複製 | 現在のタブを複製 |
 | **↑↓ (上→下)** | ページ更新 | ページをリロード |
+| **↑↓↑ (上→下→上)** | スーパーリロード | キャッシュクリア付きリロード |
+| **←→ (左→右)** | 前のタブ | 前のタブに切り替え |
+| **→← (右→左)** | 次のタブ | 次のタブに切り替え |
 
 ## 🚀 インストール方法
 
@@ -158,7 +161,7 @@ ba-mouse-gesture/
 ```
 
 ### 品質保証
-- **141テスト全パス**: 単体・統合・E2E・パフォーマンステスト
+- **146テスト全パス**: 単体・統合・E2E・パフォーマンステスト
 - **CI/CD自動化**: GitHub Actions による継続的品質管理
 - **Pre-commit Hook**: コミット時の自動品質チェック
 - **セキュリティ監査**: 定期的なセキュリティチェック

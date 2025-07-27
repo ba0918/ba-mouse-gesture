@@ -25,29 +25,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # 依存関係のインストール
 pnpm install
 
-# テスト実行（137テスト全パス）
-npm test
-npm run test:coverage
-npm run test:watch
+# テスト実行（146テスト全パス）
+pnpm test
+pnpm run test:coverage
+pnpm run test:watch
 
 # E2Eテスト実行
-npm run test:e2e
+pnpm run test:e2e
 
 # リント実行（ESLint）
-npm run lint
-npm run lint:fix
+pnpm run lint
+pnpm run lint:fix
 
 # Chrome拡張機能のビルド
-npm run build          # 本番ビルド（minify有効）
-npm run build:dev      # 開発ビルド（minifyなし）
-npm run build:watch    # ファイル監視・自動ビルド
+pnpm run build          # 本番ビルド（minify有効）
+pnpm run build:dev      # 開発ビルド（minifyなし）
+pnpm run build:watch    # ファイル監視・自動ビルド
 
 # 品質ゲート（自動実行）
 # pre-commit: lint + 関連テスト（コミット時自動実行）
 # pre-push: 全テストスイート（プッシュ時自動実行）
 
 # 型チェック（TypeScript推奨時）
-npm run typecheck
+pnpm run typecheck
 ```
 
 ## 技術要件
@@ -79,7 +79,7 @@ npm run typecheck
 - 右クリック + マウス移動でジェスチャー開始
 - **感度最適化**：15px閾値（Opera標準準拠）
 - 基本方向：上下左右
-- 複合ジェスチャー：↓→、↑→、→↓、↑↓
+- 複合ジェスチャー：↓→、↑→、→↓、↑↓、↑↓↑、←→、→←（計10種類）
 
 ### アクション実行（全機能実装済み・業界標準準拠）
 - ←: ブラウザの戻る
@@ -90,6 +90,9 @@ npm run typecheck
 - ↑→: 新しいタブを開く
 - →↓: タブ複製
 - **↑↓: ページ更新**（Opera標準準拠）
+- **🆕 ↑↓↑: スーパーリロード**（キャッシュクリア付きリロード・Phase 10新機能）
+- **🆕 ←→: 前のタブ**（前のタブに切り替え・Phase 10新機能）
+- **🆕 →←: 次のタブ**（次のタブに切り替え・Phase 10新機能）
 
 ### カスタムジェスチャー機能（Phase 4完了）
 - **独自ジェスチャーパターンの作成・管理**
@@ -256,7 +259,7 @@ git tag v1.9.0  # → GitHub Actions → ビルド → リリース
 
 ## プロジェクト状況
 
-- **Phase 0-9**: ✅ 100%完了
+- **Phase 0-9**: ✅ 100%完了、**Phase 10**: 🔄 実装中
   - **Phase 0**: プロジェクト基盤
   - **Phase 1**: 基本ジェスチャー機能
   - **Phase 2**: 軌跡表示・設定機能
@@ -270,7 +273,8 @@ git tag v1.9.0  # → GitHub Actions → ビルド → リリース
   - **Phase 6-7**: ビルドシステム・デバッグ・品質改善
   - **Phase 8**: 品質管理システム強化（husky品質ゲート）
   - **Phase 9**: ジェスチャー感度カスタマイズ機能
-- **テスト**: ✅ **141/141パス**（TDD実践成果・品質ゲート含む）
+  - **Phase 10**: 🔄 **新機能拡張実装中**（スーパーリロード・タブ切り替え機能完了、ジェスチャー一覧画面実装予定）
+- **テスト**: ✅ **146/146パス**（TDD実践成果・品質ゲート含む・Phase 10新機能追加）
 - **セキュリティ**: ✅ 監査完了
 - **品質管理**: ✅ husky品質ゲート + CI/CD自動化完了
 - **CI/CD**: ✅ **GitHub Actions完全導入**（自動テスト・ビルド・リリース）
@@ -278,6 +282,6 @@ git tag v1.9.0  # → GitHub Actions → ビルド → リリース
 
 ## 次期開発予定
 
-- **Phase 10**: Chrome Web Store公開
+- **Phase 11**: Chrome Web Store公開準備・追加機能実装
 - **継続的改善**: TDDによる品質向上・機能拡張
 - **運用最適化**: CI/CDパフォーマンス調整・モニタリング強化
