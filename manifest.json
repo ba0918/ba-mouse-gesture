@@ -22,7 +22,8 @@
         "content_scripts/debug-logger.js",
         "content_scripts/custom-gesture-manager.js",
         "content_scripts/gesture-learning-manager.js",
-        "content_scripts/gesture-simple.js"
+        "content_scripts/gesture-simple.js",
+        "content_scripts/gesture.js"
       ],
       "run_at": "document_end"
     }

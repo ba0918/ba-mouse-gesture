@@ -119,6 +119,7 @@ async function build() {
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
     await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
+    await copyFile('popup/options-clean.html', path.join(distDir, 'popup/options-clean.html'))
     await copyDir('assets', path.join(distDir, 'assets'))
     
     // 本番ビルド時にDebugLoggerを処理
