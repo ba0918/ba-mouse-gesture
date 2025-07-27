@@ -646,6 +646,9 @@ class OptionsManager {
       'close_tab': 'タブを閉じる',
       'new_tab': '新しいタブ',
       'refresh': '更新',
+      'super_refresh': 'スーパーリロード（キャッシュクリア）',
+      'prev_tab': '前のタブ',
+      'next_tab': '次のタブ',
       'duplicate_tab': 'タブを複製'
     }
     return actionNames[action] || action

@@ -295,10 +295,13 @@ function analyzeComplexGesture() {
         
     // 対応する複合ジェスチャーをチェック
     const complexPatterns = {
-      'DOWNRIGHT': 'downright',  // ↓→: タブを閉じる
-      'UPRIGHT': 'upright',      // ↑→: 新しいタブ
-      'RIGHTDOWN': 'rightdown',  // →↓: タブ複製
-      'UPDOWN': 'updown'         // ↑↓: ページ更新
+      'DOWNRIGHT': 'downright',    // ↓→: タブを閉じる
+      'UPRIGHT': 'upright',        // ↑→: 新しいタブ
+      'RIGHTDOWN': 'rightdown',    // →↓: タブ複製
+      'UPDOWN': 'updown',          // ↑↓: ページ更新
+      'UPDOWNUP': 'super_refresh', // ↑↓↑: スーパーリロード（キャッシュクリア）
+      'LEFTRIGHT': 'prev_tab',     // ←→: 前のタブ
+      'RIGHTLEFT': 'next_tab'      // →←: 次のタブ
     }
         
     const defaultGesture = complexPatterns[pattern]

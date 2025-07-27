@@ -216,6 +216,47 @@ async function executeComplexAction(gestureType, tabId) {
         debugLog(LOG_LEVELS.ERROR, 'Tab reload failed:', error)
         throw error
       }
+
+    case 'super_refresh':
+      debugLog(LOG_LEVELS.DEBUG, 'Super reloading tab (↑↓↑) - tabId:', tabId)
+      try {
+        await chrome.tabs.reload(tabId, {bypassCache: true})
+        debugLog(LOG_LEVELS.DEBUG, 'Super reload successful')
+        return 'Tab super reloaded (cache cleared)'
+      } catch (error) {
+        debugLog(LOG_LEVELS.ERROR, 'Super reload failed:', error)
+        throw error
+      }
+
+    case 'prev_tab': {
+      debugLog(LOG_LEVELS.DEBUG, 'Switching to previous tab (←→)')
+      try {
+        const tabs = await chrome.tabs.query({currentWindow: true})
+        const currentIndex = tabs.findIndex(tab => tab.id === tabId)
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1
+        await chrome.tabs.update(tabs[prevIndex].id, {active: true})
+        debugLog(LOG_LEVELS.DEBUG, 'Switched to previous tab successfully')
+        return 'Switched to previous tab'
+      } catch (error) {
+        debugLog(LOG_LEVELS.ERROR, 'Previous tab switch failed:', error)
+        throw error
+      }
+    }
+
+    case 'next_tab': {
+      debugLog(LOG_LEVELS.DEBUG, 'Switching to next tab (→←)')
+      try {
+        const tabs = await chrome.tabs.query({currentWindow: true})
+        const currentIndex = tabs.findIndex(tab => tab.id === tabId)
+        const nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0
+        await chrome.tabs.update(tabs[nextIndex].id, {active: true})
+        debugLog(LOG_LEVELS.DEBUG, 'Switched to next tab successfully')
+        return 'Switched to next tab'
+      } catch (error) {
+        debugLog(LOG_LEVELS.ERROR, 'Next tab switch failed:', error)
+        throw error
+      }
+    }
                 
     default:
       throw new Error(`Unknown complex gesture: ${gestureType}`)
@@ -240,6 +281,9 @@ async function executeCustomAction(action, tabId) {
       'close_tab': 'downright',
       'new_tab': 'upright',
       'refresh': 'updown',           // ↑↓で更新
+      'super_refresh': 'super_refresh', // ↑↓↑でスーパーリロード
+      'prev_tab': 'prev_tab',        // ←→で前のタブ
+      'next_tab': 'next_tab',        // →←で次のタブ
       'duplicate_tab': 'rightdown'   // →↓でタブ複製
     }
     
@@ -260,6 +304,29 @@ async function executeCustomAction(action, tabId) {
       debugLog(LOG_LEVELS.DEBUG, 'Custom: Reloading tab')
       await chrome.tabs.reload(tabId)
       return 'Tab reloaded (custom)'
+
+    case 'super_refresh':
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Super reloading tab')
+      await chrome.tabs.reload(tabId, {bypassCache: true})
+      return 'Tab super reloaded (custom)'
+
+    case 'prev_tab': {
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Switching to previous tab')
+      const tabs = await chrome.tabs.query({currentWindow: true})
+      const currentIndex = tabs.findIndex(tab => tab.id === tabId)
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1
+      await chrome.tabs.update(tabs[prevIndex].id, {active: true})
+      return 'Switched to previous tab (custom)'
+    }
+
+    case 'next_tab': {
+      debugLog(LOG_LEVELS.DEBUG, 'Custom: Switching to next tab')
+      const tabs = await chrome.tabs.query({currentWindow: true})
+      const currentIndex = tabs.findIndex(tab => tab.id === tabId)
+      const nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0
+      await chrome.tabs.update(tabs[nextIndex].id, {active: true})
+      return 'Switched to next tab (custom)'
+    }
       
     case 'duplicate_tab': {
       debugLog(LOG_LEVELS.DEBUG, 'Custom: Duplicating tab')
