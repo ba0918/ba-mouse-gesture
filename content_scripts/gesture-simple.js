@@ -10,7 +10,7 @@ let settings = {
   enabled: true,
   strokeColor: '#2563eb',
   strokeWidth: 3,
-  excludeList: [],
+  excludedSites: [],
   gestureThreshold: 15, // ジェスチャー検出の最小距離（px）
   defaultGestureStates: {
     // 基本ジェスチャー
@@ -35,7 +35,7 @@ function isExcludedSite() {
   const currentUrl = window.location.href
   const currentHost = window.location.hostname
     
-  return settings.excludeList.some(pattern => {
+  return settings.excludedSites.some(pattern => {
     // 完全URL マッチ
     if (pattern.includes('://')) {
       return currentUrl.includes(pattern) || currentUrl.match(pattern.replace(/\*/g, '.*'))

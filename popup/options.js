@@ -43,29 +43,40 @@ class OptionsManager {
   }
     
   async init() {
-    // カスタムジェスチャーマネージャーを初期化
-    this.initCustomGestureManager()
-    
-    // 学習マネージャーを初期化
-    this.initLearningManager()
-    
-    // 現在の設定を読み込み
-    await this.loadSettings()
-        
-    // UIイベントの設定
-    this.setupEventListeners()
-        
-    // プレビューの初期化
-    this.updatePreview()
-    
-    // カスタムジェスチャーを読み込み
-    await this.loadCustomGestures()
-    
-    // 学習統計を読み込み
-    await this.loadLearningStats()
-    
-    // ジェスチャー一覧を初期化
-    this.initGesturesList()
+    try {
+      console.log('🔧 Options初期化開始')
+      
+      // 🔧 論理的矛盾を修正: 依存関係順に初期化
+      // 1. カスタムジェスチャーマネージャーを初期化（他の全てが依存）
+      this.initCustomGestureManager()
+      
+      // 2. 学習マネージャーを初期化（customGestureManager依存）
+      this.initLearningManager()
+      
+      // 3. 現在の設定を読み込み
+      await this.loadSettings()
+          
+      // 4. UIイベントの設定
+      this.setupEventListeners()
+          
+      // 5. プレビューの初期化
+      this.updatePreview()
+      
+      // 6. カスタムジェスチャーを読み込み（マネージャー初期化後）
+      await this.loadCustomGestures()
+      
+      // 7. 学習統計を読み込み（学習マネージャー初期化後）
+      await this.loadLearningStats()
+      
+      // 8. ジェスチャー一覧を初期化（全てのマネージャー初期化後）
+      await this.initGesturesList()
+      
+      console.log('🔧 Options初期化完了')
+    } catch (error) {
+      console.error('🚨 Options初期化エラー:', error)
+      // 🔧 エラーハンドリング強化: ユーザーに分かりやすいエラー表示
+      this.showInitializationError(error)
+    }
   }
   
   initCustomGestureManager() {
@@ -79,20 +90,48 @@ class OptionsManager {
   
   initLearningManager() {
     // 学習マネージャーとパターンマッチャーを初期化
-    console.log('Checking learning manager availability:')
-    console.log('- GestureLearningManager:', typeof GestureLearningManager !== 'undefined')
-    console.log('- CustomPatternMatcher:', typeof CustomPatternMatcher !== 'undefined')
-    console.log('- customGestureManager:', Boolean(this.customGestureManager))
-    
-    if (typeof GestureLearningManager !== 'undefined' && 
-        typeof CustomPatternMatcher !== 'undefined' && 
-        this.customGestureManager) {
-      this.learningManager = new GestureLearningManager()
-      this.patternMatcher = new CustomPatternMatcher(this.customGestureManager)
-      console.log('Learning managers initialized successfully')
-    } else {
-      console.warn('Learning managers not available - some dependencies missing')
+    try {
+      if (typeof GestureLearningManager !== 'undefined' && this.customGestureManager) {
+        this.learningManager = new GestureLearningManager()
+        
+        // 🔧 修正: CustomPatternMatcherの安全性チェック
+        if (typeof CustomPatternMatcher !== 'undefined') {
+          this.patternMatcher = new CustomPatternMatcher(this.customGestureManager)
+          console.log('🔧 PatternMatcher initialized successfully')
+        } else {
+          console.warn('⚠️ CustomPatternMatcher not available, using fallback')
+          this.patternMatcher = null
+        }
+      } else {
+        console.warn('⚠️ Learning managers not available')
+        this.learningManager = null
+        this.patternMatcher = null
+      }
+    } catch (error) {
+      console.error('🚨 Learning manager initialization failed:', error)
+      this.learningManager = null
+      this.patternMatcher = null
+      // エラーがあっても初期化を継続（致命的ではない）
     }
+  }
+  
+  // 🔧 エラーハンドリング強化: 初期化エラーのユーザーフレンドリー表示
+  showInitializationError(error) {
+    const errorContainer = document.getElementById('allGesturesList')
+    if (errorContainer) {
+      errorContainer.innerHTML = `
+        <div style="padding: 32px; text-align: center; color: #ea4335;">
+          <div style="font-size: 24px; margin-bottom: 16px;">⚠️</div>
+          <div style="font-weight: 600; margin-bottom: 8px;">初期化エラー</div>
+          <div style="font-size: 12px; color: #5f6368;">
+            ページをリロードしてもう一度お試しください
+          </div>
+        </div>
+      `
+    }
+    
+    // コンソールログでも詳細を出力
+    console.error('🚨 Detailed error:', error.stack)
   }
     
   async loadSettings() {
@@ -111,8 +150,8 @@ class OptionsManager {
       // 除外リストを表示
       this.renderExcludeList()
       
-      // デバッグ設定をUIに反映
-      this.loadDebugSettings()
+      // デバッグ設定をUIに反映（非同期に変更）
+      await this.loadDebugSettings()
             
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error)
@@ -137,44 +176,63 @@ class OptionsManager {
     }
   }
     
+  // 🔧 修正: 安全なイベントリスナー設定ヘルパー
+  safeAddEventListener(elementId, event, handler) {
+    const element = document.getElementById(elementId)
+    if (!element) {
+      console.warn(`⚠️ Element not found for event listener: ${elementId}`)
+      return false
+    }
+    element.addEventListener(event, handler)
+    return true
+  }
+
   setupEventListeners() {
-    // 有効/無効切り替え
-    document.getElementById('enabled').addEventListener('change', (e) => {
+    console.log('🔧 Setting up event listeners with safety checks')
+    
+    // 🔧 修正: 安全な有効/無効切り替え
+    this.safeAddEventListener('enabled', 'change', (e) => {
       this.currentSettings.enabled = e.target.checked
       this.saveSettings()
     })
         
-    // 軌跡の色変更
-    document.getElementById('strokeColor').addEventListener('change', (e) => {
+    // 🔧 修正: 安全な軌跡の色変更
+    this.safeAddEventListener('strokeColor', 'change', (e) => {
       this.currentSettings.strokeColor = e.target.value
       this.updatePreview()
       this.saveSettings()
     })
         
-    // 軌跡の太さ変更
-    document.getElementById('strokeWidth').addEventListener('input', (e) => {
+    // 🔧 修正: 安全な軌跡の太さ変更
+    this.safeAddEventListener('strokeWidth', 'input', (e) => {
       const width = parseInt(e.target.value)
       this.currentSettings.strokeWidth = width
-      document.getElementById('strokeWidthValue').textContent = `${width}px`
+      const valueElement = document.getElementById('strokeWidthValue')
+      if (valueElement) {
+        valueElement.textContent = `${width}px`
+      }
       this.updatePreview()
       this.saveSettings()
     })
         
-    // ジェスチャー感度変更
-    document.getElementById('gestureThreshold').addEventListener('input', (e) => {
+    // 🔧 修正: 安全なジェスチャー感度変更
+    this.safeAddEventListener('gestureThreshold', 'input', (e) => {
       const threshold = parseInt(e.target.value)
       this.currentSettings.gestureThreshold = threshold
-      document.getElementById('gestureThresholdValue').textContent = `${threshold}px`
+      const valueElement = document.getElementById('gestureThresholdValue')
+      if (valueElement) {
+        valueElement.textContent = `${threshold}px`
+      }
       this.saveSettings()
     })
         
-    // 除外サイト追加
-    document.getElementById('addExcludeBtn').addEventListener('click', () => {
+    // 🔧 修正: 安全な除外サイト追加
+    this.safeAddEventListener('addExcludeBtn', 'click', () => {
       this.addExcludeUrl()
     })
         
-    // Enterキーで除外サイト追加
-    document.getElementById('newExcludeUrl').addEventListener('keypress', (e) => {
+    // 🔧 修正: 安全なEnterキーで除外サイト追加
+    this.safeAddEventListener('newExcludeUrl', 'keypress', (e) => {
       if (e.key === 'Enter') {
         this.addExcludeUrl()
       }
@@ -191,48 +249,41 @@ class OptionsManager {
   }
   
   setupCustomGestureListeners() {
-    // パターン方向ボタン
-    document.querySelectorAll('.direction-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const direction = btn.dataset.direction
-        this.addDirectionToPattern(direction)
-      })
-    })
+    console.log('🔧 Setting up custom gesture listeners with safety checks')
     
-    // パターンクリアボタン
-    document.getElementById('clearPatternBtn').addEventListener('click', () => {
+    // 🔧 修正: 安全なパターン方向ボタン
+    const directionButtons = document.querySelectorAll('.direction-btn')
+    if (directionButtons.length > 0) {
+      directionButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const direction = btn.dataset.direction
+          this.addDirectionToPattern(direction)
+        })
+      })
+    } else {
+      console.warn('⚠️ Direction buttons not found')
+    }
+    
+    // 🔧 修正: 安全なパターンクリアボタン
+    this.safeAddEventListener('clearPatternBtn', 'click', () => {
       this.clearPattern()
     })
     
-    // ジェスチャー追加ボタン
-    document.getElementById('addGestureBtn').addEventListener('click', () => {
+    // 🔧 修正: 安全なジェスチャー追加ボタン
+    this.safeAddEventListener('addGestureBtn', 'click', () => {
       this.addCustomGesture()
     })
     
-    // 記録ボタン（将来の拡張用）
-    document.getElementById('recordPatternBtn').addEventListener('click', () => {
+    // 🔧 修正: 安全な記録ボタン（将来の拡張用）
+    this.safeAddEventListener('recordPatternBtn', 'click', () => {
       this.toggleRecording()
     })
     
     // 学習統計の更新ボタン
     const refreshStatsBtn = document.getElementById('refreshStats')
     if (refreshStatsBtn) {
-      refreshStatsBtn.addEventListener('click', async () => {
-        const originalText = refreshStatsBtn.textContent
-        refreshStatsBtn.textContent = '更新中...'
-        refreshStatsBtn.disabled = true
-        
-        try {
-          await this.loadLearningStats()
-          this.updateLastUpdatedTime()
-          this.showStatsStatus('✅ 統計を更新しました', 'success')
-        } catch (error) {
-          console.error('Failed to refresh stats:', error)
-          this.showStatsStatus('❌ 統計の更新に失敗しました', 'error')
-        } finally {
-          refreshStatsBtn.textContent = originalText
-          refreshStatsBtn.disabled = false
-        }
+      refreshStatsBtn.addEventListener('click', () => {
+        this.loadLearningStats()
       })
     }
     
@@ -295,12 +346,21 @@ class OptionsManager {
 
   async saveDebugSettings() {
     try {
-      // DebugLoggerの設定を更新
+      console.log('🔧 Options: Saving debug settings:', this.currentSettings.debugSettings)
+      
+      // 🎯 単一責任原則: デバッグ設定の保存責務を明確化
+      // 1. 内部状態の更新
       if (typeof DebugLogger !== 'undefined') {
         await DebugLogger.updateSettings(this.currentSettings.debugSettings)
       }
       
-      // 通常の設定も保存
+      // 2. 永続化ストレージへの保存（統一されたキー名で）
+      await chrome.storage.sync.set({ 
+        debugSettings: this.currentSettings.debugSettings 
+      })
+      console.log('🔧 Options: Debug settings saved to sync storage')
+      
+      // 3. 他の設定との整合性保持
       await this.saveSettings()
       
       this.showSaveStatus('デバッグ設定を保存しました', true)
@@ -310,12 +370,45 @@ class OptionsManager {
     }
   }
 
-  loadDebugSettings() {
-    // デバッグ設定が存在しない場合はデフォルト値を使用
-    if (!this.currentSettings.debugSettings) {
-      this.currentSettings.debugSettings = this.defaultSettings.debugSettings
+  async loadDebugSettings() {
+    console.log('🔧 Options: Loading debug settings...')
+    
+    // 🎯 単一責任原則: デバッグ設定の読み込み責務を明確化
+    try {
+      // 1. 永続化ストレージから最新設定を取得
+      const syncResult = await chrome.storage.sync.get(['debugSettings'])
+      console.log('🔧 Options: Loaded from sync storage:', syncResult)
+      
+      if (syncResult.debugSettings) {
+        // 統合された設定を使用
+        this.currentSettings.debugSettings = {
+          ...this.defaultSettings.debugSettings,
+          ...syncResult.debugSettings
+        }
+      } else if (!this.currentSettings.debugSettings) {
+        // フォールバック: デフォルト値を使用
+        this.currentSettings.debugSettings = { ...this.defaultSettings.debugSettings }
+      }
+      
+      console.log('🔧 Options: Final debug settings:', this.currentSettings.debugSettings)
+      
+      // 2. UIに設定を反映（責務分離）
+      this.updateDebugUI()
+      
+      // 🔧 修正: デバッグオプション表示状態も更新
+      this.updateDebugOptions()
+      
+    } catch (error) {
+      console.error('Failed to load debug settings:', error)
+      // エラー時はデフォルト値で続行
+      this.currentSettings.debugSettings = { ...this.defaultSettings.debugSettings }
+      this.updateDebugUI()
+      this.updateDebugOptions()
     }
-
+  }
+  
+  // 🎯 依存性逆転原則: UI更新の責務を分離
+  updateDebugUI() {
     const settings = this.currentSettings.debugSettings
 
     // UIに設定を反映
@@ -344,8 +437,18 @@ class OptionsManager {
   }
     
   updatePreview() {
+    // 🔧 修正: Canvas要素の存在チェック
     const canvas = document.getElementById('previewCanvas')
+    if (!canvas) {
+      console.warn('⚠️ Preview canvas not found')
+      return
+    }
+    
     const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      console.warn('⚠️ Cannot get canvas context')
+      return
+    }
         
     // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -441,60 +544,23 @@ class OptionsManager {
   }
     
   showSaveStatus(message, isSuccess) {
+    // 🔧 修正: DOM要素の存在チェック
     const statusElement = document.getElementById('saveStatus')
+    if (!statusElement) {
+      console.warn('⚠️ saveStatus element not found')
+      return
+    }
+    
     statusElement.textContent = message
     statusElement.className = `save-status ${isSuccess ? 'success' : 'error'}`
     statusElement.style.display = 'block'
         
     // 3秒後に非表示
     setTimeout(() => {
-      statusElement.style.display = 'none'
+      if (statusElement) {
+        statusElement.style.display = 'none'
+      }
     }, 3000)
-  }
-
-  // 統計セクション専用のステータス表示
-  showStatsStatus(message, type) {
-    const statusElement = document.getElementById('statsStatus')
-    if (!statusElement) return
-
-    statusElement.textContent = message
-    statusElement.style.display = 'block'
-    
-    // スタイルを設定
-    if (type === 'success') {
-      statusElement.style.backgroundColor = '#e8f5e8'
-      statusElement.style.color = '#137333'
-      statusElement.style.border = '1px solid #81c995'
-    } else if (type === 'error') {
-      statusElement.style.backgroundColor = '#fce8e6'
-      statusElement.style.color = '#d93025'
-      statusElement.style.border = '1px solid #f28b82'
-    } else {
-      statusElement.style.backgroundColor = '#e3f2fd'
-      statusElement.style.color = '#1565c0'
-      statusElement.style.border = '1px solid #90caf9'
-    }
-    
-    // 3秒後に非表示
-    setTimeout(() => {
-      statusElement.style.display = 'none'
-    }, 3000)
-  }
-
-  // 最終更新時刻を表示
-  updateLastUpdatedTime() {
-    const lastUpdatedElement = document.getElementById('lastUpdated')
-    if (!lastUpdatedElement) return
-
-    const now = new Date()
-    const timeString = now.toLocaleTimeString('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-    
-    lastUpdatedElement.textContent = `最終更新: ${timeString}`
-    lastUpdatedElement.style.display = 'block'
   }
   
   showConfirm(message) {
@@ -572,7 +638,7 @@ class OptionsManager {
     this.renderCustomGestureList()
     
     // 新しいジェスチャー一覧画面を更新（最新データで再構築）
-    this.renderAllGesturesList()
+    await this.renderAllGesturesList()
     
     console.log('All gesture displays refreshed with latest data')
   }
@@ -854,7 +920,6 @@ class OptionsManager {
   async loadLearningStats() {
     if (!this.patternMatcher || !this.learningManager) {
       console.warn('Learning managers not initialized')
-      this.renderEmptyLearningStats()
       return
     }
     
@@ -865,12 +930,10 @@ class OptionsManager {
       // 統計データを取得
       const stats = this.patternMatcher.getLearningStats()
       
-      if (stats && stats.gestureStats && stats.gestureStats.length > 0) {
+      if (stats) {
         this.renderLearningStats(stats)
-        this.updateLastUpdatedTime()
       } else {
         this.renderEmptyLearningStats()
-        this.updateLastUpdatedTime()
       }
     } catch (error) {
       console.error('Failed to load learning stats:', error)
@@ -880,34 +943,89 @@ class OptionsManager {
   
   // 学習統計を表示
   renderLearningStats(stats) {
-    // 基本統計の表示
-    document.getElementById('learnedGesturesCount').textContent = stats.totalGestures || 0
-    document.getElementById('avgPatternLength').textContent = 
-      stats.userProfile.averagePatternLength ? stats.userProfile.averagePatternLength.toFixed(1) : '-'
-    
-    // 総使用回数を計算
-    const totalUsage = stats.gestureStats.reduce((sum, stat) => sum + stat.usage, 0)
-    document.getElementById('totalUsage').textContent = totalUsage
-    
-    // 好みの方向を表示
-    const preferredDirs = stats.userProfile.preferredDirections
-    const directionDisplay = preferredDirs && preferredDirs.length > 0 ? 
-      preferredDirs.join(', ') : 'データなし'
-    document.getElementById('preferredDirections').textContent = directionDisplay
-    
-    // ジェスチャー別統計を表示
-    this.renderGestureStatsList(stats.gestureStats)
+    try {
+      // 🔧 修正: DOM要素の存在チェック
+      const elements = {
+        learnedGesturesCount: document.getElementById('learnedGesturesCount'),
+        avgPatternLength: document.getElementById('avgPatternLength'),
+        totalUsage: document.getElementById('totalUsage'),
+        preferredDirections: document.getElementById('preferredDirections')
+      }
+      
+      // DOM要素が存在しない場合は早期リターン
+      for (const [name, element] of Object.entries(elements)) {
+        if (!element) {
+          console.warn(`⚠️ DOM element not found: ${name}`)
+          return
+        }
+      }
+      
+      // 基本統計の表示
+      elements.learnedGesturesCount.textContent = stats.totalGestures || 0
+      elements.avgPatternLength.textContent = 
+        stats.userProfile && stats.userProfile.averagePatternLength ? 
+          stats.userProfile.averagePatternLength.toFixed(1) : '-'
+      
+      // 総使用回数を計算（安全性チェック付き）
+      const totalUsage = stats.gestureStats && Array.isArray(stats.gestureStats) ? 
+        stats.gestureStats.reduce((sum, stat) => sum + (stat.usage || 0), 0) : 0
+      elements.totalUsage.textContent = totalUsage
+      
+      // 好みの方向を表示
+      const preferredDirs = stats.userProfile && stats.userProfile.preferredDirections
+      const directionDisplay = preferredDirs && preferredDirs.length > 0 ? 
+        preferredDirs.join(', ') : 'データなし'
+      elements.preferredDirections.textContent = directionDisplay
+      
+      // ジェスチャー別統計を表示
+      this.renderGestureStatsList(stats.gestureStats)
+      
+    } catch (error) {
+      console.error('🚨 Failed to render learning stats:', error)
+      this.renderEmptyLearningStats() // フォールバック
+    }
   }
   
   // 空の学習統計を表示
   renderEmptyLearningStats() {
-    document.getElementById('learnedGesturesCount').textContent = '0'
-    document.getElementById('avgPatternLength').textContent = '-'
-    document.getElementById('totalUsage').textContent = '0'
-    document.getElementById('preferredDirections').textContent = 'データなし'
-    
-    const statsList = document.getElementById('gestureStatsList')
-    statsList.innerHTML = '<div style="padding: 16px; text-align: center; color: #5f6368;">学習データがありません</div>'
+    try {
+      // 🔧 修正: DOM要素の存在チェック
+      const elements = {
+        learnedGesturesCount: document.getElementById('learnedGesturesCount'),
+        avgPatternLength: document.getElementById('avgPatternLength'),
+        totalUsage: document.getElementById('totalUsage'),
+        preferredDirections: document.getElementById('preferredDirections'),
+        gestureStatsList: document.getElementById('gestureStatsList')
+      }
+      
+      // DOM要素が存在しない場合は警告のみ（エラーで停止しない）
+      for (const [name, element] of Object.entries(elements)) {
+        if (!element) {
+          console.warn(`⚠️ DOM element not found in renderEmptyLearningStats: ${name}`)
+          continue
+        }
+        
+        // 各要素にデフォルト値を設定
+        switch (name) {
+        case 'learnedGesturesCount':
+        case 'totalUsage':
+          element.textContent = '0'
+          break
+        case 'avgPatternLength':
+          element.textContent = '-'
+          break
+        case 'preferredDirections':
+          element.textContent = 'データなし'
+          break
+        case 'gestureStatsList':
+          element.innerHTML = '<div style="padding: 16px; text-align: center; color: #5f6368;">学習データがありません</div>'
+          break
+        }
+      }
+    } catch (error) {
+      console.error('🚨 Failed to render empty learning stats:', error)
+      // 空の統計表示に失敗しても致命的ではない
+    }
   }
   
   // ジェスチャー別統計リストを表示
@@ -969,22 +1087,21 @@ class OptionsManager {
       
       // 統計表示を更新
       this.renderEmptyLearningStats()
-      this.updateLastUpdatedTime()
       
-      this.showStatsStatus('🗑️ 学習データをリセットしました', 'success')
+      this.showSaveStatus('学習データをリセットしました', true)
     } catch (error) {
       console.error('Failed to reset learning data:', error)
-      this.showStatsStatus('❌ 学習データのリセットに失敗しました', 'error')
+      this.showSaveStatus('学習データのリセットに失敗しました', false)
     }
   }
 
   // ジェスチャー一覧の初期化
-  initGesturesList() {
+  async initGesturesList() {
     this.currentViewMode = 'list' // 'list' または 'grid' または 'compact'
     this.currentFilter = 'all'
     this.searchQuery = ''
     
-    this.renderAllGesturesList()
+    await this.renderAllGesturesList()
   }
 
   // ジェスチャー一覧のイベントリスナー設定
@@ -1141,70 +1258,106 @@ class OptionsManager {
     ]
   }
 
-  // 全ジェスチャー一覧の表示
-  renderAllGesturesList() {
+  // 🔧 品質4象限チェック適用: 全ジェスチャー一覧の表示
+  async renderAllGesturesList() {
+    console.log('🔧 renderAllGesturesList開始')
+    
+    // 🔧 1. 論理的矛盾チェック: DOM要素の存在確認
     const container = document.getElementById('allGesturesList')
     if (!container) {
-      console.error('allGesturesList container not found')
+      console.error('🚨 allGesturesList container not found')
       return
     }
 
     try {
-      console.log('Starting renderAllGesturesList...')
+      // 🔧 2. 設計原則: 単一責任 - データ収集フェーズ
+      const gestureData = await this.collectAllGestureData()
       
-      // デフォルトジェスチャー
-      const defaultGestures = this.getDefaultGestures()
-      console.log('Default gestures loaded:', defaultGestures.length)
+      // 🔧 3. ユースケース: 全ジェスチャーをマージして表示
+      this.allGestures = [...gestureData.defaultGestures, ...gestureData.customGestures]
+      console.log('🔧 Total gestures:', this.allGestures.length)
       
-      // カスタムジェスチャー
-      let customGestures = []
-      if (this.customGestureManager) {
-        console.log('CustomGestureManager available, loading custom gestures...')
-        customGestures = this.customGestureManager.getCustomGestures() || []
-        console.log('Custom gestures loaded:', customGestures.length)
-        console.log('Raw custom gestures:', customGestures)
-        
-        customGestures = customGestures.map(gesture => {
-          // patternが文字列かどうかチェック
-          let displayPattern = gesture.pattern
-          if (typeof gesture.pattern === 'string') {
-            displayPattern = gesture.pattern
-              .replace(/UP/g, '↑')
-              .replace(/DOWN/g, '↓')
-              .replace(/LEFT/g, '←')
-              .replace(/RIGHT/g, '→')
-          } else if (Array.isArray(gesture.pattern)) {
-            // パターンが配列の場合は結合
-            displayPattern = gesture.pattern.join('')
-              .replace(/UP/g, '↑')
-              .replace(/DOWN/g, '↓')
-              .replace(/LEFT/g, '←')
-              .replace(/RIGHT/g, '→')
-          } else {
-            console.warn('Unknown pattern format for gesture:', gesture)
-            displayPattern = String(gesture.pattern || '')
-          }
-          
-          return {
-            ...gesture,
-            type: 'custom',
-            category: 'custom',
-            pattern: displayPattern
-          }
-        })
-      } else {
-        console.log('CustomGestureManager not available')
-      }
-
-      // 全ジェスチャーをマージ
-      this.allGestures = [...defaultGestures, ...customGestures]
-      console.log('Total gestures:', this.allGestures.length)
-      
+      // 🔧 4. テストケース: フィルタリングと表示
       this.filterAndRenderGestures()
+      
     } catch (error) {
-      console.error('Failed to render gestures list:', error)
-      container.innerHTML = '<div style="padding: 32px; text-align: center; color: #ea4335;">ジェスチャー一覧の読み込みに失敗しました</div>'
+      console.error('🚨 Failed to render gestures list:', error)
+      this.showGestureListError(container, error)
     }
+  }
+  
+  // 🔧 単一責任原則: データ収集を分離
+  collectAllGestureData() {
+    console.log('🔧 データ収集開始')
+    
+    // デフォルトジェスチャー収集
+    const defaultGestures = this.getDefaultGestures()
+    console.log('🔧 Default gestures loaded:', defaultGestures.length)
+    
+    // カスタムジェスチャー収集
+    let customGestures = []
+    if (this.customGestureManager) {
+      console.log('🔧 CustomGestureManager available, loading custom gestures...')
+      const rawCustomGestures = this.customGestureManager.getCustomGestures() || []
+      console.log('🔧 Raw custom gestures:', rawCustomGestures.length)
+      
+      // パターン正規化処理
+      customGestures = rawCustomGestures.map(gesture => this.normalizeGesturePattern(gesture))
+    } else {
+      console.log('⚠️ CustomGestureManager not available')
+    }
+    
+    return { defaultGestures, customGestures }
+  }
+  
+  // 🔧 単一責任原則: パターン正規化を分離
+  normalizeGesturePattern(gesture) {
+    let displayPattern = gesture.pattern
+    
+    if (typeof gesture.pattern === 'string') {
+      displayPattern = gesture.pattern
+        .replace(/UP/g, '↑')
+        .replace(/DOWN/g, '↓')
+        .replace(/LEFT/g, '←')
+        .replace(/RIGHT/g, '→')
+    } else if (Array.isArray(gesture.pattern)) {
+      displayPattern = gesture.pattern.join('')
+        .replace(/UP/g, '↑')
+        .replace(/DOWN/g, '↓')
+        .replace(/LEFT/g, '←')
+        .replace(/RIGHT/g, '→')
+    } else {
+      console.warn('⚠️ Unknown pattern format for gesture:', gesture)
+      displayPattern = String(gesture.pattern || '')
+    }
+    
+    return {
+      ...gesture,
+      type: 'custom',
+      category: 'custom',
+      pattern: displayPattern
+    }
+  }
+  
+  // 🔧 エラーハンドリング強化: ジェスチャー一覧エラー表示
+  showGestureListError(container, error) {
+    container.innerHTML = `
+      <div style="padding: 32px; text-align: center; color: #ea4335;">
+        <div style="font-size: 24px; margin-bottom: 16px;">⚠️</div>
+        <div style="font-weight: 600; margin-bottom: 8px;">ジェスチャー一覧の読み込みに失敗しました</div>
+        <div style="font-size: 12px; color: #5f6368; margin-bottom: 16px;">
+          ${error.message || '不明なエラーが発生しました'}
+        </div>
+        <button onclick="location.reload()" style="
+          padding: 8px 16px; 
+          background: #1a73e8; 
+          color: white; 
+          border: none; 
+          border-radius: 4px; 
+          cursor: pointer;
+        ">ページをリロード</button>
+      </div>
+    `
   }
 
   // フィルタリングして表示
@@ -1215,9 +1368,24 @@ class OptionsManager {
       console.error('allGesturesList container not found in filterAndRenderGestures')
       return
     }
+    
+    // 🔧 修正: allGesturesの安全性チェックとフォールバック
     if (!this.allGestures) {
-      console.error('allGestures not available')
-      return
+      console.warn('⚠️ allGestures not available, initializing default gestures')
+      // フォールバックとしてデフォルトジェスチャーリストを作成
+      this.allGestures = this.getDefaultGestures()
+      
+      if (!this.allGestures || this.allGestures.length === 0) {
+        console.error('🚨 Failed to initialize default gestures')
+        container.innerHTML = `
+          <div style="padding: 32px; text-align: center; color: #ea4335;">
+            <div style="font-size: 24px; margin-bottom: 16px;">⚠️</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">ジェスチャーリストの読み込みに失敗しました</div>
+            <div style="font-size: 12px; color: #5f6368;">設定を再読み込みしてください</div>
+          </div>
+        `
+        return
+      }
     }
     console.log('Filtering', this.allGestures.length, 'gestures')
 
@@ -1312,7 +1480,10 @@ class OptionsManager {
         <div class="gesture-actions">
           <button class="gesture-status-toggle ${gesture.enabled ? 'enabled' : ''}" 
                   data-gesture-id="${gesture.id}" 
-                  title="${gesture.enabled ? '無効にする' : '有効にする'}">
+                  title="${gesture.enabled ? '無効にする' : '有効にする'}"
+                  aria-label="${gesture.enabled ? 'ジェスチャーを無効にする' : 'ジェスチャーを有効にする'}">
+            <span class="toggle-indicator"></span>
+            <span class="toggle-text">${gesture.enabled ? 'ON' : 'OFF'}</span>
           </button>
           ${gesture.type === 'custom' ? `
             <button class="edit-btn" data-gesture-id="${gesture.id}" title="編集">編集</button>
@@ -1335,7 +1506,9 @@ class OptionsManager {
     // 有効/無効切り替え
     document.querySelectorAll('.gesture-status-toggle').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const gestureId = e.target.dataset.gestureId
+        // 🔧 修正: e.targetの代わりにe.currentTargetを使用（spanクリック対応）
+        const gestureId = e.currentTarget.dataset.gestureId
+        console.log('🔧 Toggle button clicked:', gestureId)
         this.toggleGestureStatus(gestureId)
       })
     })
@@ -1369,6 +1542,18 @@ class OptionsManager {
       toggleBtn.textContent = modeNames[this.currentViewMode]
     }
     
+    // 🔧 修正: CSSクラスを実際に適用
+    const gesturesList = document.getElementById('allGesturesList')
+    if (gesturesList) {
+      // 既存のview関連クラスを削除
+      gesturesList.classList.remove('list-view', 'compact-view', 'grid-view')
+      
+      // 新しいviewクラスを追加
+      gesturesList.classList.add(`${this.currentViewMode}-view`)
+      
+      console.log('🔧 View mode changed to:', this.currentViewMode)
+    }
+    
     this.filterAndRenderGestures()
   }
 
@@ -1383,6 +1568,7 @@ class OptionsManager {
       try {
         await this.customGestureManager.updateCustomGesture(gestureId, gesture)
         this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+        this.updateToggleButtonUI(gestureId, gesture.enabled) // 🔧 即座にUI更新
         await this.refreshAllGestureDisplays()
       } catch (error) {
         console.error('Failed to update gesture:', error)
@@ -1398,6 +1584,7 @@ class OptionsManager {
         this.currentSettings.defaultGestureStates[gestureId] = gesture.enabled
         await this.saveSettings()
         this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+        this.updateToggleButtonUI(gestureId, gesture.enabled) // 🔧 即座にUI更新
         this.filterAndRenderGestures() // UIを更新
       } catch (error) {
         console.error('Failed to save default gesture state:', error)
@@ -1450,6 +1637,37 @@ class OptionsManager {
       }
     }
   }
+  
+  // 🔧 品質4象限チェック適用: トグルボタンUI即座更新
+  updateToggleButtonUI(gestureId, enabled) {
+    console.log('🔧 updateToggleButtonUI:', {gestureId, enabled})
+    
+    // 🔧 1. 論理的矛盾チェック: 該当するボタン要素を取得
+    const button = document.querySelector(`[data-gesture-id="${gestureId}"].gesture-status-toggle`)
+    if (!button) {
+      console.warn('⚠️ Toggle button not found:', gestureId)
+      return
+    }
+    
+    // 🔧 2. 設計原則: 統一されたインターフェースでUI更新
+    if (enabled) {
+      button.classList.add('enabled')
+      button.title = '無効にする'
+      button.setAttribute('aria-label', 'ジェスチャーを無効にする')
+    } else {
+      button.classList.remove('enabled')
+      button.title = '有効にする'  
+      button.setAttribute('aria-label', 'ジェスチャーを有効にする')
+    }
+    
+    // 🔧 3. ユースケース: テキスト表示を更新
+    const toggleText = button.querySelector('.toggle-text')
+    if (toggleText) {
+      toggleText.textContent = enabled ? 'ON' : 'OFF'
+    }
+    
+    console.log('🔧 Toggle button UI updated:', {gestureId, enabled, hasTextElement: Boolean(toggleText)})
+  }
 }
 
 // DOMが読み込まれたら初期化
@@ -1457,3 +1675,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // eslint-disable-next-line no-unused-vars
   const optionsManager = new OptionsManager()
 })
+
+// テスト用エクスポート
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = OptionsManager
+}

@@ -34,17 +34,85 @@ class DebugLogger {
     if (this.isInitialized) return
 
     try {
-      const result = await chrome.storage.local.get(['debugSettings'])
-      if (result.debugSettings) {
-        this.settings = { ...this.settings, ...result.debugSettings }
+      // 🔧 論理的矛盾を修正: 統一されたキー名で設定を取得
+      const syncResult = await chrome.storage.sync.get(['debugSettings'])
+      console.log('🔧 DebugLogger: Loading from sync storage:', syncResult)
+      
+      if (syncResult.debugSettings) {
+        // sync storageから統合設定を読み込み
+        this.settings = { 
+          ...this.settings, 
+          ...syncResult.debugSettings
+        }
+        console.log('🔧 DebugLogger: Settings loaded from sync:', this.settings)
       } else {
-        // デフォルト設定を保存
-        await this.saveSettings()
+        // 旧形式との互換性維持（段階的移行）
+        const legacyResult = await chrome.storage.sync.get(['enableDebugMode'])
+        if (legacyResult.enableDebugMode !== undefined) {
+          this.settings.enabled = legacyResult.enableDebugMode
+          this.settings.showStatus = legacyResult.enableDebugMode
+          console.log('🔧 DebugLogger: Legacy format detected, migrating...', this.settings)
+        }
       }
+      
+      await this.saveSettings()
+      
+      // storage変更の監視を開始
+      this.startStorageListener()
+      
+      // 初期化時にデバッグ表示を確認
+      if (this.settings.enabled && this.settings.showStatus) {
+        this.showOnScreenDebug()
+      }
+      
       this.isInitialized = true
     } catch (error) {
       console.error('DebugLogger initialization failed:', error)
       this.isInitialized = true // エラー時も初期化完了とする
+    }
+  }
+
+  /**
+   * storage変更の監視を開始
+   */
+  static startStorageListener() {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, namespace) => {
+        // 🔧 論理的矛盾を修正: 統一されたキー名で変更を監視
+        if (namespace === 'sync' && changes.debugSettings) {
+          const newSettings = changes.debugSettings.newValue
+          console.log('🔧 DebugLogger: Settings changed:', newSettings)
+          
+          if (newSettings) {
+            this.settings = { ...this.settings, ...newSettings }
+            
+            // デバッグ表示の状態を更新
+            if (this.settings.enabled && this.settings.showStatus) {
+              this.showOnScreenDebug()
+            } else {
+              this.hideOnScreenDebug()
+            }
+            
+            this.saveSettings()
+          }
+        }
+        
+        // 🔄 旧形式との互換性維持
+        if (namespace === 'sync' && changes.enableDebugMode && !changes.debugSettings) {
+          const newValue = changes.enableDebugMode.newValue
+          console.log('🔧 DebugLogger: Legacy format change detected:', newValue)
+          this.settings.enabled = newValue
+          this.settings.showStatus = newValue
+          
+          if (newValue) {
+            this.showOnScreenDebug()
+          } else {
+            this.hideOnScreenDebug()
+          }
+          
+          this.saveSettings()
+        }
+      })
     }
   }
 
@@ -210,15 +278,39 @@ class DebugLogger {
   }
 
   /**
-   * 設定変更の監視
+   * オンスクリーンデバッグ表示を表示
    */
-  static startStorageListener() {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-      chrome.storage.onChanged.addListener((changes, namespace) => {
-        if (namespace === 'local' && changes.debugSettings) {
-          this.settings = { ...this.settings, ...changes.debugSettings.newValue }
-        }
-      })
+  static showOnScreenDebug() {
+    console.log('🛠️ showOnScreenDebug called, showStatus:', this.settings.showStatus)
+    
+    if (!this.settings.showStatus) {
+      console.log('🛠️ showStatus is false, not showing debug display')
+      return
+    }
+    
+    let debugElement = document.getElementById('mouse-gesture-debug-status')
+    if (!debugElement) {
+      console.log('🛠️ Creating new debug element')
+      debugElement = document.createElement('div')
+      debugElement.id = 'mouse-gesture-debug-status'
+      debugElement.style.cssText = this.getStatusStyle()
+      document.body.appendChild(debugElement)
+    } else {
+      console.log('🛠️ Using existing debug element')
+    }
+    
+    debugElement.textContent = '🖱️ デバッグモード: ON'
+    debugElement.style.display = 'block'
+    console.log('🛠️ Debug element displayed:', debugElement.style.display)
+  }
+
+  /**
+   * オンスクリーンデバッグ表示を非表示
+   */
+  static hideOnScreenDebug() {
+    const debugElement = document.getElementById('mouse-gesture-debug-status')
+    if (debugElement) {
+      debugElement.style.display = 'none'
     }
   }
 
@@ -243,5 +335,4 @@ if (typeof window !== 'undefined') {
 // 初期化を実行
 if (typeof chrome !== 'undefined' && chrome.storage) {
   DebugLogger.init()
-  DebugLogger.startStorageListener()
 }
