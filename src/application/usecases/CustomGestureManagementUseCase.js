@@ -119,6 +119,100 @@ class CustomGestureManagementUseCase {
   }
 
   /**
+   * 方向配列からカスタムジェスチャーを作成（UI向け）
+   * @param {string} name - ジェスチャー名
+   * @param {string[]} directions - 方向配列 ['up', 'down', 'left', 'right']
+   * @param {string} action - アクション
+   * @param {string} description - 説明
+   * @returns {Promise<CustomGesture>}
+   */
+  async addCustomGesture({ name, pattern, action, description = '' }) {
+    if (!this.isInitialized) {
+      await this.initialize()
+    }
+
+    try {
+      // 入力値の検証
+      if (!name || typeof name !== 'string') {
+        throw new Error('Gesture name is required and must be string')
+      }
+      if (!Array.isArray(pattern) || pattern.length === 0) {
+        throw new Error('Pattern must be a non-empty array')
+      }
+      if (!action || typeof action !== 'string') {
+        throw new Error('Action is required and must be string')
+      }
+
+      // 重複チェック
+      await this.checkDuplicateName(name)
+
+      // 方向配列をGesturePatternに変換（詳細なデバッグ付き）
+      console.log('🔍 Converting pattern array to GesturePattern:', {
+        inputPattern: pattern,
+        inputType: typeof pattern,
+        isArray: Array.isArray(pattern),
+        inputLength: pattern ? pattern.length : 'undefined'
+      })
+
+      let gesturePattern
+      try {
+        gesturePattern = GesturePattern.fromArray(pattern)
+        console.log('🔍 GesturePattern created:', {
+          pattern: gesturePattern,
+          patternDirections: gesturePattern ? gesturePattern.getDirections() : 'undefined',
+          patternLength: gesturePattern ? gesturePattern.getLength() : 'undefined',
+          patternIsEmpty: gesturePattern ? gesturePattern.isEmpty() : 'undefined',
+          patternIsValid: gesturePattern ? gesturePattern.isValid() : 'undefined',
+          patternToString: gesturePattern ? gesturePattern.toString() : 'undefined'
+        })
+      } catch (patternError) {
+        console.error('❌ Failed to create GesturePattern:', patternError)
+        throw new Error(`Failed to create gesture pattern: ${patternError.message}`)
+      }
+
+      if (!gesturePattern || gesturePattern.isEmpty()) {
+        throw new Error('Invalid gesture pattern. Pattern cannot be empty')
+      }
+
+      if (!gesturePattern.isValid()) {
+        throw new Error('Invalid gesture pattern. Pattern validation failed')
+      }
+
+      // 既存パターンとの類似度チェック
+      await this.checkPatternSimilarity(gesturePattern, name)
+
+      // カスタムジェスチャーエンティティを作成
+      const gestureId = this.generateGestureId(name)
+      const customGesture = new CustomGesture(gestureId, name, gesturePattern, action, true, description)
+
+      // デバッグ: 作成されたCustomGestureオブジェクトの詳細確認
+      console.log('🔍 CustomGesture created:', {
+        id: customGesture.id,
+        name: customGesture.name,
+        pattern: customGesture.pattern,
+        patternIsValid: customGesture.pattern ? customGesture.pattern.isValid() : 'no pattern',
+        action: customGesture.action,
+        customGestureIsValid: customGesture.isValid(),
+        hasIsValidMethod: typeof customGesture.isValid === 'function'
+      })
+
+      // 保存
+      await this.gestureRepository.addCustomGesture(customGesture)
+
+      // 学習データを初期化
+      await this.initializeLearningForGesture(customGesture, gesturePattern)
+
+      return customGesture
+
+    } catch (error) {
+      console.error('CustomGestureManagementUseCase.addCustomGesture: Error details:', error)
+      console.error('CustomGestureManagementUseCase.addCustomGesture: Stack trace:', error.stack)
+      console.error('CustomGestureManagementUseCase.addCustomGesture: Input data:', { name, pattern, action, description })
+      throw new CustomGestureManagementError(`Failed to add custom gesture: ${error.message}`, error)
+    }
+  }
+
+  /**
    * カスタムジェスチャーを更新
    * @param {string} gestureId - ジェスチャーID
    * @param {Object} updates - 更新データ

@@ -3,7 +3,7 @@
  * Application層 - ビジネスロジックの調整
  */
 
-const GestureEntity = require('../../domain/entities/GestureEntity')
+const { GestureEntity } = require('../../domain/entities/GestureEntity')
 
 class GestureListUseCase {
   constructor(gestureRepository, settingsRepository) {
@@ -233,4 +233,6 @@ class GestureListUseCase {
   }
 }
 
-module.exports = GestureListUseCase
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GestureListUseCase }
+}

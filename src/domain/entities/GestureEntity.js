@@ -59,6 +59,62 @@ class GestureEntity {
   }
 
   /**
+   * 表示用にフォーマットされたパターンを取得
+   * ThinOptionsControllerとの互換性のため
+   */
+  getFormattedPattern() {
+    if (typeof this.pattern === 'string') {
+      // 文字列パターンの処理
+      return this.pattern
+        .replace(/up/gi, '↑')
+        .replace(/down/gi, '↓')  
+        .replace(/left/gi, '←')
+        .replace(/right/gi, '→')
+    } else if (Array.isArray(this.pattern)) {
+      // 配列パターンの処理
+      return this.pattern
+        .map(dir => {
+          switch(dir.toLowerCase()) {
+            case 'up': return '↑'
+            case 'down': return '↓'
+            case 'left': return '←'
+            case 'right': return '→'
+            default: return dir
+          }
+        })
+        .join('→')
+    }
+    return String(this.pattern || '')
+  }
+
+  /**
+   * アクションの表示名を取得
+   * ThinOptionsControllerとの互換性のため
+   */
+  getActionDisplayName() {
+    const actionNames = {
+      back: 'ブラウザの戻る',
+      forward: 'ブラウザの進む',
+      scroll_up: 'ページ最上部スクロール',
+      scroll_down: 'ページ最下部スクロール',
+      close_tab: 'タブを閉じる',
+      new_tab: '新しいタブを開く',
+      refresh: 'ページ更新',
+      duplicate_tab: 'タブ複製',
+      super_refresh: 'スーパーリロード（キャッシュクリア付き）',
+      prev_tab: '前のタブに切り替え',
+      next_tab: '次のタブに切り替え'
+    }
+    
+    // descriptionがある場合はそれを優先
+    if (this.description && this.description !== '') {
+      return this.description
+    }
+    
+    return actionNames[this.action] || this.action
+  }
+
+  /**
    * エンティティの妥当性検証
    */
   validate() {
@@ -101,4 +157,6 @@ class GestureEntity {
   }
 }
 
-module.exports = GestureEntity
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GestureEntity }
+}

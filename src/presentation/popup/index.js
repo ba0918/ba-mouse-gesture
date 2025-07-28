@@ -6,10 +6,14 @@
 // UseCase のインポート
 const { SettingsManagementUseCase } = require('../../application/usecases/SettingsManagementUseCase')
 const { CustomGestureManagementUseCase } = require('../../application/usecases/CustomGestureManagementUseCase')
+const { GestureListUseCase } = require('../../application/usecases/GestureListUseCase')
 
 // Repository のインポート
 const { SettingsRepository } = require('../../infrastructure/storage/repositories/SettingsRepository')
 const { GestureRepository } = require('../../infrastructure/storage/repositories/GestureRepository')
+
+// Storage Adapter のインポート
+const { ChromeStorageAdapter } = require('../../infrastructure/adapters/ChromeStorageAdapter')
 
 // ThinController のインポート
 const { ThinOptionsController } = require('./ThinOptionsController')
@@ -32,12 +36,14 @@ class CleanOptionsEntry {
       console.log('🏗️ Clean Architecture Entry: Initializing...')
       
       // Infrastructure層の初期化
-      const settingsRepository = new SettingsRepository()
-      const gestureRepository = new GestureRepository()
+      const storageAdapter = new ChromeStorageAdapter()
+      const settingsRepository = new SettingsRepository(storageAdapter)
+      const gestureRepository = new GestureRepository(storageAdapter)
       
       // Application層の初期化
       const settingsUseCase = new SettingsManagementUseCase(settingsRepository)
-      const customGestureUseCase = new CustomGestureManagementUseCase(gestureRepository)
+      const customGestureUseCase = new CustomGestureManagementUseCase(gestureRepository, settingsRepository)
+      const gestureListUseCase = new GestureListUseCase(gestureRepository, settingsRepository)
       
       // 学習統計用UseCase（簡易実装）
       const learningStatsUseCase = {
@@ -63,6 +69,7 @@ class CleanOptionsEntry {
       this.controller = new ThinOptionsController({
         settingsUseCase,
         customGestureUseCase,
+        gestureListUseCase,
         learningStatsUseCase
       })
       

@@ -161,19 +161,59 @@ class CustomGesture extends Gesture {
    * @returns {CustomGesture}
    */
   static fromJSON(data) {
-    const pattern = GesturePattern.fromArray(data.pattern)
-    const gesture = new CustomGesture(
-      data.id, 
-      data.name, 
-      pattern, 
-      data.action, 
-      data.enabled, 
-      data.priority
-    )
-    gesture.usage = data.usage || { totalCount: 0, successCount: 0, lastUsed: null }
-    gesture.metadata = data.metadata || { isCustom: true, version: '1.0.0' }
-    gesture.createdAt = data.createdAt
-    return gesture
+    try {
+      // データ形式のバリデーション
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid data format: data must be an object')
+      }
+      
+      // 必須フィールドのチェック
+      if (!data.id || !data.name || !data.action) {
+        throw new Error('Invalid data format: missing required fields (id, name, action)')
+      }
+      
+      // パターンのデシリアライゼーション（エラー処理付き）
+      let pattern
+      try {
+        pattern = GesturePattern.fromArray(data.pattern)
+      } catch (patternError) {
+        console.warn('CustomGesture.fromJSON: Failed to deserialize pattern, using empty pattern:', patternError)
+        pattern = GesturePattern.empty()
+      }
+      
+      // デフォルト値の設定
+      const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true
+      const priority = (typeof data.priority === 'number' && data.priority >= 1 && data.priority <= 10) 
+        ? data.priority 
+        : 1
+      
+      const gesture = new CustomGesture(
+        data.id, 
+        data.name, 
+        pattern, 
+        data.action, 
+        enabled, 
+        priority
+      )
+      
+      // オプショナルフィールドの設定
+      gesture.usage = data.usage || { totalCount: 0, successCount: 0, lastUsed: null }
+      gesture.metadata = data.metadata || { isCustom: true, version: '1.0.0' }
+      gesture.createdAt = data.createdAt || new Date().toISOString()
+      
+      return gesture
+    } catch (error) {
+      console.error('CustomGesture.fromJSON: Failed to deserialize custom gesture:', error, data)
+      
+      // フォールバック: 最小限の有効なカスタムジェスチャーを作成
+      return new CustomGesture(
+        data?.id || `fallback_${Date.now()}`,
+        data?.name || 'Invalid Gesture',
+        GesturePattern.empty(),
+        data?.action || 'back',
+        false // 無効状態で作成
+      )
+    }
   }
 }
 

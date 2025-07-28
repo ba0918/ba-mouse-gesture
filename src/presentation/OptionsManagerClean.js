@@ -4,21 +4,21 @@
  */
 
 // Domain層
-const GestureEntity = require('../domain/entities/GestureEntity')
-const DebugSettingsEntity = require('../domain/entities/DebugSettingsEntity')
+const { GestureEntity } = require('../domain/entities/GestureEntity')
+const { DebugSettingsEntity } = require('../domain/entities/DebugSettingsEntity')
 
 // Application層
-const GestureListUseCase = require('../application/usecases/GestureListUseCase')
-const DebugSettingsUseCase = require('../application/usecases/DebugSettingsUseCase')
+const { GestureListUseCase } = require('../application/usecases/GestureListUseCase')
+const { DebugSettingsUseCase } = require('../application/usecases/DebugSettingsUseCase')
 
 // Infrastructure層
-const SettingsRepository = require('../infrastructure/repositories/SettingsRepository')
-const GestureRepository = require('../infrastructure/repositories/GestureRepository')
-const ChromeStorageAdapter = require('../infrastructure/adapters/ChromeStorageAdapter')
+const { SettingsRepository } = require('../infrastructure/repositories/SettingsRepository')
+const { GestureRepository } = require('../infrastructure/storage/repositories/GestureRepository')
+const { ChromeStorageAdapter } = require('../infrastructure/adapters/ChromeStorageAdapter')
 
 // Presentation層
-const GestureListController = require('./controllers/GestureListController')
-const DebugSettingsController = require('./controllers/DebugSettingsController')
+const { GestureListController } = require('./controllers/GestureListController')
+const { DebugSettingsController } = require('./controllers/DebugSettingsController')
 
 class OptionsManagerClean {
   constructor() {
@@ -305,7 +305,7 @@ class OptionsManagerClean {
 
 // モジュールとしてエクスポート（テスト対応）
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = OptionsManagerClean
+  module.exports = { OptionsManagerClean }
 }
 
 // ブラウザ環境での自動初期化

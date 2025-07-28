@@ -24,7 +24,7 @@ const jsFiles = [
   },
   {
     entryPoint: 'src/presentation/popup/index.js',
-    outfile: 'dist/popup/options-new.js'
+    outfile: 'dist/popup/options.js'
   }
 ]
 
@@ -73,7 +73,8 @@ async function build() {
     // 静的ファイルをコピー
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
-    await copyFile('backup/popup/options-clean.html', path.join(distDir, 'popup/options-clean.html'))
+    await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
+    await copyFile('popup/options-init.js', path.join(distDir, 'popup/options-init.js'))
     await copyDir('assets', path.join(distDir, 'assets'))
     
     // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー

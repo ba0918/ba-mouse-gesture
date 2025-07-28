@@ -8,9 +8,9 @@
 // ブラウザ環境では window オブジェクトから取得
 // テスト環境での安全性を考慮して存在チェックを追加
 const DebugSettingsEntity = (typeof window !== 'undefined' && window.DebugSettingsEntity) || 
-  (typeof require !== 'undefined' ? require('../../domain/entities/DebugSettingsEntity') : null)
+  (typeof require !== 'undefined' ? require('../../domain/entities/DebugSettingsEntity').DebugSettingsEntity : null)
 const DebugStorageAdapter = (typeof window !== 'undefined' && window.DebugStorageAdapter) || 
-  (typeof require !== 'undefined' ? require('../../infrastructure/adapters/DebugStorageAdapter') : null)
+  (typeof require !== 'undefined' ? require('../../infrastructure/adapters/DebugStorageAdapter').DebugStorageAdapter : null)
 
 class DebugSettingsUseCase {
   constructor() {
@@ -372,5 +372,5 @@ if (typeof window !== 'undefined') {
 
 // Node.js環境対応
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = DebugSettingsUseCase
+  module.exports = { DebugSettingsUseCase }
 }

@@ -433,4 +433,6 @@ class GestureListController {
   }
 }
 
-module.exports = GestureListController
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { GestureListController }
+}

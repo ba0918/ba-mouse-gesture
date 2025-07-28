@@ -57,8 +57,33 @@ class GestureRepository {
       }
 
       for (const gesture of gestures) {
-        if (!gesture || typeof gesture.isValid !== 'function' || !gesture.isValid()) {
-          throw new Error(`Invalid gesture: ${gesture?.id || 'unknown'}`)
+        // 詳細なデバッグログを追加
+        console.log('🔍 Validating gesture:', {
+          gestureId: gesture?.id,
+          hasGestureObject: !!gesture,
+          hasIsValidMethod: typeof gesture?.isValid === 'function',
+          gestureKeys: gesture ? Object.keys(gesture) : [],
+          pattern: gesture?.pattern,
+          patternType: typeof gesture?.pattern,
+          patternIsValid: gesture?.pattern && typeof gesture.pattern.isValid === 'function' ? gesture.pattern.isValid() : 'no pattern isValid',
+        })
+        
+        if (!gesture) {
+          console.error('❌ Gesture is null/undefined')
+          throw new Error(`Invalid gesture: gesture is null/undefined`)
+        }
+        
+        if (typeof gesture.isValid !== 'function') {
+          console.error('❌ Gesture does not have isValid method:', typeof gesture.isValid)
+          throw new Error(`Invalid gesture: ${gesture?.id || 'unknown'} - no isValid method`)
+        }
+        
+        const isValidResult = gesture.isValid()
+        console.log('🔍 gesture.isValid() result:', isValidResult)
+        
+        if (!isValidResult) {
+          console.error('❌ Gesture.isValid() returned false for:', gesture?.id)
+          throw new Error(`Invalid gesture: ${gesture?.id || 'unknown'} - isValid() returned false`)
         }
       }
 

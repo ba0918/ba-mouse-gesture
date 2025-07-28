@@ -111,7 +111,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
   // ✅ FIXED: 統一されたストレージアクセスによる同期実現
   test('FIXED: popup-content script間で統一されたストレージアクセス', async () => {
     // クリーンアーキテクチャの新しい実装を使用
-    const DebugSettingsUseCase = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase } = require('../../src/application/usecases/DebugSettingsUseCase')
     
     // popup側での操作（統一されたUseCaseを使用）
     const popupUseCase = new DebugSettingsUseCase()
@@ -155,7 +155,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
   // ✅ FIXED: 状態保持の完全実現
   test('FIXED: popup再起動時にデバッグ設定が確実に保持される', async () => {
     // 1. 初回popup起動でデバッグを有効化
-    const DebugSettingsUseCase1 = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase: DebugSettingsUseCase1 } = require('../../src/application/usecases/DebugSettingsUseCase')
     const useCase1 = new DebugSettingsUseCase1()
     
     await useCase1.updateMultipleSettings({
@@ -170,7 +170,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
     
     // 2. popup再起動（新しいUseCaseインスタンス）
     delete require.cache[require.resolve('../../src/application/usecases/DebugSettingsUseCase')]
-    const DebugSettingsUseCase2 = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase: DebugSettingsUseCase2 } = require('../../src/application/usecases/DebugSettingsUseCase')
     const useCase2 = new DebugSettingsUseCase2()
     
     const reloadedSettings = await useCase2.getDebugSettings()
@@ -189,7 +189,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
 
   // ✅ FIXED: リアルタイム同期の実現
   test('FIXED: popup-content script間でリアルタイム同期が動作', async () => {
-    const DebugSettingsUseCase = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase } = require('../../src/application/usecases/DebugSettingsUseCase')
     
     // popup側とcontent script側のUseCaseを作成
     const popupUseCase = new DebugSettingsUseCase()
@@ -238,7 +238,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
       return Promise.resolve(result)
     })
     
-    const DebugSettingsUseCase = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase } = require('../../src/application/usecases/DebugSettingsUseCase')
     const useCase = new DebugSettingsUseCase()
     
     // 移行処理を実行
@@ -255,7 +255,7 @@ describe('デバッグ有効化問題の修正検証テスト', () => {
 
   // ✅ INTEGRATION: 全体的な同期システムの正常動作
   test('INTEGRATION: デバッグ機能全体が統一され正常動作', async () => {
-    const DebugSettingsUseCase = require('../../src/application/usecases/DebugSettingsUseCase')
+    const { DebugSettingsUseCase } = require('../../src/application/usecases/DebugSettingsUseCase')
     
     // 複数のUseCaseインスタンス（popup, content script, backgroundを想定）
     const popupUseCase = new DebugSettingsUseCase()

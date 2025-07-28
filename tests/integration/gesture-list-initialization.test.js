@@ -3,7 +3,7 @@
  * クリーンアーキテクチャ対応版
  */
 
-const OptionsManagerClean = require('../../src/presentation/OptionsManagerClean')
+const { OptionsManagerClean } = require('../../src/presentation/OptionsManagerClean')
 
 describe('ジェスチャー一覧初期化（クリーンアーキテクチャ）', () => {
   let optionsManager

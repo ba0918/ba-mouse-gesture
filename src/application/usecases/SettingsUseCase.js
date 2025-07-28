@@ -137,5 +137,5 @@ if (typeof window !== 'undefined') {
 
 // Node.js環境対応
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = SettingsUseCase
+  module.exports = { SettingsUseCase }
 }

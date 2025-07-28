@@ -315,11 +315,112 @@ class GesturePattern {
 
   /**
    * 配列からGesturePatternを復元
-   * @param {string[]} directions
+   * @param {string[]|any} directions
    * @returns {GesturePattern}
    */
   static fromArray(directions) {
-    return new GesturePattern(directions)
+    // データ形式のバリデーション
+    if (!directions) {
+      console.warn('GesturePattern.fromArray: directions is null/undefined, returning empty pattern')
+      return new GesturePattern([])
+    }
+    
+    // 配列でない場合の処理
+    if (!Array.isArray(directions)) {
+      console.warn('GesturePattern.fromArray: directions is not an array:', typeof directions, directions)
+      
+      // 文字列の場合は分割を試みる
+      if (typeof directions === 'string') {
+        try {
+          console.log('GesturePattern.fromArray: Parsing string directions:', directions)
+          
+          let parsed = []
+          
+          if (directions.includes('→')) {
+            // "up→right→down" 形式
+            parsed = directions.split('→').map(d => d.trim()).filter(d => d)
+          } else if (directions.includes(',')) {
+            // "up,right,down" 形式
+            parsed = directions.split(',').map(d => d.trim()).filter(d => d)
+          } else {
+            // 矢印記号が連続している場合（"↑↓←→"）を個別文字に分割
+            const arrowMap = {
+              '↑': 'up',
+              '↓': 'down', 
+              '←': 'left',
+              '→': 'right'
+            }
+            
+            // 文字列を1文字ずつ処理
+            for (let i = 0; i < directions.length; i++) {
+              const char = directions[i]
+              if (arrowMap[char]) {
+                parsed.push(arrowMap[char])
+              } else if (char.trim()) {
+                // 英語の方向名の可能性をチェック
+                const remaining = directions.substring(i)
+                for (const [arrow, direction] of Object.entries(arrowMap)) {
+                  if (remaining.toLowerCase().startsWith(direction)) {
+                    parsed.push(direction)
+                    i += direction.length - 1 // インデックスを調整
+                    break
+                  }
+                }
+              }
+            }
+          }
+          
+          console.log('GesturePattern.fromArray: Parsed directions:', parsed)
+          
+          // 解析結果が空でないことを確認
+          if (parsed.length === 0) {
+            console.warn('GesturePattern.fromArray: No valid directions found, returning empty pattern')
+            return new GesturePattern([])
+          }
+          
+          return new GesturePattern(parsed)
+        } catch (error) {
+          console.error('GesturePattern.fromArray: Failed to parse string directions:', error)
+          return new GesturePattern([])
+        }
+      }
+      
+      // その他の形式は空パターンとして扱う
+      return new GesturePattern([])
+    }
+    
+    // 配列の検証を強化
+    try {
+      console.log('GesturePattern.fromArray: Processing array:', directions)
+      
+      // 空配列チェック
+      if (directions.length === 0) {
+        console.warn('GesturePattern.fromArray: Empty array provided')
+        return new GesturePattern([])
+      }
+      
+      // 各要素が有効な方向値かチェック
+      const validDirections = ['up', 'down', 'left', 'right']
+      const filteredDirections = directions.filter(dir => {
+        const isValid = typeof dir === 'string' && validDirections.includes(dir.toLowerCase())
+        if (!isValid) {
+          console.warn('GesturePattern.fromArray: Invalid direction found:', dir, 'type:', typeof dir)
+        }
+        return isValid
+      }).map(dir => dir.toLowerCase())
+      
+      if (filteredDirections.length === 0) {
+        console.warn('GesturePattern.fromArray: No valid directions found after filtering')
+        return new GesturePattern([])
+      }
+      
+      console.log('GesturePattern.fromArray: Filtered directions:', filteredDirections)
+      return new GesturePattern(filteredDirections)
+      
+    } catch (error) {
+      console.error('GesturePattern.fromArray: Error processing array:', error)
+      return new GesturePattern([])
+    }
   }
 
   /**

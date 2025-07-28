@@ -275,4 +275,7 @@ class ChromeStorageAdapter {
   }
 }
 
-module.exports = ChromeStorageAdapter
+// CommonJS export
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ChromeStorageAdapter }
+}

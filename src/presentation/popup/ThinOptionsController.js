@@ -4,9 +4,10 @@
  */
 
 class ThinOptionsController {
-  constructor({ settingsUseCase, customGestureUseCase, learningStatsUseCase }) {
+  constructor({ settingsUseCase, customGestureUseCase, gestureListUseCase, learningStatsUseCase }) {
     this.settingsUseCase = settingsUseCase
-    this.customGestureUseCase = customGestureUseCase  
+    this.customGestureUseCase = customGestureUseCase
+    this.gestureListUseCase = gestureListUseCase
     this.learningStatsUseCase = learningStatsUseCase
     this.isInitialized = false
   }
@@ -206,7 +207,7 @@ class ThinOptionsController {
    */
   async renderGestureList() {
     try {
-      const gestures = await this.settingsUseCase.getAllGestures()
+      const gestures = await this.gestureListUseCase.getAllGestures()
       const listElement = document.getElementById('allGesturesList')
       
       if (!listElement) return
@@ -618,10 +619,23 @@ class ThinOptionsController {
     }
 
     try {
+      // UI層の大文字方向値をdomain層の小文字に変換
+      const normalizedPattern = this.currentPattern.map(direction => {
+        switch(direction) {
+        case 'UP': return 'up'
+        case 'DOWN': return 'down'
+        case 'LEFT': return 'left'
+        case 'RIGHT': return 'right'
+        default: return direction.toLowerCase()
+        }
+      })
+
+      // addCustomGestureメソッドを使用（オブジェクト形式で呼び出し）
       await this.customGestureUseCase.addCustomGesture({
         name,
-        pattern: this.currentPattern,
-        action
+        pattern: normalizedPattern,
+        action,
+        description: ''
       })
       
       // フォームリセット
@@ -634,7 +648,12 @@ class ThinOptionsController {
       
     } catch (error) {
       console.error('ジェスチャー追加エラー:', error)
-      this.showStatus('ジェスチャーの追加に失敗しました', 'error')
+      console.error('エラーの詳細:', error.message)
+      console.error('入力データ:', { name, pattern: this.currentPattern, action })
+      
+      // より詳細なエラーメッセージを表示
+      const errorMessage = error.message || 'ジェスチャーの追加に失敗しました'
+      this.showStatus(`エラー: ${errorMessage}`, 'error')
     }
   }
 

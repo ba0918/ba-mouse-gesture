@@ -301,7 +301,7 @@ class DebugSettingsController {
       }
 
       // デフォルト設定を作成
-      const DebugSettingsEntity = require('../../domain/entities/DebugSettingsEntity')
+      const { DebugSettingsEntity } = require('../../domain/entities/DebugSettingsEntity')
       this.currentSettings = DebugSettingsEntity.getDefault()
       
       // 保存
@@ -388,4 +388,6 @@ class DebugSettingsController {
   }
 }
 
-module.exports = DebugSettingsController
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { DebugSettingsController }
+}
