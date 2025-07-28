@@ -535,8 +535,12 @@ class CleanGestureManager {
       
       if (response.success) {
         console.log('Custom gesture executed successfully:', response.action)
+        // カスタムジェスチャーのデバッグ表示
+        await this.showDebugStatus(`🎯 Custom: ${response.action}`)
       } else {
         console.error('Custom gesture execution failed:', response.error)
+        // カスタムジェスチャーエラー時のデバッグ表示
+        await this.showDebugStatus('❌ Custom: Failed')
       }
     } catch (error) {
       console.error('Custom gesture handling failed:', error)
@@ -562,8 +566,12 @@ class CleanGestureManager {
       
       if (response.success) {
         console.log('Default gesture executed successfully:', response.action)
+        // デバッグ表示を追加
+        await this.showDebugStatus(`✅ ${gestureType}: ${response.action}`)
       } else {
         console.error('Default gesture execution failed:', response.error)
+        // エラー時もデバッグ表示
+        await this.showDebugStatus(`❌ ${gestureType}: Failed`)
       }
     } catch (error) {
       console.error('Default gesture handling failed:', error)
@@ -1018,19 +1026,27 @@ class CleanGestureManager {
       if (this.debugUseCase) {
         const debugSettings = await this.debugUseCase.getDebugSettings()
         
-        // コンソールログ
-        if (debugSettings.enabled) {
-          console.log(`🐛 [Debug] ${message}`)
-        }
+        // デバッグ情報を詳細ログ出力
+        console.log(`🐛 [Debug] ${message}`)
+        console.log('🔧 Debug Settings:', {
+          enabled: debugSettings.enabled,
+          showStatus: debugSettings.showStatus,
+          shouldShowStatus: debugSettings.shouldShowStatus(),
+          statusPosition: debugSettings.statusPosition
+        })
         
         // 画面上への表示
         if (debugSettings.shouldShowStatus()) {
+          console.log('🔧 Creating debug status element...')
           this.createOrUpdateDebugStatusElement(message, debugSettings.statusPosition)
+        } else {
+          console.log('🔧 Debug status display is disabled')
         }
       } else {
         console.log(`[Debug Fallback] ${message}`)
       }
     } catch (error) {
+      console.error('🚫 showDebugStatus error:', error)
       console.log(`[Debug Fallback] ${message}`)
     }
   }
@@ -1039,20 +1055,37 @@ class CleanGestureManager {
    * デバッグステータス表示要素の作成/更新
    */
   createOrUpdateDebugStatusElement(message, position = 'top-right') {
+    console.log('🔧 createOrUpdateDebugStatusElement called:', { message, position })
+    
     const statusId = 'mouse-gesture-debug-status'
     let statusElement = document.getElementById(statusId)
     
     // 要素が存在しない場合は作成
     if (!statusElement) {
+      console.log('🔧 Creating new debug status element')
       statusElement = document.createElement('div')
       statusElement.id = statusId
       statusElement.style.cssText = this.getDebugStatusStyles(position)
-      document.body.appendChild(statusElement)
+      
+      if (document.body) {
+        document.body.appendChild(statusElement)
+        console.log('🔧 Debug status element appended to body')
+      } else {
+        console.error('🚫 document.body is not available')
+        return
+      }
+    } else {
+      console.log('🔧 Using existing debug status element')
     }
     
     // メッセージを更新
     statusElement.textContent = message
     statusElement.style.display = 'block'
+    console.log('🔧 Debug status element updated:', {
+      textContent: statusElement.textContent,
+      display: statusElement.style.display,
+      position: position
+    })
     
     // 位置を更新（設定が変更された場合）
     this.updateDebugStatusPosition(statusElement, position)
@@ -1062,6 +1095,7 @@ class CleanGestureManager {
     this.debugStatusTimeout = setTimeout(() => {
       if (statusElement) {
         statusElement.style.display = 'none'
+        console.log('🔧 Debug status element hidden after 3 seconds')
       }
     }, 3000)
   }
