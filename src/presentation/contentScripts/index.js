@@ -134,6 +134,18 @@ class CleanGestureManager {
         gestureController: Boolean(this.gestureController)
       })
       
+      // window上のコンポーネント存在確認（デバッグ用）
+      console.log('Window components availability:', {
+        'window.SettingsUseCase': typeof window.SettingsUseCase,
+        'window.CustomGestureUseCase': typeof window.CustomGestureUseCase,
+        'window.GestureLearningUseCase': typeof window.GestureLearningUseCase,
+        'window.DebugSettingsUseCase': typeof window.DebugSettingsUseCase,
+        'window.SimpleGestureRecognizer': typeof window.SimpleGestureRecognizer,
+        'window.CanvasRendererAdapter': typeof window.CanvasRendererAdapter,
+        'window.SimpleMessagingAdapter': typeof window.SimpleMessagingAdapter,
+        'window.GestureManager': typeof window.GestureManager
+      })
+      
     } catch (error) {
       console.warn('Clean Architecture initialization failed, using fallback:', error)
     }

@@ -333,3 +333,10 @@ if (typeof module !== 'undefined' && module.exports) {
     GestureRecognitionError 
   }
 }
+
+// グローバル定義（ブラウザ環境用）
+if (typeof window !== 'undefined') {
+  window.GestureRecognitionUseCase = GestureRecognitionUseCase
+  window.GestureRecognitionResult = GestureRecognitionResult
+  window.GestureRecognitionError = GestureRecognitionError
+}

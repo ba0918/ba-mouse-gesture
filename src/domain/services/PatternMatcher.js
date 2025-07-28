@@ -410,3 +410,10 @@ class BestMatchResult {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { PatternMatcher, MatchResult, BestMatchResult }
 }
+
+// グローバル定義（ブラウザ環境用）
+if (typeof window !== 'undefined') {
+  window.PatternMatcher = PatternMatcher
+  window.MatchResult = MatchResult
+  window.BestMatchResult = BestMatchResult
+}

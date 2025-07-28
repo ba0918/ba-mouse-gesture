@@ -235,3 +235,8 @@ class GestureListUseCase {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { GestureListUseCase }
 }
+
+// グローバル定義（ブラウザ環境用）
+if (typeof window !== 'undefined') {
+  window.GestureListUseCase = GestureListUseCase
+}
