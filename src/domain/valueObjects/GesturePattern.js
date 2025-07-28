@@ -391,7 +391,7 @@ class GesturePattern {
     
     // 配列の検証を強化
     try {
-      console.log('GesturePattern.fromArray: Processing array:', directions)
+      // console.log('GesturePattern.fromArray: Processing array:', directions) // 冗長ログを無効化
       
       // 空配列チェック
       if (directions.length === 0) {
@@ -414,7 +414,7 @@ class GesturePattern {
         return new GesturePattern([])
       }
       
-      console.log('GesturePattern.fromArray: Filtered directions:', filteredDirections)
+      // console.log('GesturePattern.fromArray: Filtered directions:', filteredDirections) // 冗長ログを無効化
       return new GesturePattern(filteredDirections)
       
     } catch (error) {

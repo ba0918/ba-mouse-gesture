@@ -112,12 +112,33 @@ class Gesture {
    * @returns {boolean}
    */
   isValid() {
+    const hasId = Boolean(this.id)
+    const hasName = Boolean(this.name)
+    const hasPattern = Boolean(this.pattern)
+    const hasAction = Boolean(this.action)
+    const patternIsValid = this.pattern ? this.pattern.isValid() : false
+    
+    console.log('🔍 Gesture.isValid() - Base validation:', {
+      id: this.id,
+      name: this.name,
+      pattern: this.pattern,
+      action: this.action,
+      hasId: hasId,
+      hasName: hasName,
+      hasPattern: hasPattern,
+      hasAction: hasAction,
+      patternIsValid: patternIsValid,
+      patternType: typeof this.pattern,
+      patternGetLength: this.pattern && typeof this.pattern.getLength === 'function' ? this.pattern.getLength() : 'no getLength method',
+      patternToString: this.pattern && typeof this.pattern.toString === 'function' ? this.pattern.toString() : 'no toString method'
+    })
+    
     return Boolean(
-      this.id && 
-      this.name && 
-      this.pattern && 
-      this.action &&
-      this.pattern.isValid()
+      hasId && 
+      hasName && 
+      hasPattern && 
+      hasAction &&
+      patternIsValid
     )
   }
 

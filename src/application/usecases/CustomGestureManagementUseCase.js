@@ -103,7 +103,7 @@ class CustomGestureManagementUseCase {
 
       // カスタムジェスチャーエンティティを作成
       const gestureId = this.generateGestureId(name)
-      const customGesture = new CustomGesture(gestureId, name, pattern, action, true, description)
+      const customGesture = new CustomGesture(gestureId, name, pattern, action, true, 1) // enabled=true, priority=1
 
       // 保存
       await this.gestureRepository.addCustomGesture(customGesture)
@@ -183,7 +183,9 @@ class CustomGestureManagementUseCase {
 
       // カスタムジェスチャーエンティティを作成
       const gestureId = this.generateGestureId(name)
-      const customGesture = new CustomGesture(gestureId, name, gesturePattern, action, true, description)
+      const customGesture = new CustomGesture(gestureId, name, gesturePattern, action, true, 1) // enabled=true, priority=1
+      
+      // descriptionは使用しないか、別途設定する場合は後で追加
 
       // デバッグ: 作成されたCustomGestureオブジェクトの詳細確認
       console.log('🔍 CustomGesture created:', {
