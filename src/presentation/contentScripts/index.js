@@ -608,7 +608,7 @@ class CleanGestureManager {
       }
       
     } catch (error) {
-      console.error('Domain Service recognition failed, using fallback:', error)
+      console.warn('Domain Service recognition failed, using fallback:', error)
     }
     
     // フォールバック: 従来のロジック
@@ -791,23 +791,28 @@ class CleanGestureManager {
    * backgroundスクリプトにジェスチャーメッセージを送信 - Clean Architecture対応
    */
   async sendGestureMessage(gestureType) {
-    try {
-      // Clean Architecture - Messaging Adapter経由でメッセージ送信
-      const message = this.isSimpleGesture(gestureType) 
-        ? { type: 'simpleGesture', direction: gestureType }
-        : { type: 'complexGesture', gestureType: gestureType }
-      
-      const response = await this.messagingAdapter.sendMessage(message)
-      
-      // デバッグ情報の表示
-      if (await this.debugUseCase.isDebugEnabled()) {
-        this.showDebugStatus(`✅ Action: ${response?.action || 'Success'}`)
+    // Clean Architecture Adapter が利用可能な場合のみ使用
+    if (this.messagingAdapter) {
+      try {
+        const message = this.isSimpleGesture(gestureType) 
+          ? { type: 'simpleGesture', direction: gestureType }
+          : { type: 'complexGesture', gestureType: gestureType }
+        
+        const response = await this.messagingAdapter.sendMessage(message)
+        
+        // デバッグ情報の表示
+        if (await this.debugUseCase.isDebugEnabled()) {
+          this.showDebugStatus(`✅ Action: ${response?.action || 'Success'}`)
+        }
+        
+        return response
+        
+      } catch (error) {
+        console.warn('Messaging adapter failed, using fallback:', error)
+        return this.sendGestureMessageFallback(gestureType)
       }
-      
-      return response
-      
-    } catch (error) {
-      console.error('Messaging adapter failed, using fallback:', error)
+    } else {
+      // Clean Architecture 初期化未完了の場合は直接フォールバック使用
       return this.sendGestureMessageFallback(gestureType)
     }
   }
