@@ -150,6 +150,18 @@ class CleanGestureManager {
             const debugEnabled = data.appSettings?.debugSettings?.enabled || false
             return debugEnabled
           }
+          
+          // フォールバック: Chrome Storage APIを直接使用
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+            return new Promise((resolve) => {
+              chrome.storage.sync.get(['appSettings'], (result) => {
+                const debugEnabled = result.appSettings?.debugSettings?.enabled || false
+                console.log('🔧 [Debug] Direct storage debug enabled:', debugEnabled)
+                resolve(debugEnabled)
+              })
+            })
+          }
+          
           return false
         } catch (error) {
           console.error('Debug enabled check failed:', error)
@@ -192,8 +204,45 @@ class CleanGestureManager {
             return debugSettings
           }
           
-          // フォールバック実装
-          console.warn('🔧 [Debug] ChromeStorageAdapter not available, using fallback')
+          // フォールバック実装: Chrome Storage APIを直接使用
+          console.log('🔧 [Debug] ChromeStorageAdapter not available, using direct chrome.storage')
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+            return new Promise((resolve) => {
+              chrome.storage.sync.get(['appSettings'], (result) => {
+                console.log('🔧 [Debug] Direct chrome.storage result:', JSON.stringify(result, null, 2))
+                
+                const debugSettings = result.appSettings?.debugSettings || {
+                  enabled: false,
+                  logLevel: 2,
+                  showStatus: false,
+                  statusPosition: 'top-right'
+                }
+                
+                // shouldShowStatus メソッドを追加
+                debugSettings.shouldShowStatus = function () {
+                  const result = this.enabled && this.showStatus
+                  console.log('🔧 [Debug] Direct storage shouldShowStatus calculation:', {
+                    enabled: this.enabled,
+                    showStatus: this.showStatus,
+                    result: result
+                  })
+                  return result
+                }
+                
+                console.log('🔧 [Debug] Direct storage debug settings:', JSON.stringify({
+                  enabled: debugSettings.enabled,
+                  showStatus: debugSettings.showStatus,
+                  logLevel: debugSettings.logLevel,
+                  statusPosition: debugSettings.statusPosition
+                }, null, 2))
+                
+                resolve(debugSettings)
+              })
+            })
+          }
+          
+          // 最終フォールバック
+          console.warn('🔧 [Debug] Chrome storage not available, using fallback defaults')
           return {
             enabled: false,
             logLevel: 2,
