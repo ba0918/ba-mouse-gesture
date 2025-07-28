@@ -147,16 +147,8 @@ class CleanGestureManager {
     return {
       async isDebugEnabled() {
         try {
-          // 詳細デバッグ情報
-          console.log('🔧 [Debug] isDebugEnabled check:', {
-            windowChromeStorageAdapter: typeof window.ChromeStorageAdapter,
-            windowKeys: Object.keys(window).filter(k => k.includes('Chrome')),
-            chromeStorage: typeof chrome?.storage
-          })
-          
           // Infrastructure層のChromeStorageAdapterを使用
           if (window.ChromeStorageAdapter) {
-            console.log('🔧 [Debug] Using window.ChromeStorageAdapter')
             const storageAdapter = new window.ChromeStorageAdapter()
             const data = await storageAdapter.get(['appSettings'])
             const debugEnabled = data.appSettings?.debugSettings?.enabled || false
@@ -164,12 +156,10 @@ class CleanGestureManager {
           }
           
           // フォールバック: Chrome Storage APIを直接使用
-          console.log('🔧 [Debug] window.ChromeStorageAdapter not available, using direct chrome.storage')
           if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
             return new Promise((resolve) => {
               chrome.storage.sync.get(['appSettings'], (result) => {
                 const debugEnabled = result.appSettings?.debugSettings?.enabled || false
-                console.log('🔧 [Debug] Direct storage debug enabled:', debugEnabled)
                 resolve(debugEnabled)
               })
             })
@@ -184,23 +174,10 @@ class CleanGestureManager {
 
       async getDebugSettings() {
         try {
-          // 詳細デバッグ情報
-          console.log('🔧 [Debug] getDebugSettings check:', {
-            windowChromeStorageAdapter: typeof window.ChromeStorageAdapter,
-            windowKeys: Object.keys(window).filter(k => k.includes('Chrome')),
-            chromeStorage: typeof chrome?.storage
-          })
-          
           // Infrastructure層のChromeStorageAdapterを使用
           if (window.ChromeStorageAdapter) {
-            console.log('🔧 [Debug] Using window.ChromeStorageAdapter for getDebugSettings')
             const storageAdapter = new window.ChromeStorageAdapter()
             const data = await storageAdapter.get(['appSettings'])
-            
-            // 詳細なデバッグログ
-            console.log('🔧 [Debug] Raw storage data:', JSON.stringify(data, null, 2))
-            console.log('🔧 [Debug] appSettings:', JSON.stringify(data.appSettings, null, 2))
-            console.log('🔧 [Debug] appSettings.debugSettings:', JSON.stringify(data.appSettings?.debugSettings, null, 2))
             
             const debugSettings = data.appSettings?.debugSettings || {
               enabled: false,
@@ -212,26 +189,16 @@ class CleanGestureManager {
             // shouldShowStatus メソッドを追加
             debugSettings.shouldShowStatus = function () {
               const result = this.enabled && this.showStatus
-              console.log('🔧 [Debug] shouldShowStatus calculation:', {
-                enabled: this.enabled,
-                showStatus: this.showStatus,
-                result: result
-              })
               return result
             }
-            
-            console.log('🔧 [Debug] Final debug settings:', JSON.stringify(debugSettings, null, 2))
             
             return debugSettings
           }
           
           // フォールバック実装: Chrome Storage APIを直接使用
-          console.log('🔧 [Debug] ChromeStorageAdapter not available, using direct chrome.storage')
           if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
             return new Promise((resolve) => {
               chrome.storage.sync.get(['appSettings'], (result) => {
-                console.log('🔧 [Debug] Direct chrome.storage result:', JSON.stringify(result, null, 2))
-                
                 const debugSettings = result.appSettings?.debugSettings || {
                   enabled: false,
                   logLevel: 2,
@@ -241,21 +208,8 @@ class CleanGestureManager {
                 
                 // shouldShowStatus メソッドを追加
                 debugSettings.shouldShowStatus = function () {
-                  const result = this.enabled && this.showStatus
-                  console.log('🔧 [Debug] Direct storage shouldShowStatus calculation:', {
-                    enabled: this.enabled,
-                    showStatus: this.showStatus,
-                    result: result
-                  })
-                  return result
+                  return this.enabled && this.showStatus
                 }
-                
-                console.log('🔧 [Debug] Direct storage debug settings:', JSON.stringify({
-                  enabled: debugSettings.enabled,
-                  showStatus: debugSettings.showStatus,
-                  logLevel: debugSettings.logLevel,
-                  statusPosition: debugSettings.statusPosition
-                }, null, 2))
                 
                 resolve(debugSettings)
               })
@@ -263,28 +217,21 @@ class CleanGestureManager {
           }
           
           // 最終フォールバック
-          console.warn('🔧 [Debug] Chrome storage not available, using fallback defaults')
           return {
             enabled: false,
             logLevel: 2,
             showStatus: false,
             statusPosition: 'top-right',
-            shouldShowStatus: () => {
-              console.log('🔧 [Debug] Fallback shouldShowStatus called')
-              return false
-            }
+            shouldShowStatus: () => false
           }
         } catch (error) {
-          console.error('🔧 [Debug] Get debug settings failed:', error)
+          console.error('Get debug settings failed:', error)
           return {
             enabled: false,
             logLevel: 2,
             showStatus: false,
             statusPosition: 'top-right',
-            shouldShowStatus: () => {
-              console.log('🔧 [Debug] Error fallback shouldShowStatus called')
-              return false
-            }
+            shouldShowStatus: () => false
           }
         }
       }
