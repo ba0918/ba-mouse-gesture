@@ -469,12 +469,17 @@ class SettingsManagementUseCase {
       
       console.log('✅ SettingsManagementUseCase: Settings saved successfully')
       
-      // バックグラウンドスクリプトに設定変更を通知
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({
-          type: 'SETTINGS_UPDATED',
-          settings: settings
-        })
+      // バックグラウンドスクリプトに設定変更を通知（Infrastructure層経由）
+      if (this.messagingAdapter) {
+        try {
+          await this.messagingAdapter.sendMessage({
+            type: 'SETTINGS_UPDATED',
+            settings: settings
+          }, { expectResponse: false })
+        } catch (error) {
+          // メッセージング失敗は無視（リスナーがない場合は正常）
+          console.log('Settings update notification failed:', error)
+        }
       }
       
       // 更新後の設定を返す
@@ -516,46 +521,40 @@ class SettingsManagementUseCase {
 
   /**
    * Chrome Storage APIの統一インターフェース（旧SettingsUseCaseインターフェース互換）
+   * Repository経由でアクセス（Clean Architecture準拠）
    * @param {Array|string} keys
    * @returns {Promise<Object>}
    */
-  chromeStorageGet(keys) {
-    return new Promise((resolve, reject) => {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        reject(new Error('Chrome storage API is not available'))
-        return
+  async chromeStorageGet(keys) {
+    try {
+      if (this.settingsRepository && this.settingsRepository.storageAdapter) {
+        return await this.settingsRepository.storageAdapter.get(keys)
+      } else {
+        throw new Error('Storage adapter is not available')
       }
-      
-      chrome.storage.sync.get(keys, (result) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError)
-        } else {
-          resolve(result)
-        }
-      })
-    })
+    } catch (error) {
+      console.error('chromeStorageGet failed:', error)
+      throw error
+    }
   }
 
   /**
    * Chrome Storage APIの統一インターフェース（旧SettingsUseCaseインターフェース互換）
+   * Repository経由でアクセス（Clean Architecture準拠）
    * @param {Object} data
    * @returns {Promise<void>}
    */
-  chromeStorageSet(data) {
-    return new Promise((resolve, reject) => {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        reject(new Error('Chrome storage API is not available'))
-        return
+  async chromeStorageSet(data) {
+    try {
+      if (this.settingsRepository && this.settingsRepository.storageAdapter) {
+        return await this.settingsRepository.storageAdapter.set(data)
+      } else {
+        throw new Error('Storage adapter is not available')
       }
-      
-      chrome.storage.sync.set(data, () => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError)
-        } else {
-          resolve()
-        }
-      })
-    })
+    } catch (error) {
+      console.error('chromeStorageSet failed:', error)
+      throw error
+    }
   }
 }
 

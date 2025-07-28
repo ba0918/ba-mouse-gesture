@@ -79,7 +79,7 @@ class ThinOptionsController {
       },
       (gestureId) => this.editCustomGesture(gestureId),
       (message) => this.showConfirm(message),
-      () => this.editingGestureId,
+      () => this.eventController.getEditingGestureIdInternal(),
       () => this.exitEditMode(),
       async () => {
         // 削除時はアクションフィールドのみ保持、他はクリア
@@ -398,80 +398,29 @@ class ThinOptionsController {
   }
 
   /**
-   * 編集モードに入る
+   * 編集モードに入る（EventControllerに委譲）
    * @param {string} gestureId - 編集中のジェスチャーID
    * @private
    */
   enterEditMode(gestureId) {
-    // 編集状態を保存
-    this.editingGestureId = gestureId
-    
-    // ボタンテキスト変更
-    const addButton = document.getElementById('addGestureBtn')
-    if (addButton) {
-      addButton.textContent = '更新'
-      addButton.classList.add('edit-mode')
-    }
-    
-    // キャンセルボタンを表示
-    let cancelButton = document.getElementById('cancelEditBtn')
-    if (!cancelButton) {
-      cancelButton = document.createElement('button')
-      cancelButton.id = 'cancelEditBtn'
-      cancelButton.type = 'button'
-      cancelButton.textContent = '編集をキャンセル'
-      cancelButton.className = 'cancel-btn'
-      
-      if (addButton && addButton.parentNode) {
-        addButton.parentNode.insertBefore(cancelButton, addButton.nextSibling)
-      }
-    }
-    cancelButton.style.display = 'inline-block'
-    
-    // キャンセルボタンのイベント設定
-    cancelButton.onclick = () => this.exitEditMode()
+    this.eventController.enterEditMode(gestureId)
   }
 
   /**
-   * 編集モードを終了
+   * 編集モードを終了（EventControllerに委譲）
    * @private
    */
   exitEditMode() {
-    // 編集状態をクリア
-    this.editingGestureId = null
-    
-    // ボタンテキストを元に戻す
-    const addButton = document.getElementById('addGestureBtn')
-    if (addButton) {
-      addButton.textContent = 'カスタムジェスチャーを追加'
-      addButton.classList.remove('edit-mode')
-    }
-    
-    // キャンセルボタンを非表示
-    const cancelButton = document.getElementById('cancelEditBtn')
-    if (cancelButton) {
-      cancelButton.style.display = 'none'
-    }
-    
-    // フォームをクリア
-    this.updateElement('gestureName', '', 'value')
-    this.updateElement('gestureAction', '', 'value')
-    if (this.eventController) {
-      this.eventController.clearPattern()
-    }
-    
-    this.showStatus('編集をキャンセルしました', 'info')
+    this.eventController.exitEditModeInternal()
   }
 
   /**
-   * HTMLエスケープ
+   * HTMLエスケープ（RenderControllerに委譲）
    * @param {string} text - エスケープ対象文字列
    * @returns {string} エスケープ済み文字列
    */
   escapeHtml(text) {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    return this.renderController.escapeHtml(text)
   }
 
   // ========== 公開API（後方互換性のため） ==========

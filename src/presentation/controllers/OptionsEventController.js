@@ -697,6 +697,81 @@ class OptionsEventController {
     })
     this.getEditingGestureId = getEditingGestureIdCallback
     this.exitEditMode = exitEditModeCallback
+    
+    // 編集モード状態管理
+    this.editingGestureId = null
+  }
+
+  /**
+   * 編集モードに入る
+   * @param {string} gestureId - 編集中のジェスチャーID
+   */
+  enterEditMode(gestureId) {
+    // 編集状態を保存
+    this.editingGestureId = gestureId
+    
+    // ボタンテキスト変更
+    const addButton = document.getElementById('addGestureBtn')
+    if (addButton) {
+      addButton.textContent = '更新'
+      addButton.classList.add('edit-mode')
+    }
+    
+    // キャンセルボタンを表示
+    let cancelButton = document.getElementById('cancelEditBtn')
+    if (!cancelButton) {
+      cancelButton = document.createElement('button')
+      cancelButton.id = 'cancelEditBtn'
+      cancelButton.type = 'button'
+      cancelButton.textContent = '編集をキャンセル'
+      cancelButton.className = 'cancel-btn'
+      
+      if (addButton && addButton.parentNode) {
+        addButton.parentNode.insertBefore(cancelButton, addButton.nextSibling)
+      }
+    }
+    cancelButton.style.display = 'inline-block'
+    
+    // キャンセルボタンのイベント設定
+    cancelButton.onclick = () => this.exitEditModeInternal()
+  }
+
+  /**
+   * 編集モードを終了（内部実装）
+   */
+  exitEditModeInternal() {
+    // 編集状態をクリア
+    this.editingGestureId = null
+    
+    // ボタンテキストを元に戻す
+    const addButton = document.getElementById('addGestureBtn')
+    if (addButton) {
+      addButton.textContent = 'カスタムジェスチャーを追加'
+      addButton.classList.remove('edit-mode')
+    }
+    
+    // キャンセルボタンを非表示
+    const cancelButton = document.getElementById('cancelEditBtn')
+    if (cancelButton) {
+      cancelButton.style.display = 'none'
+    }
+    
+    // フォームをクリア
+    const nameField = document.getElementById('gestureName')
+    const actionField = document.getElementById('gestureAction')
+    if (nameField) nameField.value = ''
+    if (actionField) actionField.value = ''
+    this.clearPattern()
+    
+    this.showStatus('編集をキャンセルしました', 'info')
+  }
+
+  /**
+   * 編集中のジェスチャーIDを取得
+   * @returns {string|null}
+   */
+  getEditingGestureIdInternal() {
+    return this.editingGestureId
   }
 }
 
