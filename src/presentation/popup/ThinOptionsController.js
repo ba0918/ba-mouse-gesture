@@ -172,6 +172,13 @@ class ThinOptionsController {
    * @private
    */
   updateUIFromSettings(settings) {
+    console.log('🔧 [Debug] ThinOptionsController.updateUIFromSettings called with settings:', {
+      fullSettings: settings,
+      debugSettings: settings.debugSettings,
+      debugSettingsLogLevel: settings.debugSettings?.logLevel,
+      debugSettingsLogLevelType: typeof settings.debugSettings?.logLevel
+    })
+    
     // 基本設定
     this.updateElement('enabled', settings.enabled, 'checked')
     this.updateElement('strokeColor', settings.strokeColor, 'value')
@@ -183,8 +190,21 @@ class ThinOptionsController {
     // デバッグ設定
     const debugSettings = settings.debugSettings || {}
     const debugEnabled = debugSettings.enabled || false
+    // logLevelは数値0も有効なので、厳密にundefinedチェック
+    const debugLogLevel = debugSettings.logLevel !== undefined ? debugSettings.logLevel : 2
+    
+    console.log('🔧 [Debug] ThinOptionsController.updateUIFromSettings - Debug settings processing:', {
+      originalDebugSettings: debugSettings,
+      originalLogLevel: debugSettings.logLevel,
+      originalLogLevelType: typeof debugSettings.logLevel,
+      processedDebugLogLevel: debugLogLevel,
+      processedLogLevelType: typeof debugLogLevel,
+      undefinedCheck: debugSettings.logLevel !== undefined,
+      settingsSource: 'getCurrentSettings'
+    })
+    
     this.updateElement('debugEnabled', debugEnabled, 'checked')
-    this.updateElement('debugLogLevel', debugSettings.logLevel || 2, 'value')
+    this.updateElement('debugLogLevel', debugLogLevel, 'value')
     this.updateElement('debugShowStatus', debugSettings.showStatus || false, 'checked')
     this.updateElement('debugStatusPosition', debugSettings.statusPosition || 'top-right', 'value')
     
@@ -234,11 +254,36 @@ class ThinOptionsController {
   updateElement(elementId, value, property = 'textContent') {
     const element = document.getElementById(elementId)
     if (element) {
+      if (elementId === 'debugLogLevel') {
+        console.log('🔧 [Debug] ThinOptionsController.updateElement for debugLogLevel:', {
+          elementId: elementId,
+          value: value,
+          valueType: typeof value,
+          property: property,
+          elementCurrentValue: element[property],
+          elementType: element.tagName,
+          isSelectElement: element.tagName === 'SELECT'
+        })
+      }
+      
       if (property === 'checked') {
         element.checked = value
+      } else if (element.tagName === 'SELECT' && property === 'value') {
+        // SELECT要素の場合は明示的に文字列変換
+        element[property] = String(value)
       } else {
         element[property] = value
       }
+      
+      if (elementId === 'debugLogLevel') {
+        console.log('🔧 [Debug] ThinOptionsController.updateElement after update:', {
+          elementFinalValue: element[property],
+          elementFinalValueType: typeof element[property],
+          stringConversion: String(value)
+        })
+      }
+    } else if (elementId === 'debugLogLevel') {
+      console.warn('🔧 [Debug] ThinOptionsController.updateElement - element not found:', elementId)
     }
   }
 

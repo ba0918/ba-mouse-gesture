@@ -332,7 +332,6 @@ class GesturePattern {
       // 文字列の場合は分割を試みる
       if (typeof directions === 'string') {
         try {
-          console.log('GesturePattern.fromArray: Parsing string directions:', directions)
           
           let parsed = []
           
@@ -370,7 +369,6 @@ class GesturePattern {
             }
           }
           
-          console.log('GesturePattern.fromArray: Parsed directions:', parsed)
           
           // 解析結果が空でないことを確認
           if (parsed.length === 0) {
@@ -391,7 +389,6 @@ class GesturePattern {
     
     // 配列の検証を強化
     try {
-      // console.log('GesturePattern.fromArray: Processing array:', directions) // 冗長ログを無効化
       
       // 空配列チェック
       if (directions.length === 0) {
@@ -414,7 +411,6 @@ class GesturePattern {
         return new GesturePattern([])
       }
       
-      // console.log('GesturePattern.fromArray: Filtered directions:', filteredDirections) // 冗長ログを無効化
       return new GesturePattern(filteredDirections)
       
     } catch (error) {

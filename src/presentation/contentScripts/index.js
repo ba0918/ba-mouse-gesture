@@ -18,6 +18,7 @@ import { GestureManager } from '../../presentation/controllers/GestureManager.js
 import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js'
 import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js'
 import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter.js'
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger.js'
 import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity.js'
 
 // グローバルに公開（後方互換性のため）
@@ -40,6 +41,9 @@ if (typeof window !== 'undefined') {
   window.SettingsRepository = SettingsRepository
   window.GestureRepository = GestureRepository
   
+  // DebugLogger公開
+  window.DebugLogger = DebugLogger
+  
   // Debug関連のAdapterも公開
   window.DebugStorageAdapter = DebugStorageAdapter
   window.DebugSettingsEntity = DebugSettingsEntity
@@ -58,6 +62,7 @@ class CleanGestureManager {
     this.customGestureUseCase = null
     this.learningUseCase = null
     this.debugUseCase = null
+    this.logger = null // DebugLogger (デバッグ設定読み込み後に初期化)
     
     // Clean Architecture - Domain Services
     this.gestureRecognizer = null
@@ -175,28 +180,6 @@ class CleanGestureManager {
         }
       }
       
-      console.log('Clean Architecture components initialized:', {
-        settingsUseCase: Boolean(this.settingsUseCase),
-        customGestureUseCase: Boolean(this.customGestureUseCase),
-        learningUseCase: Boolean(this.learningUseCase),
-        debugUseCase: Boolean(this.debugUseCase),
-        gestureRecognizer: Boolean(this.gestureRecognizer),
-        canvasRenderer: Boolean(this.canvasRenderer),
-        messagingAdapter: Boolean(this.messagingAdapter),
-        gestureController: Boolean(this.gestureController)
-      })
-      
-      // window上のコンポーネント存在確認（デバッグ用）
-      console.log('Window components availability:', {
-        'window.SettingsUseCase': typeof window.SettingsUseCase,
-        'window.CustomGestureUseCase': typeof window.CustomGestureUseCase,
-        'window.GestureLearningUseCase': typeof window.GestureLearningUseCase,
-        'window.DebugSettingsUseCase': typeof window.DebugSettingsUseCase,
-        'window.SimpleGestureRecognizer': typeof window.SimpleGestureRecognizer,
-        'window.CanvasRendererAdapter': typeof window.CanvasRendererAdapter,
-        'window.SimpleMessagingAdapter': typeof window.SimpleMessagingAdapter,
-        'window.GestureManager': typeof window.GestureManager
-      })
       
     } catch (error) {
       console.warn('Clean Architecture initialization failed, using fallback:', error)
@@ -325,9 +308,13 @@ class CleanGestureManager {
         
         console.log('Settings loaded via UseCase:', this.settings)
         
+        // DebugLoggerを初期化
+        const debugSettings = await this.debugUseCase.getDebugSettings()
+        this.logger = new window.DebugLogger(debugSettings)
+        
         // デバッグ情報の表示
         if (await this.debugUseCase.isDebugEnabled()) {
-          console.log('🐛 Debug mode enabled')
+          this.logger.debug('Debug mode enabled')
           this.showDebugStatus('設定を読み込みました')
         }
         
@@ -982,22 +969,43 @@ class CleanGestureManager {
       // chrome.storage.onChangedを監視
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.onChanged.addListener(async (changes, namespace) => {
-          // Clean Architecture 対応: appSettings と settings 両方を監視
-          if (namespace === 'sync' && (changes.appSettings || changes.settings)) {
-            console.log('Settings changed, reloading via UseCase...')
-            
-            // UseCase経由で最新設定を取得
-            await this.loadSettings()
-            
-            // 除外サイト/無効化チェック
-            if (!this.settings.enabled || this.isExcludedSite()) {
-              this.clearCanvas()
-              if (await this.debugUseCase.isDebugEnabled()) {
-                this.showDebugStatus('マウスジェスチャーが無効になりました')
+          if (namespace === 'sync') {
+            // Clean Architecture 対応: appSettings と settings 両方を監視
+            if (changes.appSettings || changes.settings) {
+              console.log('Settings changed, reloading via UseCase...')
+              
+              // UseCase経由で最新設定を取得
+              await this.loadSettings()
+              
+              // 除外サイト/無効化チェック
+              if (!this.settings.enabled || this.isExcludedSite()) {
+                this.clearCanvas()
+                if (await this.debugUseCase.isDebugEnabled()) {
+                  this.showDebugStatus('マウスジェスチャーが無効になりました')
+                }
+              } else {
+                if (await this.debugUseCase.isDebugEnabled()) {
+                  this.showDebugStatus('マウスジェスチャーが有効になりました')
+                }
               }
-            } else {
-              if (await this.debugUseCase.isDebugEnabled()) {
-                this.showDebugStatus('マウスジェスチャーが有効になりました')
+            }
+            
+            // デバッグ設定の変更を監視
+            if (changes.debugSettings) {
+              console.log('🔧 Debug settings changed, updating debug state...')
+              const newDebugSettings = changes.debugSettings.newValue
+              
+              if (newDebugSettings) {
+                console.log('🔧 New debug settings:', newDebugSettings)
+                
+                // デバッグが無効になった場合、デバッグメッセージを非表示
+                if (!newDebugSettings.enabled) {
+                  console.log('🔧 Debug mode disabled, hiding debug status')
+                  this.hideDebugStatus()
+                } else {
+                  console.log('🔧 Debug mode enabled')
+                  this.showDebugStatus('デバッグモードが有効になりました')
+                }
               }
             }
             
@@ -1137,21 +1145,32 @@ class CleanGestureManager {
       if (this.debugUseCase) {
         const debugSettings = await this.debugUseCase.getDebugSettings()
         
-        // デバッグ情報を詳細ログ出力
-        console.log(`🐛 [Debug] ${message}`)
-        console.log('🔧 Debug Settings:', {
-          enabled: debugSettings.enabled,
-          showStatus: debugSettings.showStatus,
-          shouldShowStatus: debugSettings.shouldShowStatus(),
-          statusPosition: debugSettings.statusPosition
-        })
+        // デバッグが無効な場合は何も表示しない
+        if (!debugSettings.enabled) {
+          return
+        }
+        
+        // ログレベルに応じてデバッグ情報を出力
+        if (this.logger) {
+          this.logger.debug(message)
+          this.logger.info('Debug Settings:', {
+            enabled: debugSettings.enabled,
+            showStatus: debugSettings.showStatus,
+            shouldShowStatus: debugSettings.shouldShowStatus(),
+            statusPosition: debugSettings.statusPosition
+          })
+        }
         
         // 画面上への表示
         if (debugSettings.shouldShowStatus()) {
-          console.log('🔧 Creating debug status element...')
+          if (this.logger) {
+            this.logger.info('Creating debug status element...')
+          }
           this.createOrUpdateDebugStatusElement(message, debugSettings.statusPosition)
         } else {
-          console.log('🔧 Debug status display is disabled')
+          if (this.logger) {
+            this.logger.info('Debug status display is disabled')
+          }
         }
       } else {
         console.log(`[Debug Fallback] ${message}`)
@@ -1159,6 +1178,29 @@ class CleanGestureManager {
     } catch (error) {
       console.error('🚫 showDebugStatus error:', error)
       console.log(`[Debug Fallback] ${message}`)
+    }
+  }
+
+  /**
+   * デバッグステータス表示を隠す
+   */
+  hideDebugStatus() {
+    try {
+      const existingElement = document.getElementById('debug-status-element')
+      if (existingElement) {
+        console.log('🔧 Hiding debug status element')
+        existingElement.style.display = 'none'
+        
+        // 少し待ってから要素を削除
+        setTimeout(() => {
+          if (existingElement.parentNode) {
+            existingElement.parentNode.removeChild(existingElement)
+            console.log('🔧 Debug status element removed')
+          }
+        }, 500)
+      }
+    } catch (error) {
+      console.error('🚫 hideDebugStatus error:', error)
     }
   }
 

@@ -158,16 +158,28 @@ class SettingsManagementUseCase {
    */
   async updateDebugSettings(debugConfig) {
     try {
+      console.log('🔧 [Debug] SettingsManagementUseCase.updateDebugSettings called:', {
+        debugConfig: debugConfig,
+        logLevel: debugConfig.logLevel,
+        logLevelType: typeof debugConfig.logLevel
+      })
+      
       // デバッグ設定の検証
       this.validateDebugSettings(debugConfig)
       
       const result = await this.settingsRepository.updateDebugSettings(debugConfig)
+      
+      console.log('🔧 [Debug] SettingsRepository.updateDebugSettings result:', {
+        resultDebugSettings: result.debugSettings,
+        logLevel: result.debugSettings?.logLevel
+      })
       
       // 設定変更通知
       await this.notifySettingsChange('debug_settings_updated', debugConfig)
       
       return result
     } catch (error) {
+      console.error('❌ SettingsManagementUseCase.updateDebugSettings error:', error)
       throw new SettingsManagementError('Failed to update debug settings', error)
     }
   }
@@ -414,7 +426,17 @@ class SettingsManagementUseCase {
   async getSettings() {
     try {
       const settings = await this.getCurrentSettings()
-      return settings.toJSON()
+      const settingsJSON = settings.toJSON()
+      
+      console.log('🔧 [Debug] SettingsManagementUseCase.getSettings result:', {
+        settingsEntity: settings,
+        settingsJSON: settingsJSON,
+        debugSettings: settingsJSON.debugSettings,
+        debugLogLevel: settingsJSON.debugSettings?.logLevel,
+        debugLogLevelType: typeof settingsJSON.debugSettings?.logLevel
+      })
+      
+      return settingsJSON
     } catch (error) {
       console.error('❌ SettingsManagementUseCase: Failed to load settings:', error)
       return this.getDefaultSettings()

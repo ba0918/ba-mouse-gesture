@@ -40,13 +40,37 @@ class Settings {
     }
     
     // デバッグ設定
+    const incomingDebugSettings = config.debugSettings || {}
+    console.log('🔧 [Debug] Settings constructor - incoming debugSettings:', {
+      incomingDebugSettings: incomingDebugSettings,
+      incomingLogLevel: incomingDebugSettings.logLevel,
+      incomingLogLevelType: typeof incomingDebugSettings.logLevel
+    })
+    
+    // logLevelの数値型保証処理
+    const processedLogLevel = incomingDebugSettings.logLevel !== undefined 
+      ? (typeof incomingDebugSettings.logLevel === 'string' ? parseInt(incomingDebugSettings.logLevel, 10) : incomingDebugSettings.logLevel)
+      : 2
+      
+    // 数値型logLevelを保証したincoming設定
+    const processedIncomingDebugSettings = {
+      ...incomingDebugSettings,
+      logLevel: processedLogLevel
+    }
+      
     this.debugSettings = {
       enabled: false,
-      logLevel: 2, // INFO
+      logLevel: 2, // INFO（デフォルト）
       showStatus: false,
       statusPosition: 'top-right',
-      ...config.debugSettings
+      ...processedIncomingDebugSettings
     }
+    
+    console.log('🔧 [Debug] Settings constructor - final debugSettings:', {
+      finalDebugSettings: this.debugSettings,
+      finalLogLevel: this.debugSettings.logLevel,
+      finalLogLevelType: typeof this.debugSettings.logLevel
+    })
     
     // メタデータ
     this.version = '1.0.0'
@@ -205,7 +229,20 @@ class Settings {
    * @param {Object} debugConfig
    */
   setDebugSettings(debugConfig) {
+    console.log('🔧 [Debug] Settings.setDebugSettings called:', {
+      incoming: debugConfig,
+      incomingLogLevel: debugConfig.logLevel,
+      currentDebugSettings: this.debugSettings,
+      currentLogLevel: this.debugSettings.logLevel
+    })
+    
     this.debugSettings = { ...this.debugSettings, ...debugConfig }
+    
+    console.log('🔧 [Debug] Settings.setDebugSettings after merge:', {
+      finalDebugSettings: this.debugSettings,
+      finalLogLevel: this.debugSettings.logLevel
+    })
+    
     this.updateModified()
   }
 
@@ -236,7 +273,27 @@ class Settings {
            this.isValidWidth(this.strokeWidth) &&
            this.gestureThreshold >= 5 &&
            this.gestureThreshold <= 100 &&
-           Array.isArray(this.excludeList)
+           Array.isArray(this.excludeList) &&
+           this.isValidDebugSettings()
+  }
+
+  /**
+   * デバッグ設定の妥当性をチェック
+   * @returns {boolean}
+   */
+  isValidDebugSettings() {
+    if (!this.debugSettings || typeof this.debugSettings !== 'object') {
+      return false
+    }
+    
+    const { enabled, logLevel, showStatus, statusPosition } = this.debugSettings
+    
+    return typeof enabled === 'boolean' &&
+           typeof logLevel === 'number' &&
+           logLevel >= 0 && logLevel <= 3 &&
+           typeof showStatus === 'boolean' &&
+           typeof statusPosition === 'string' &&
+           ['top-right', 'top-left', 'bottom-right', 'bottom-left'].includes(statusPosition)
   }
 
   /**

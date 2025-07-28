@@ -9,7 +9,7 @@
  */
 class DebugStorageAdapter {
   constructor() {
-    this.STORAGE_KEY = 'debugSettings'
+    this.STORAGE_KEY = 'appSettings'
     this.defaultSettings = {
       enabled: false,
       logLevel: 2,
@@ -27,13 +27,13 @@ class DebugStorageAdapter {
    */
   async loadSettings() {
     try {
-      // 🎯 修正：sync storageのみ使用
-      const result = await this.chromeStorageGet(['debugSettings'])
+      // 🎯 修正：appSettings.debugSettingsパスから読み込み
+      const result = await this.chromeStorageGet(['appSettings'])
       
-      if (result.debugSettings) {
+      if (result.appSettings && result.appSettings.debugSettings) {
         return {
           ...this.defaultSettings,
-          ...result.debugSettings
+          ...result.appSettings.debugSettings
         }
       }
       
@@ -59,9 +59,17 @@ class DebugStorageAdapter {
       
       console.log('🔧 DebugStorageAdapter: Saving settings to sync storage:', settingsToSave)
       
-      // 🎯 修正：sync storageのみ使用（local storageは完全廃止）
+      // 🎯 修正：既存のappSettingsを取得してdebugSettings部分のみ更新
+      const result = await this.chromeStorageGet(['appSettings'])
+      const currentAppSettings = result.appSettings || {}
+      
+      const updatedAppSettings = {
+        ...currentAppSettings,
+        debugSettings: settingsToSave
+      }
+      
       await this.chromeStorageSet({ 
-        [this.STORAGE_KEY]: settingsToSave 
+        [this.STORAGE_KEY]: updatedAppSettings 
       })
       
       console.log('✅ DebugStorageAdapter: Settings saved successfully')
@@ -88,22 +96,28 @@ class DebugStorageAdapter {
       // 統一されたchange listenerを設定
       chrome.storage.onChanged.addListener((changes, namespace) => {
         if (namespace === 'sync' && changes[this.STORAGE_KEY]) {
-          const newSettings = changes[this.STORAGE_KEY].newValue
-          const oldSettings = changes[this.STORAGE_KEY].oldValue
+          const newAppSettings = changes[this.STORAGE_KEY].newValue
+          const oldAppSettings = changes[this.STORAGE_KEY].oldValue
           
-          console.log('🔧 DebugStorageAdapter: Settings changed:', {
-            old: oldSettings,
-            new: newSettings
-          })
+          const newSettings = newAppSettings?.debugSettings
+          const oldSettings = oldAppSettings?.debugSettings
           
-          // 全ての登録されたコールバックを実行
-          this.changeListeners.forEach(listener => {
-            try {
-              listener(newSettings, oldSettings)
-            } catch (error) {
-              console.error('❌ DebugStorageAdapter: Listener callback failed:', error)
-            }
-          })
+          // debugSettings部分に変更があった場合のみコールバックを実行
+          if (newSettings !== oldSettings) {
+            console.log('🔧 DebugStorageAdapter: Settings changed:', {
+              old: oldSettings,
+              new: newSettings
+            })
+            
+            // 全ての登録されたコールバックを実行
+            this.changeListeners.forEach(listener => {
+              try {
+                listener(newSettings, oldSettings)
+              } catch (error) {
+                console.error('❌ DebugStorageAdapter: Listener callback failed:', error)
+              }
+            })
+          }
         }
       })
     }
@@ -131,7 +145,7 @@ class DebugStorageAdapter {
       
       return {
         storageType: 'sync-only',
-        settings: syncSettings[this.STORAGE_KEY] || null,
+        settings: syncSettings[this.STORAGE_KEY]?.debugSettings || null,
         listenerCount: this.changeListeners.size,
         timestamp: new Date().toISOString()
       }
@@ -179,56 +193,6 @@ class DebugStorageAdapter {
     })
   }
 
-  /**
-   * 旧形式からの移行（互換性維持）
-   * local storageのデータを検出して警告を出す
-   */
-  async checkLegacyData() {
-    try {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        return { hasLegacyData: false }
-      }
-      
-      // local storageに古いデータがあるかチェック
-      const localResult = await new Promise((resolve) => {
-        chrome.storage.local.get([this.STORAGE_KEY], resolve)
-      })
-      
-      if (localResult[this.STORAGE_KEY]) {
-        console.warn('⚠️ DebugStorageAdapter: Legacy local storage data detected:', localResult[this.STORAGE_KEY])
-        return {
-          hasLegacyData: true,
-          legacyData: localResult[this.STORAGE_KEY]
-        }
-      }
-      
-      return { hasLegacyData: false }
-      
-    } catch (error) {
-      console.error('❌ DebugStorageAdapter: Failed to check legacy data:', error)
-      return { hasLegacyData: false }
-    }
-  }
-
-  /**
-   * 旧形式データの削除（クリーンアップ）
-   */
-  async cleanupLegacyData() {
-    try {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        return
-      }
-      
-      await new Promise((resolve) => {
-        chrome.storage.local.remove([this.STORAGE_KEY], resolve)
-      })
-      
-      console.log('✅ DebugStorageAdapter: Legacy data cleaned up')
-      
-    } catch (error) {
-      console.error('❌ DebugStorageAdapter: Failed to cleanup legacy data:', error)
-    }
-  }
 }
 
 // モジュールとして使用可能にする

@@ -252,7 +252,24 @@ class SettingsRepository {
     if (!Settings) {
       ({ Settings } = require('../../domain/entities/Settings'))
     }
-    return Settings.fromJSON(data)
+    
+    console.log('🔧 [Debug] SettingsRepository.deserializeSettings called with:', {
+      rawData: data,
+      debugSettings: data?.debugSettings,
+      debugLogLevel: data?.debugSettings?.logLevel,
+      debugLogLevelType: typeof data?.debugSettings?.logLevel
+    })
+    
+    const settings = Settings.fromJSON(data)
+    
+    console.log('🔧 [Debug] SettingsRepository.deserializeSettings result:', {
+      settingsEntity: settings,
+      debugSettings: settings.debugSettings,
+      debugLogLevel: settings.debugSettings?.logLevel,
+      debugLogLevelType: typeof settings.debugSettings?.logLevel
+    })
+    
+    return settings
   }
 
   /**

@@ -299,12 +299,20 @@ class OptionsEventController {
   setupDebugEvents() {
     // デバッグ設定を取得する共通関数
     const getCurrentDebugConfig = () => {
-      return {
+      const logLevelElement = document.getElementById('debugLogLevel')
+      const rawLogLevel = logLevelElement?.value || '2'
+      const parsedLogLevel = parseInt(rawLogLevel)
+      
+      const config = {
         enabled: document.getElementById('debugEnabled')?.checked || false,
-        logLevel: parseInt(document.getElementById('debugLogLevel')?.value || '2'),
+        logLevel: parsedLogLevel,
         showStatus: document.getElementById('debugShowStatus')?.checked || false,
         statusPosition: document.getElementById('debugStatusPosition')?.value || 'top-right'
       }
+      
+      console.log('🔧 [LogLevel Fix] getCurrentDebugConfig result:', config)
+      
+      return config
     }
 
     // デバッグ有効/無効の切り替え
@@ -336,9 +344,18 @@ class OptionsEventController {
     })
 
     // ログレベル設定
-    this.bindEvent('debugLogLevel', 'change', async () => {
+    this.bindEvent('debugLogLevel', 'change', async (e) => {
+      console.log('🔧 [LogLevel Fix] Event triggered - value:', e.target.value, 'as number:', parseInt(e.target.value))
+      
       const debugConfig = getCurrentDebugConfig()
+      console.log('🔧 [LogLevel Fix] Config to save:', debugConfig)
+      
       await this.settingsUseCase.updateDebugSettings(debugConfig)
+      
+      // 保存後の確認のため、設定を再読み込み
+      const savedSettings = await this.settingsUseCase.getCurrentSettings()
+      console.log('🔧 [LogLevel Fix] After save - stored logLevel:', savedSettings.debugSettings?.logLevel)
+      
       this.showStatus('ログレベルを変更しました', 'success')
     })
 

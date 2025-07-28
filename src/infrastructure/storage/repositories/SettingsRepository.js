@@ -162,9 +162,26 @@ class SettingsRepository {
    * @returns {Promise<Settings>}
    */
   async updateDebugSettings(debugConfig) {
+    console.log('🔧 [Debug] SettingsRepository.updateDebugSettings called:', {
+      debugConfig: debugConfig,
+      logLevel: debugConfig.logLevel
+    })
+    
     const settings = await this.getSettings()
+    console.log('🔧 [Debug] Current settings before update:', {
+      currentDebugSettings: settings.debugSettings,
+      currentLogLevel: settings.debugSettings?.logLevel
+    })
+    
     settings.setDebugSettings(debugConfig)
+    console.log('🔧 [Debug] Settings after setDebugSettings:', {
+      updatedDebugSettings: settings.debugSettings,
+      updatedLogLevel: settings.debugSettings?.logLevel
+    })
+    
     await this.saveSettings(settings)
+    console.log('🔧 [Debug] Settings saved successfully')
+    
     return settings
   }
 

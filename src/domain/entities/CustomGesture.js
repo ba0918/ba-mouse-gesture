@@ -103,21 +103,6 @@ class CustomGesture extends Gesture {
     const priorityValid = this.priority >= 1 && this.priority <= 10
     const metadataValid = this.metadata.isCustom === true
     
-    console.log('🔍 CustomGesture.isValid() - Detailed validation:', {
-      id: this.id,
-      name: this.name,
-      pattern: this.pattern,
-      action: this.action,
-      priority: this.priority,
-      metadata: this.metadata,
-      superValid: superValid,
-      priorityValid: priorityValid,
-      metadataValid: metadataValid,
-      hasPattern: Boolean(this.pattern),
-      patternIsValid: this.pattern ? this.pattern.isValid() : 'no pattern',
-      patternType: typeof this.pattern,
-      patternConstructor: this.pattern ? this.pattern.constructor.name : 'undefined'
-    })
     
     return superValid && priorityValid && metadataValid
   }
