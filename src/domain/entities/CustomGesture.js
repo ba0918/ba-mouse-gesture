@@ -113,7 +113,7 @@ class CustomGesture extends Gesture {
       superValid: superValid,
       priorityValid: priorityValid,
       metadataValid: metadataValid,
-      hasPattern: !!this.pattern,
+      hasPattern: Boolean(this.pattern),
       patternIsValid: this.pattern ? this.pattern.isValid() : 'no pattern',
       patternType: typeof this.pattern,
       patternConstructor: this.pattern ? this.pattern.constructor.name : 'undefined'

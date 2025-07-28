@@ -39,33 +39,60 @@ class GestureEntity {
   }
 
   /**
-   * パターンを表示用に正規化
+   * パターンを表示用に正規化（統一メソッド）
+   * 長いパターンの省略表示にも対応
    */
-  getDisplayPattern() {
-    if (typeof this.pattern === 'string') {
-      return this.pattern
-        .replace(/UP/g, '↑')
-        .replace(/DOWN/g, '↓')
-        .replace(/LEFT/g, '←')
-        .replace(/RIGHT/g, '→')
-    } else if (Array.isArray(this.pattern)) {
-      return this.pattern.join('')
-        .replace(/UP/g, '↑')
-        .replace(/DOWN/g, '↓')
-        .replace(/LEFT/g, '←')
-        .replace(/RIGHT/g, '→')
+  getDisplayPattern(maxLength = 8) {
+    const pattern = this.normalizePatternToArrows()
+    
+    // 長すぎる場合は省略表示（maxLengthが1以下の場合は省略しない）
+    if (maxLength > 1 && pattern.length > maxLength) {
+      return pattern.substring(0, maxLength - 1) + '…'
     }
-    return String(this.pattern || '')
+    
+    return pattern
   }
 
   /**
    * 表示用にフォーマットされたパターンを取得
    * ThinOptionsControllerとの互換性のため
    */
-  getFormattedPattern() {
+  getFormattedPattern(maxLength = 12) {
+    return this.getDisplayPattern(maxLength)
+  }
+
+  /**
+   * パターンを矢印形式に正規化する内部メソッド
+   * @private
+   */
+  normalizePatternToArrows() {
     if (typeof this.pattern === 'string') {
-      // 文字列パターンの処理
+      // 既に矢印文字列の場合はそのまま返す
+      if (/^[↑↓←→]+$/.test(this.pattern)) {
+        return this.pattern
+      }
+      // カンマ区切りの場合は分割して処理
+      if (this.pattern.includes(',')) {
+        return this.pattern
+          .split(',')
+          .map(dir => dir.trim())
+          .map(dir => {
+            switch(dir.toLowerCase()) {
+            case 'up': return '↑'
+            case 'down': return '↓'
+            case 'left': return '←'
+            case 'right': return '→'
+            default: return dir
+            }
+          })
+          .join('')
+      }
+      // 英語方向文字列の場合は変換
       return this.pattern
+        .replace(/UP/gi, '↑')
+        .replace(/DOWN/gi, '↓')
+        .replace(/LEFT/gi, '←')
+        .replace(/RIGHT/gi, '→')
         .replace(/up/gi, '↑')
         .replace(/down/gi, '↓')  
         .replace(/left/gi, '←')
@@ -74,15 +101,48 @@ class GestureEntity {
       // 配列パターンの処理
       return this.pattern
         .map(dir => {
+          // 既に矢印の場合はそのまま
+          if (/^[↑↓←→]$/.test(dir)) {
+            return dir
+          }
+          // 英語方向文字列を矢印に変換
           switch(dir.toLowerCase()) {
-            case 'up': return '↑'
-            case 'down': return '↓'
-            case 'left': return '←'
-            case 'right': return '→'
-            default: return dir
+          case 'up': return '↑'
+          case 'down': return '↓'
+          case 'left': return '←'
+          case 'right': return '→'
+          default: return dir // 不明な場合はそのまま
           }
         })
-        .join('→')
+        .join('')
+    } else if (this.pattern && typeof this.pattern === 'object' && this.pattern._directions && Array.isArray(this.pattern._directions)) {
+      // GesturePatternオブジェクト（_directionsプロパティがある場合）
+      return this.pattern._directions
+        .map(dir => {
+          switch(dir.toLowerCase()) {
+          case 'up': return '↑'
+          case 'down': return '↓'
+          case 'left': return '←'
+          case 'right': return '→'
+          default: return dir
+          }
+        })
+        .join('')
+    } else if (this.pattern && typeof this.pattern.toString === 'function') {
+      // その他のオブジェクトでtoStringメソッドがある場合
+      const patternStr = this.pattern.toString()
+      // 既に矢印の場合はそのまま
+      if (/^[↑↓←→]+$/.test(patternStr)) {
+        return patternStr
+      }
+      // 再帰的に正規化
+      const tempEntity = new GestureEntity({
+        id: 'temp',
+        name: 'temp',
+        pattern: patternStr,
+        action: 'temp'
+      })
+      return tempEntity.normalizePatternToArrows()
     }
     return String(this.pattern || '')
   }

@@ -171,15 +171,28 @@ class GestureManager {
    */
   async loadSettings() {
     try {
-      // Chrome storage syncから設定を読み込み
-      const result = await chrome.storage.sync.get(['settings'])
-      if (result.settings) {
+      // Clean Architecture 対応: appSettings キーを使用
+      const result = await chrome.storage.sync.get(['appSettings', 'settings'])
+      let settingsData = null
+      
+      // 新しい構成 (Clean Architecture) を優先
+      if (result.appSettings) {
+        settingsData = result.appSettings
+        console.log('Settings loaded from appSettings (Clean Architecture)')
+      } else if (result.settings) {
+        // 後方互換性のために古い構成もサポート
+        settingsData = result.settings
+        console.log('Settings loaded from settings (legacy)')
+      }
+      
+      if (settingsData) {
         this.settings = {
-          enabled: result.settings.enabled ?? true,
-          strokeColor: result.settings.strokeColor || '#2196F3',
-          strokeWidth: result.settings.strokeWidth || 3,
-          gestureThreshold: result.settings.gestureThreshold || 15,
-          excludeList: result.settings.excludeList || []
+          enabled: settingsData.enabled ?? true,
+          strokeColor: settingsData.strokeColor || '#2196F3',
+          strokeWidth: settingsData.strokeWidth || 3,
+          gestureThreshold: settingsData.gestureThreshold || 15,
+          excludeList: settingsData.excludeList || [],
+          defaultGestureStates: settingsData.defaultGestureStates || {}
         }
       }
       console.log('Settings loaded:', this.settings)
@@ -252,9 +265,11 @@ class GestureManager {
     try {
       if (typeof chrome !== 'undefined' && chrome.storage) {
         chrome.storage.onChanged.addListener((changes, namespace) => {
-          if (namespace === 'sync' && changes.settings) {
+          // Clean Architecture 対応: appSettings と settings 両方を監視
+          if (namespace === 'sync' && (changes.appSettings || changes.settings)) {
             console.log('Settings changed, reloading...')
-            this.updateSettings(changes.settings.newValue)
+            const settingsChange = changes.appSettings || changes.settings
+            this.updateSettings(settingsChange.newValue)
           }
         })
       }

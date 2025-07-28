@@ -16,7 +16,6 @@ class GestureListUseCase {
    */
   async getAllGestures() {
     try {
-      console.log('🔧 GestureListUseCase: Loading all gestures')
       
       // デフォルトジェスチャーを取得
       const defaultGestures = await this.getDefaultGestures()
@@ -30,7 +29,6 @@ class GestureListUseCase {
         ...customGestures.map(g => GestureEntity.fromPlainObject({...g, type: 'custom'}))
       ]
       
-      console.log('🔧 GestureListUseCase: Loaded gestures:', allGestures.length)
       return allGestures
       
     } catch (error) {
@@ -138,7 +136,8 @@ class GestureListUseCase {
         type: 'default',
         category: 'advanced',
         description: 'キャッシュクリア付きリロード',
-        enabled: gestureStates.super_refresh !== false
+        enabled: gestureStates.super_refresh !== false,
+        isNew: true
       },
       {
         id: 'prev_tab',
@@ -148,7 +147,8 @@ class GestureListUseCase {
         type: 'default',
         category: 'advanced',
         description: '前のタブに切り替え',
-        enabled: gestureStates.prev_tab !== false
+        enabled: gestureStates.prev_tab !== false,
+        isNew: true
       },
       {
         id: 'next_tab',
@@ -158,7 +158,8 @@ class GestureListUseCase {
         type: 'default',
         category: 'advanced',
         description: '次のタブに切り替え',
-        enabled: gestureStates.next_tab !== false
+        enabled: gestureStates.next_tab !== false,
+        isNew: true
       }
     ]
   }
@@ -167,7 +168,6 @@ class GestureListUseCase {
    * ジェスチャーの状態を切り替え
    */
   async toggleGestureStatus(gestureId) {
-    console.log('🔧 GestureListUseCase: Toggling gesture:', gestureId)
     
     try {
       const allGestures = await this.getAllGestures()
@@ -187,7 +187,6 @@ class GestureListUseCase {
         await this.saveDefaultGestureState(gestureId, newStatus)
       }
       
-      console.log('🔧 GestureListUseCase: Gesture toggled:', {gestureId, enabled: newStatus})
       return newStatus
       
     } catch (error) {

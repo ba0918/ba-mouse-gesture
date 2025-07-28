@@ -60,17 +60,17 @@ class GestureRepository {
         // 詳細なデバッグログを追加
         console.log('🔍 Validating gesture:', {
           gestureId: gesture?.id,
-          hasGestureObject: !!gesture,
+          hasGestureObject: Boolean(gesture),
           hasIsValidMethod: typeof gesture?.isValid === 'function',
           gestureKeys: gesture ? Object.keys(gesture) : [],
           pattern: gesture?.pattern,
           patternType: typeof gesture?.pattern,
-          patternIsValid: gesture?.pattern && typeof gesture.pattern.isValid === 'function' ? gesture.pattern.isValid() : 'no pattern isValid',
+          patternIsValid: gesture?.pattern && typeof gesture.pattern.isValid === 'function' ? gesture.pattern.isValid() : 'no pattern isValid'
         })
         
         if (!gesture) {
           console.error('❌ Gesture is null/undefined')
-          throw new Error(`Invalid gesture: gesture is null/undefined`)
+          throw new Error('Invalid gesture: gesture is null/undefined')
         }
         
         if (typeof gesture.isValid !== 'function') {
