@@ -41,9 +41,9 @@ class Settings {
     
     // デバッグ設定
     this.debugSettings = {
-      enabled: true,
+      enabled: false,
       logLevel: 2, // INFO
-      showStatus: true,
+      showStatus: false,
       statusPosition: 'top-right',
       ...config.debugSettings
     }

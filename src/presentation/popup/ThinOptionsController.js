@@ -147,11 +147,54 @@ class ThinOptionsController {
    * デバッグ設定のイベント設定
    */
   setupDebugEvents() {
+    // デバッグ設定を取得する共通関数
+    const getCurrentDebugConfig = () => {
+      return {
+        enabled: document.getElementById('debugEnabled')?.checked || false,
+        logLevel: parseInt(document.getElementById('debugLogLevel')?.value || '2'),
+        showStatus: document.getElementById('debugShowStatus')?.checked || false,
+        statusPosition: document.getElementById('debugStatusPosition')?.value || 'top-right'
+      }
+    }
+
+    // デバッグ有効/無効の切り替え
     this.bindEvent('debugEnabled', 'change', async (e) => {
-      const debugConfig = { enabled: e.target.checked }
+      const enabled = e.target.checked
+      const debugConfig = getCurrentDebugConfig()
+      
+      // デバッグ無効時は画面表示も自動的に無効化
+      if (!enabled) {
+        debugConfig.showStatus = false
+        const showStatusCheckbox = document.getElementById('debugShowStatus')
+        if (showStatusCheckbox) {
+          showStatusCheckbox.checked = false
+        }
+      }
+      
       await this.settingsUseCase.updateDebugSettings(debugConfig)
-      this.toggleDebugOptions(e.target.checked)
+      this.toggleDebugOptions(enabled)
       this.showStatus('デバッグ設定を更新しました', 'success')
+    })
+
+    // 画面表示の切り替え
+    this.bindEvent('debugShowStatus', 'change', async () => {
+      const debugConfig = getCurrentDebugConfig()
+      await this.settingsUseCase.updateDebugSettings(debugConfig)
+      this.showStatus('デバッグ表示設定を更新しました', 'success')
+    })
+
+    // ログレベルの変更
+    this.bindEvent('debugLogLevel', 'change', async () => {
+      const debugConfig = getCurrentDebugConfig()
+      await this.settingsUseCase.updateDebugSettings(debugConfig)
+      this.showStatus('ログレベルを更新しました', 'success')
+    })
+
+    // 表示位置の変更
+    this.bindEvent('debugStatusPosition', 'change', async () => {
+      const debugConfig = getCurrentDebugConfig()
+      await this.settingsUseCase.updateDebugSettings(debugConfig)
+      this.showStatus('表示位置を更新しました', 'success')
     })
   }
 
@@ -186,12 +229,27 @@ class ThinOptionsController {
    * 設定からUIを更新（薄いロジック）
    */
   updateUIFromSettings(settings) {
-    this.updateElement('enabled', settings.enabled, 'checked')
-    this.updateElement('strokeColor', settings.strokeColor)
-    this.updateElement('strokeWidth', settings.strokeWidth)
-    this.updateElement('strokeWidthValue', `${settings.strokeWidth}px`)
-    this.updateElement('gestureThreshold', settings.gestureThreshold)
-    this.updateElement('gestureThresholdValue', `${settings.gestureThreshold}px`)
+    this.updateElement('enabled', settings.isEnabled(), 'checked')
+    
+    // 軌跡表示設定はgetStrokeSettings()メソッドから取得
+    const strokeSettings = settings.getStrokeSettings()
+    this.updateElement('strokeColor', strokeSettings.color, 'value')
+    this.updateElement('strokeWidth', strokeSettings.width, 'value')
+    this.updateElement('strokeWidthValue', `${strokeSettings.width}px`)
+    
+    // ジェスチャー閾値はgetThreshold()から取得してdetectionThresholdを使用
+    const threshold = settings.getThreshold()
+    this.updateElement('gestureThreshold', threshold.getDetectionThreshold(), 'value')
+    this.updateElement('gestureThresholdValue', `${threshold.getDetectionThreshold()}px`)
+    
+    // デバッグ設定の反映
+    const debugSettings = settings.getDebugSettings()
+    this.updateElement('debugEnabled', debugSettings.enabled, 'checked')
+    this.updateElement('debugLogLevel', debugSettings.logLevel, 'value')
+    this.updateElement('debugShowStatus', debugSettings.showStatus, 'checked')
+    this.updateElement('debugStatusPosition', debugSettings.statusPosition, 'value')
+    this.toggleDebugOptions(debugSettings.enabled)
+    
     this.updatePreview()
   }
 
