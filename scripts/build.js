@@ -12,9 +12,8 @@ const isWatch = process.argv.includes('--watch')
 const distDir = path.join(__dirname, '..', 'dist')
 
 // ビルド対象のJavaScriptファイル
-// Phase 11: Clean Architecture対応 - 段階的移行（新旧ハイブリッド）
+// 新アーキテクチャのみ（Clean Architecture統一）
 const jsFiles = [
-  // 新アーキテクチャ（src/配下）
   {
     entryPoint: 'src/presentation/background/index.js',
     outfile: 'dist/background/background.js'
@@ -26,31 +25,6 @@ const jsFiles = [
   {
     entryPoint: 'src/presentation/popup/index.js',
     outfile: 'dist/popup/options-new.js'
-  },
-  // 既存アーキテクチャ（レガシー互換性維持）
-  {
-    entryPoint: 'background/background-simple.js',
-    outfile: 'dist/background/background-simple.js'
-  },
-  {
-    entryPoint: 'content_scripts/debug-logger.js',
-    outfile: 'dist/content_scripts/debug-logger.js'
-  },
-  {
-    entryPoint: 'content_scripts/custom-gesture-manager.js',
-    outfile: 'dist/content_scripts/custom-gesture-manager.js'
-  },
-  {
-    entryPoint: 'content_scripts/gesture-learning-manager.js',
-    outfile: 'dist/content_scripts/gesture-learning-manager.js'
-  },
-  {
-    entryPoint: 'content_scripts/gesture-simple.js',
-    outfile: 'dist/content_scripts/gesture-simple.js'
-  },
-  {
-    entryPoint: 'popup/options.js',
-    outfile: 'dist/popup/options.js'
   }
 ]
 
@@ -86,25 +60,6 @@ async function copyDir(src, dest) {
   }
 }
 
-// 本番ビルド時にDebugLoggerの設定を変更
-async function processDebugLogger() {
-  if (!isProduction) return
-
-  const debugLoggerPath = 'content_scripts/debug-logger.js'
-  const content = await fs.readFile(debugLoggerPath, 'utf8')
-  
-  // 本番用設定に変更
-  const productionContent = content
-    .replace('enabled: true, // 開発時はデフォルトでON（本番ビルド時に自動変更）', 'enabled: false, // 本番ビルドでは無効')
-    .replace('showStatus: true, // 開発時はデフォルトで表示', 'showStatus: false, // 本番ビルドでは非表示')
-
-  // 一時ファイルとして保存
-  const tempPath = path.join(distDir, 'content_scripts/debug-logger.js')
-  await ensureDir(path.dirname(tempPath))
-  await fs.writeFile(tempPath, productionContent)
-  
-  console.log('🔧 本番ビルド: デバッグ機能を無効化')
-}
 
 // ビルド実行
 async function build() {
@@ -118,29 +73,18 @@ async function build() {
     // 静的ファイルをコピー
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
-    await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
-    await copyFile('popup/options-clean.html', path.join(distDir, 'popup/options-clean.html'))
+    await copyFile('backup/popup/options-clean.html', path.join(distDir, 'popup/options-clean.html'))
     await copyDir('assets', path.join(distDir, 'assets'))
     
-    // 本番ビルド時にDebugLoggerを処理
-    if (isProduction) {
-      await processDebugLogger()
-    }
+    // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー
+    console.log('📁 新アーキテクチャファイル準備完了')
 
     // JavaScriptファイルをビルド
     console.log('🔨 JavaScriptファイルをビルド中...')
     
+    // 新アーキテクチャ統一ビルドオプション
     const buildOptions = {
-      bundle: false, // 既存ファイル用：個別ファイルのまま
-      minify: isProduction,
-      sourcemap: !isProduction,
-      target: 'es2020',
-      format: 'iife'
-    }
-    
-    // 新アーキテクチャ用ビルドオプション
-    const newArchBuildOptions = {
-      bundle: true, // 新アーキテクチャ：モジュール依存関係解決
+      bundle: true, // モジュール依存関係解決
       minify: isProduction,
       sourcemap: !isProduction,
       target: 'es2020',
@@ -152,28 +96,13 @@ async function build() {
     for (const file of jsFiles) {
       await ensureDir(path.dirname(file.outfile))
       
-      // 新アーキテクチャ vs 既存アーキテクチャの判定
-      const isNewArch = file.entryPoint.startsWith('src/')
-      const options = isNewArch ? newArchBuildOptions : buildOptions
+      await esbuild.build({
+        ...buildOptions,
+        entryPoints: [file.entryPoint],
+        outfile: file.outfile
+      })
       
-      // debug-logger.jsの場合は特別処理
-      if (file.entryPoint === 'content_scripts/debug-logger.js' && isProduction) {
-        // 既に処理済みのファイルを使用
-        await esbuild.build({
-          ...buildOptions,
-          entryPoints: [file.outfile], // 既に処理済みのファイルを使用
-          outfile: file.outfile,
-          allowOverwrite: true
-        })
-      } else {
-        await esbuild.build({
-          ...options,
-          entryPoints: [file.entryPoint],
-          outfile: file.outfile
-        })
-      }
-      
-      console.log(`  ✓ ${file.entryPoint} → ${file.outfile}${isNewArch ? ' (新アーキテクチャ)' : ''}`)
+      console.log(`  ✓ ${file.entryPoint} → ${file.outfile} (新アーキテクチャ)`)
     }
     
     console.log('✅ ビルド完了!')

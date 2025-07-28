@@ -1,5 +1,11 @@
 // マウスジェスチャーツール - 設定画面のスクリプト
 
+// 🎯 Clean Architectureの実装を読み込み（必須）
+if (typeof window === 'undefined' || !window.DebugSettingsUseCase || !window.SettingsUseCase) {
+  console.error('❌ FATAL: UseCase not loaded. Clean Architecture implementation missing.')
+  throw new Error('UseCases are required for Clean Architecture compliance')
+}
+
 class OptionsManager {
   constructor() {
     this.defaultSettings = {
@@ -27,9 +33,9 @@ class OptionsManager {
       },
       // デバッグ設定
       debugSettings: {
-        enabled: true, // 開発時はデフォルトでON
+        enabled: false, // 🎯 修正: デフォルトはfalse（prod環境対応）
         logLevel: 2, // INFO
-        showStatus: true,
+        showStatus: false, // 🎯 修正: デフォルトはfalse
         statusPosition: 'top-right'
       }
     }
@@ -38,6 +44,16 @@ class OptionsManager {
     this.customGestureManager = null
     this.currentPattern = []
     this.isRecording = false
+    
+    // 🎯 Clean ArchitectureのUseCaseを初期化（必須）
+    try {
+      this.debugSettingsUseCase = new window.DebugSettingsUseCase()
+      this.settingsUseCase = new window.SettingsUseCase()
+      console.log('✅ UseCases initialized - Clean Architecture ready')
+    } catch (error) {
+      console.error('❌ FATAL: Failed to initialize UseCases:', error)
+      throw error // Clean Architecture実装が必須なので、失敗時はエラーを投げる
+    }
         
     this.init()
   }
@@ -136,8 +152,12 @@ class OptionsManager {
     
   async loadSettings() {
     try {
-      const result = await chrome.storage.sync.get(this.defaultSettings)
-      this.currentSettings = { ...this.defaultSettings, ...result }
+      // 🎯 Clean Architecture準拠: UseCase経由で設定を取得
+      const settings = await this.settingsUseCase.getSettings()
+      this.currentSettings = { 
+        ...this.currentSettings,  // デバッグ設定を保持
+        ...settings 
+      }
             
       // UIに設定を反映
       document.getElementById('enabled').checked = this.currentSettings.enabled
@@ -161,14 +181,12 @@ class OptionsManager {
     
   async saveSettings() {
     try {
-      await chrome.storage.sync.set(this.currentSettings)
+      // 🎯 Clean Architecture準拠: UseCase経由で保存
+      // デバッグ設定を除外して保存
+      // eslint-disable-next-line no-unused-vars
+      const { debugSettings, ...settingsToSave } = this.currentSettings
+      await this.settingsUseCase.saveSettings(settingsToSave)
       this.showSaveStatus('設定を保存しました', true)
-            
-      // バックグラウンドスクリプトに設定変更を通知
-      chrome.runtime.sendMessage({
-        type: 'SETTINGS_UPDATED',
-        settings: this.currentSettings
-      })
             
     } catch (error) {
       console.error('設定の保存に失敗しました:', error)
@@ -348,24 +366,19 @@ class OptionsManager {
     try {
       console.log('🔧 Options: Saving debug settings:', this.currentSettings.debugSettings)
       
-      // 🎯 単一責任原則: デバッグ設定の保存責務を明確化
-      // 1. 内部状態の更新
-      if (typeof DebugLogger !== 'undefined') {
-        await DebugLogger.updateSettings(this.currentSettings.debugSettings)
-      }
+      // 🎯 Clean Architecture準拠: UseCaseのみを使用（直接API呼び出し禁止）
+      await this.debugSettingsUseCase.saveDebugSettings(this.currentSettings.debugSettings)
+      console.log('✅ Options: Debug settings saved via UseCase (Clean Architecture)')
       
-      // 2. 永続化ストレージへの保存（統一されたキー名で）
-      await chrome.storage.sync.set({ 
-        debugSettings: this.currentSettings.debugSettings 
-      })
-      console.log('🔧 Options: Debug settings saved to sync storage')
-      
-      // 3. 他の設定との整合性保持
-      await this.saveSettings()
+      // UIに即座に反映
+      this.updateDebugUI()
+      this.updateDebugOptions()
       
       this.showSaveStatus('デバッグ設定を保存しました', true)
+      console.log('✅ Options: Debug settings sync completed')
+      
     } catch (error) {
-      console.error('Failed to save debug settings:', error)
+      console.error('❌ Options: Failed to save debug settings:', error)
       this.showSaveStatus('デバッグ設定の保存に失敗しました', false)
     }
   }
@@ -373,33 +386,20 @@ class OptionsManager {
   async loadDebugSettings() {
     console.log('🔧 Options: Loading debug settings...')
     
-    // 🎯 単一責任原則: デバッグ設定の読み込み責務を明確化
     try {
-      // 1. 永続化ストレージから最新設定を取得
-      const syncResult = await chrome.storage.sync.get(['debugSettings'])
-      console.log('🔧 Options: Loaded from sync storage:', syncResult)
+      // 🎯 Clean Architecture準拠: UseCaseのみを使用（直接API呼び出し禁止）
+      const debugSettingsEntity = await this.debugSettingsUseCase.getDebugSettings()
+      this.currentSettings.debugSettings = debugSettingsEntity.toPlainObject()
+      console.log('✅ Options: Debug settings loaded via UseCase (Clean Architecture):', this.currentSettings.debugSettings)
       
-      if (syncResult.debugSettings) {
-        // 統合された設定を使用
-        this.currentSettings.debugSettings = {
-          ...this.defaultSettings.debugSettings,
-          ...syncResult.debugSettings
-        }
-      } else if (!this.currentSettings.debugSettings) {
-        // フォールバック: デフォルト値を使用
-        this.currentSettings.debugSettings = { ...this.defaultSettings.debugSettings }
-      }
-      
-      console.log('🔧 Options: Final debug settings:', this.currentSettings.debugSettings)
-      
-      // 2. UIに設定を反映（責務分離）
+      // UIに設定を反映
       this.updateDebugUI()
-      
-      // 🔧 修正: デバッグオプション表示状態も更新
       this.updateDebugOptions()
       
+      console.log('✅ Options: Debug settings loaded and UI updated')
+      
     } catch (error) {
-      console.error('Failed to load debug settings:', error)
+      console.error('❌ Options: Failed to load debug settings:', error)
       // エラー時はデフォルト値で続行
       this.currentSettings.debugSettings = { ...this.defaultSettings.debugSettings }
       this.updateDebugUI()
@@ -1072,8 +1072,11 @@ class OptionsManager {
     }
     
     try {
-      // Chrome storageから学習データを削除
-      await chrome.storage.sync.remove('gestureLearningData')
+      // Clean Architecture準拠: StorageAdapterを使用
+      const storageAdapter = new window.ContentStorageAdapter()
+      if (storageAdapter.isAvailable()) {
+        await storageAdapter.remove('gestureLearningData')
+      }
       
       // 学習マネージャーをリセット
       if (this.learningManager) {

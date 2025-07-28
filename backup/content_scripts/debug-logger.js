@@ -1,12 +1,26 @@
 /**
  * デバッグログ管理システム
  * オプション画面の設定に基づいてログ出力と画面表示を制御
+ * 🎯 Clean Architecture完全準拠: UseCase経由でのみストレージアクセス
  */
 class DebugLogger {
   /**
    * デバッグ設定を初期化
    */
   static async init() {
+    // Clean ArchitectureのUseCaseを初期化
+    if (!window.DebugSettingsUseCase) {
+      console.error('❌ FATAL: DebugSettingsUseCase not loaded in content script')
+      throw new Error('DebugSettingsUseCase is required for Clean Architecture compliance')
+    }
+    
+    try {
+      this.debugSettingsUseCase = new window.DebugSettingsUseCase()
+      console.log('✅ DebugLogger: UseCase initialized')
+    } catch (error) {
+      console.error('❌ FATAL: Failed to initialize DebugSettingsUseCase:', error)
+      throw error
+    }
     // 静的プロパティの初期化
     this.LOG_LEVELS = {
       ERROR: 0,
@@ -23,9 +37,9 @@ class DebugLogger {
     }
 
     this.settings = {
-      enabled: true, // 開発時はデフォルトでON（本番ビルド時に自動変更）
+      enabled: false, // 🎯 修正: デフォルトはfalse（prod環境対応）
       logLevel: this.LOG_LEVELS.INFO,
-      showStatus: true, // 開発時はデフォルトで表示
+      showStatus: false, // 🎯 修正: デフォルトはfalse
       statusPosition: this.DISPLAY_POSITIONS.TOP_RIGHT
     }
 
@@ -34,28 +48,13 @@ class DebugLogger {
     if (this.isInitialized) return
 
     try {
-      // 🔧 論理的矛盾を修正: 統一されたキー名で設定を取得
-      const syncResult = await chrome.storage.sync.get(['debugSettings'])
-      console.log('🔧 DebugLogger: Loading from sync storage:', syncResult)
+      // 🎯 Clean Architecture準拠: UseCase経由で設定を取得
+      const debugSettingsEntity = await this.debugSettingsUseCase.getDebugSettings()
+      this.settings = debugSettingsEntity.toStorageFormat()
+      console.log('✅ DebugLogger: Settings loaded via UseCase:', this.settings)
       
-      if (syncResult.debugSettings) {
-        // sync storageから統合設定を読み込み
-        this.settings = { 
-          ...this.settings, 
-          ...syncResult.debugSettings
-        }
-        console.log('🔧 DebugLogger: Settings loaded from sync:', this.settings)
-      } else {
-        // 旧形式との互換性維持（段階的移行）
-        const legacyResult = await chrome.storage.sync.get(['enableDebugMode'])
-        if (legacyResult.enableDebugMode !== undefined) {
-          this.settings.enabled = legacyResult.enableDebugMode
-          this.settings.showStatus = legacyResult.enableDebugMode
-          console.log('🔧 DebugLogger: Legacy format detected, migrating...', this.settings)
-        }
-      }
-      
-      await this.saveSettings()
+      // 旧データの移行チェック（UseCase内で処理される）
+      await this.debugSettingsUseCase.checkAndMigrateLegacyData()
       
       // storage変更の監視を開始
       this.startStorageListener()
@@ -76,44 +75,25 @@ class DebugLogger {
    * storage変更の監視を開始
    */
   static startStorageListener() {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-      chrome.storage.onChanged.addListener((changes, namespace) => {
-        // 🔧 論理的矛盾を修正: 統一されたキー名で変更を監視
-        if (namespace === 'sync' && changes.debugSettings) {
-          const newSettings = changes.debugSettings.newValue
-          console.log('🔧 DebugLogger: Settings changed:', newSettings)
-          
-          if (newSettings) {
-            this.settings = { ...this.settings, ...newSettings }
-            
-            // デバッグ表示の状態を更新
-            if (this.settings.enabled && this.settings.showStatus) {
-              this.showOnScreenDebug()
-            } else {
-              this.hideOnScreenDebug()
-            }
-            
-            this.saveSettings()
-          }
-        }
-        
-        // 🔄 旧形式との互換性維持
-        if (namespace === 'sync' && changes.enableDebugMode && !changes.debugSettings) {
-          const newValue = changes.enableDebugMode.newValue
-          console.log('🔧 DebugLogger: Legacy format change detected:', newValue)
-          this.settings.enabled = newValue
-          this.settings.showStatus = newValue
-          
-          if (newValue) {
-            this.showOnScreenDebug()
-          } else {
-            this.hideOnScreenDebug()
-          }
-          
-          this.saveSettings()
-        }
+    // 🎯 Clean Architecture準拠: UseCase経由で変更監視
+    this.debugSettingsUseCase.startSyncListener((newSettings, oldSettings) => {
+      console.log('🔧 DebugLogger: Settings changed via UseCase:', {
+        old: oldSettings ? oldSettings.toStorageFormat() : null,
+        new: newSettings.toStorageFormat()
       })
-    }
+      
+      // 設定を更新
+      this.settings = newSettings.toStorageFormat()
+      
+      // デバッグ表示の状態を更新
+      if (this.settings.enabled && this.settings.showStatus) {
+        this.showOnScreenDebug()
+      } else {
+        this.hideOnScreenDebug()
+      }
+    })
+    
+    console.log('✅ DebugLogger: Storage listener started via UseCase')
   }
 
   /**
@@ -121,9 +101,11 @@ class DebugLogger {
    */
   static async saveSettings() {
     try {
-      await chrome.storage.local.set({ debugSettings: this.settings })
+      // 🎯 Clean Architecture準拠: UseCase経由で保存
+      await this.debugSettingsUseCase.saveDebugSettings(this.settings)
+      console.log('✅ DebugLogger: Settings saved via UseCase')
     } catch (error) {
-      console.error('Failed to save debug settings:', error)
+      console.error('❌ DebugLogger: Failed to save debug settings:', error)
     }
   }
 
@@ -131,8 +113,10 @@ class DebugLogger {
    * 設定を更新
    */
   static async updateSettings(newSettings) {
-    this.settings = { ...this.settings, ...newSettings }
-    await this.saveSettings()
+    // 🎯 Clean Architecture準拠: UseCase経由で更新
+    await this.debugSettingsUseCase.updateMultipleSettings(newSettings)
+    const updatedEntity = await this.debugSettingsUseCase.getDebugSettings()
+    this.settings = updatedEntity.toStorageFormat()
   }
 
   /**
@@ -334,5 +318,10 @@ if (typeof window !== 'undefined') {
 
 // 初期化を実行
 if (typeof chrome !== 'undefined' && chrome.storage) {
-  DebugLogger.init()
+  // Clean Architecture実装がロードされるまで少し待つ
+  setTimeout(() => {
+    DebugLogger.init().catch(error => {
+      console.error('❌ DebugLogger initialization failed:', error)
+    })
+  }, 100)
 }

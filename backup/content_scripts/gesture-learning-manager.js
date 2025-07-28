@@ -1,7 +1,22 @@
 // ジェスチャー学習機能管理クラス
+// 🎯 Clean Architecture準拠: UseCase経由でのみストレージアクセス
 
 class GestureLearningManager {
   constructor() {
+    // 🎯 Clean Architecture: UseCaseの初期化（フォールバック機能付き）
+    if (typeof window !== 'undefined' && window.GestureLearningUseCase) {
+      try {
+        this.gestureLearningUseCase = new window.GestureLearningUseCase()
+        console.log('✅ GestureLearningUseCase initialized')
+      } catch (error) {
+        console.error('❌ FATAL: Failed to initialize GestureLearningUseCase:', error)
+        this.gestureLearningUseCase = this.createFallbackUseCase()
+      }
+    } else {
+      // テスト環境やUseCaseが利用できない場合のフォールバック
+      console.warn('⚠️ GestureLearningUseCase not available, using fallback')
+      this.gestureLearningUseCase = this.createFallbackUseCase()
+    }
     this.usageHistory = new Map()
     this.userProfile = {
       averagePatternLength: 0,
@@ -113,37 +128,60 @@ class GestureLearningManager {
   }
 
   // 学習データを保存
+  // Clean Architecture準拠: UseCase経由で保存
   async saveLearningData() {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
+    try {
       const data = {
         usageHistory: Object.fromEntries(this.usageHistory),
         userProfile: this.userProfile
       }
       
-      await chrome.storage.sync.set({ gestureLearningData: data })
+      await this.gestureLearningUseCase.saveLearningData(data)
       this.isDirty = false
+    } catch (error) {
+      console.error('❌ Failed to save learning data:', error)
+      throw error
     }
   }
 
   // 学習データを読み込み
+  // Clean Architecture準拠: UseCase経由で読み込み
   async loadLearningData() {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        const result = await chrome.storage.sync.get({ gestureLearningData: {} })
-        const data = result.gestureLearningData || {}
-        
-        // 使用履歴を復元
-        if (data.usageHistory) {
-          this.usageHistory = new Map(Object.entries(data.usageHistory))
-        }
-        
-        // ユーザープロファイルを復元
-        if (data.userProfile) {
-          this.userProfile = { ...this.userProfile, ...data.userProfile }
-        }
+      const data = await this.gestureLearningUseCase.getLearningData()
+      
+      // 使用履歴を復元
+      if (data.usageHistory) {
+        this.usageHistory = new Map(Object.entries(data.usageHistory))
+      }
+      
+      // ユーザープロファイルを復元
+      if (data.userProfile) {
+        this.userProfile = { ...this.userProfile, ...data.userProfile }
       }
     } catch (error) {
       console.warn('Failed to load learning data:', error)
+    }
+  }
+
+  // テスト環境用のフォールバックUseCaseを作成
+  createFallbackUseCase() {
+    return {
+      saveLearningData: async () => {
+        // テスト環境では何もしない
+        return true
+      },
+      getLearningData: async () => {
+        // テスト環境では空のデータを返す
+        return {
+          usageHistory: {},
+          userProfile: {
+            averagePatternLength: 0,
+            preferredDirections: [],
+            gestureSpeed: 'medium'
+          }
+        }
+      }
     }
   }
 }

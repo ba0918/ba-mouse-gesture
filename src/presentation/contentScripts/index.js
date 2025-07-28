@@ -1,17 +1,32 @@
 /**
  * Clean Architecture - Content Scripts エントリーポイント
- * ジェスチャー検出機能をLegacyIntegrationAdapterと統合
+ * UseCaseパターンとクリーンアーキテクチャに基づく実装
  */
 
-// LegacyIntegrationAdapter のインポート
-const { getOrCreateAdapter } = require('../adapters/LegacyIntegrationAdapter')
+// Clean Architecture - Dynamic imports (ビルド時に解決)
+// SettingsUseCase, CustomGestureUseCase等のクラスは実行時に動的に読み込み
 
 /**
  * Clean Architecture 対応ジェスチャーマネージャー
  */
 class CleanGestureManager {
   constructor() {
-    this.adapter = null
+    // Clean Architecture - UseCase instances (初期化は遅延ロード)
+    this.settingsUseCase = null
+    this.customGestureUseCase = null
+    this.learningUseCase = null
+    this.debugUseCase = null
+    
+    // Clean Architecture - Domain Services
+    this.gestureRecognizer = null
+    
+    // Clean Architecture - Infrastructure Adapters
+    this.canvasRenderer = null
+    this.messagingAdapter = null
+    
+    // Clean Architecture - Controllers
+    this.gestureController = null
+    
     this.isInitialized = false
     this.gestureState = {
       isRecording: false,
@@ -26,8 +41,6 @@ class CleanGestureManager {
       gestureThreshold: 15,
       excludeList: []
     }
-    this.canvas = null
-    this.ctx = null
   }
 
   /**
@@ -37,14 +50,11 @@ class CleanGestureManager {
     try {
       console.log('🏗️ Clean Architecture Gestures: Initializing...')
       
-      // LegacyIntegrationAdapter を初期化
-      this.adapter = await getOrCreateAdapter({
-        initializeViews: false, // content scriptsではビューは不要
-        forceOptionsView: false
-      })
+      // Clean Architecture コンポーネントの初期化
+      this.initializeCleanArchitecture()
       
       // 設定を読み込み
-      this.loadSettings()
+      await this.loadSettings()
       
       // 除外サイトチェック
       if (this.isExcludedSite()) {
@@ -58,6 +68,9 @@ class CleanGestureManager {
       // イベントリスナー設定
       this.setupEventListeners()
       
+      // メッセージリスナー設定
+      this.setupMessageListener()
+      
       // 設定変更監視
       this.watchSettingsChanges()
       
@@ -66,31 +79,103 @@ class CleanGestureManager {
       
     } catch (error) {
       console.error('❌ Clean Architecture Gestures: Initialization failed:', error)
+    }
+  }
+  
+  /**
+   * Clean Architecture コンポーネントの初期化
+   */
+  initializeCleanArchitecture() {
+    try {
+      // グローバルに存在するクラスを使用（ビルド時に統合される前提）
+      if (typeof window !== 'undefined') {
+        this.settingsUseCase = window.SettingsUseCase ? new window.SettingsUseCase() : null
+        this.customGestureUseCase = window.CustomGestureUseCase ? new window.CustomGestureUseCase() : null
+        this.learningUseCase = window.GestureLearningUseCase ? new window.GestureLearningUseCase() : null
+        this.debugUseCase = window.DebugSettingsUseCase ? new window.DebugSettingsUseCase() : null
+        
+        this.gestureRecognizer = window.SimpleGestureRecognizer ? new window.SimpleGestureRecognizer() : null
+        
+        this.canvasRenderer = window.CanvasRendererAdapter ? new window.CanvasRendererAdapter() : null
+        this.messagingAdapter = window.SimpleMessagingAdapter ? new window.SimpleMessagingAdapter() : null
+        
+        if (window.GestureManager && this.settingsUseCase && this.customGestureUseCase) {
+          this.gestureController = new window.GestureManager({
+            settingsUseCase: this.settingsUseCase,
+            customGestureUseCase: this.customGestureUseCase,
+            learningUseCase: this.learningUseCase
+          })
+        }
+      }
       
-      // フォールバック: 既存のgesture-simple.jsが動作している場合はそちらに委譲
-      this.initializeFallback()
+      console.log('Clean Architecture components initialized:', {
+        settingsUseCase: Boolean(this.settingsUseCase),
+        customGestureUseCase: Boolean(this.customGestureUseCase),
+        learningUseCase: Boolean(this.learningUseCase),
+        debugUseCase: Boolean(this.debugUseCase),
+        gestureRecognizer: Boolean(this.gestureRecognizer),
+        canvasRenderer: Boolean(this.canvasRenderer),
+        messagingAdapter: Boolean(this.messagingAdapter),
+        gestureController: Boolean(this.gestureController)
+      })
+      
+    } catch (error) {
+      console.warn('Clean Architecture initialization failed, using fallback:', error)
     }
   }
 
   /**
-   * 設定の読み込み
+   * 設定の読み込み - Clean Architecture対応
    */
-  loadSettings() {
-    if (!this.adapter) return
-
+  async loadSettings() {
     try {
-      const currentSettings = this.adapter.legacyState.currentSettings
-      if (currentSettings) {
+      // UseCase経由で設定を読み込み
+      const loadedSettings = await this.settingsUseCase.getSettings()
+      this.settings = {
+        enabled: loadedSettings.enabled ?? true,
+        strokeColor: loadedSettings.strokeColor || '#2196F3',
+        strokeWidth: loadedSettings.strokeWidth || 3,
+        gestureThreshold: loadedSettings.gestureThreshold || 15,
+        excludeList: loadedSettings.excludeList || [],
+        defaultGestureStates: loadedSettings.defaultGestureStates || {}
+      }
+      
+      // カスタムジェスチャーも読み込み
+      await this.customGestureUseCase.loadCustomGestures()
+      
+      console.log('Settings loaded via UseCase:', this.settings)
+      
+      // デバッグ情報の表示
+      if (await this.debugUseCase.isDebugEnabled()) {
+        console.log('🐛 Debug mode enabled')
+        this.showDebugStatus('設定を読み込みました')
+      }
+      
+    } catch (error) {
+      console.error('Failed to load settings via UseCase:', error)
+      // フォールバック
+      await this.loadSettingsFallback()
+    }
+  }
+  
+  /**
+   * 設定読み込みのフォールバック
+   */
+  async loadSettingsFallback() {
+    try {
+      const result = await chrome.storage.sync.get(['settings'])
+      if (result.settings) {
         this.settings = {
-          enabled: currentSettings.enabled,
-          strokeColor: currentSettings.strokeColor || currentSettings.stroke?.color || '#2196F3',
-          strokeWidth: currentSettings.strokeWidth || currentSettings.stroke?.width || 3,
-          gestureThreshold: currentSettings.gestureThreshold || 15,
-          excludeList: currentSettings.excludeList || []
+          enabled: result.settings.enabled ?? true,
+          strokeColor: result.settings.strokeColor || '#2196F3',
+          strokeWidth: result.settings.strokeWidth || 3,
+          gestureThreshold: result.settings.gestureThreshold || 15,
+          excludeList: result.settings.excludeList || []
         }
       }
+      console.log('Settings loaded (fallback):', this.settings)
     } catch (error) {
-      console.error('Failed to load settings:', error)
+      console.error('Fallback settings load failed:', error)
     }
   }
 
@@ -117,9 +202,34 @@ class CleanGestureManager {
   }
 
   /**
-   * Canvas初期化
+   * Canvas初期化 - Clean Architecture対応
    */
   initializeCanvas() {
+    try {
+      // Clean Architecture - Adapter経由でCanvas初期化
+      this.canvasRenderer.initialize({
+        canvasId: 'mouse-gesture-trail',
+        strokeColor: this.settings.strokeColor,
+        strokeWidth: this.settings.strokeWidth,
+        zIndex: 999999
+      })
+      
+      // 下位互換性のため、直接アクセス用のcanvasも保持
+      this.canvas = this.canvasRenderer.getCanvas()
+      this.ctx = this.canvasRenderer.getContext()
+      
+      console.log('Canvas initialized via CanvasRendererAdapter')
+      
+    } catch (error) {
+      console.error('Canvas adapter initialization failed, using fallback:', error)
+      this.initializeCanvasFallback()
+    }
+  }
+  
+  /**
+   * Canvas初期化のフォールバック
+   */
+  initializeCanvasFallback() {
     // 既存のcanvasがあれば削除
     const existingCanvas = document.getElementById('mouse-gesture-trail')
     if (existingCanvas) {
@@ -292,24 +402,339 @@ class CleanGestureManager {
    * ジェスチャー実行
    */
   async executeGesture(trail) {
-    if (!this.adapter) return
-    
     try {
-      // LegacyIntegrationAdapter経由でジェスチャー実行
-      const currentUrl = window.location.href
-      const tabId = await this.getCurrentTabId()
+      // ジェスチャー認識
+      const gestureResult = await this.recognizeGesture(trail)
+      if (!gestureResult) {
+        console.log('Gesture not recognized')
+        return
+      }
       
-      const result = await this.adapter.executeLegacyGesture(trail, currentUrl, tabId)
+      console.log('Recognized gesture:', gestureResult)
       
-      if (result.success) {
-        console.log('Gesture executed successfully:', result.gesture?.name)
+      // ジェスチャーの種類に応じて処理
+      const distance = this.calculateTrailDistance()
+      if (gestureResult.type === 'custom') {
+        await this.handleCustomGesture(gestureResult, distance)
       } else {
-        console.log('Gesture not recognized or failed:', result.message)
+        await this.handleDefaultGesture(gestureResult, distance)
       }
       
     } catch (error) {
       console.error('Gesture execution failed:', error)
     }
+  }
+  
+  /**
+   * カスタムジェスチャーの処理
+   */
+  async handleCustomGesture(gestureResult, distance) {
+    try {
+      console.log(`Custom gesture: ${gestureResult.name} (${distance.toFixed(0)}px)`)
+      
+      const response = await this.sendGestureMessage({
+        type: 'customGesture',
+        action: gestureResult.action,
+        name: gestureResult.name,
+        distance: distance,
+        confidence: gestureResult.confidence
+      })
+      
+      if (response.success) {
+        console.log('Custom gesture executed successfully:', response.action)
+      } else {
+        console.error('Custom gesture execution failed:', response.error)
+      }
+    } catch (error) {
+      console.error('Custom gesture handling failed:', error)
+    }
+  }
+  
+  /**
+   * デフォルトジェスチャーの処理
+   */
+  async handleDefaultGesture(gestureResult, distance) {
+    try {
+      // ジェスチャー状態をチェック
+      const gestureType = typeof gestureResult === 'string' ? gestureResult : gestureResult.action || gestureResult.type
+      
+      if (!this.isGestureEnabled(gestureType)) {
+        console.log(`Gesture ${gestureType} is disabled`)
+        return
+      }
+      
+      console.log(`Default gesture: ${gestureType} (${distance.toFixed(0)}px)`)
+      
+      const response = await this.sendGestureMessage(gestureType)
+      
+      if (response.success) {
+        console.log('Default gesture executed successfully:', response.action)
+      } else {
+        console.error('Default gesture execution failed:', response.error)
+      }
+    } catch (error) {
+      console.error('Default gesture handling failed:', error)
+    }
+  }
+
+  /**
+   * ジェスチャー認識 - Clean Architecture対応
+   */
+  async recognizeGesture(trail) {
+    if (trail.length < 2) return null
+    
+    // 軌跡の総移動距離チェック
+    const totalDistance = this.calculateTrailDistance()
+    if (totalDistance < this.settings.gestureThreshold) return null
+    
+    try {
+      // Clean Architecture - Domain Service経由でジェスチャー認識
+      const recognitionResult = await this.gestureRecognizer.recognizeGesture({
+        trail,
+        threshold: this.settings.gestureThreshold,
+        settings: this.settings
+      })
+      
+      if (recognitionResult) {
+        console.log('Gesture recognized via Domain Service:', recognitionResult)
+        return recognitionResult
+      }
+      
+      // カスタムジェスチャーのチェック
+      const customResult = await this.checkCustomGesture(trail)
+      if (customResult) {
+        return customResult
+      }
+      
+    } catch (error) {
+      console.error('Domain Service recognition failed, using fallback:', error)
+    }
+    
+    // フォールバック: 従来のロジック
+    return this.recognizeGestureFallback(trail)
+  }
+  
+  /**
+   * カスタムジェスチャーのチェック
+   */
+  async checkCustomGesture(trail) {
+    try {
+      const directions = this.convertTrailToDirections(trail)
+      const customResult = await this.customGestureUseCase.matchPattern(directions)
+      
+      if (customResult.matched) {
+        // 学習機能: 成功したパターンを記録
+        await this.learningUseCase.recordSuccessfulMatch({
+          pattern: directions,
+          gestureName: customResult.gestureName,
+          confidence: customResult.confidence
+        })
+        
+        return {
+          type: 'custom',
+          action: customResult.action,
+          name: customResult.gestureName,
+          confidence: customResult.confidence
+        }
+      }
+    } catch (error) {
+      console.error('Custom gesture check failed:', error)
+    }
+    
+    return null
+  }
+  
+  /**
+   * ジェスチャー認識のフォールバック
+   */
+  recognizeGestureFallback(trail) {
+    // 最初に単純ジェスチャーかチェック
+    if (this.isSimpleGesturePath(trail)) {
+      return this.analyzeSimpleGesture(trail)
+    }
+    
+    // 複合ジェスチャーの分析
+    return this.analyzeComplexGesture(trail)
+  }
+
+  /**
+   * 単純ジェスチャー判定（1方向のみかチェック）
+   */
+  isSimpleGesturePath(trail) {
+    if (trail.length < 3) return true
+    
+    const directions = []
+    
+    // 隣接する点を比較して方向を検出
+    for (let i = 0; i < trail.length - 1; i++) {
+      const start = trail[i]
+      const end = trail[i + 1]
+      
+      const deltaX = end.x - start.x
+      const deltaY = end.y - start.y
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+      
+      if (distance > 5) {
+        let direction = ''
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+        } else {
+          direction = deltaY > 0 ? 'DOWN' : 'UP'
+        }
+        directions.push(direction)
+      }
+    }
+    
+    // 連続する同じ方向を統合
+    const cleanDirections = this.cleanDirections(directions)
+    const uniqueDirections = [...new Set(cleanDirections)]
+    
+    console.log('Simple gesture check - unique directions:', uniqueDirections)
+    
+    // 単一方向のみの場合は単純ジェスチャー
+    return uniqueDirections.length <= 1
+  }
+
+  /**
+   * 単純ジェスチャーの分析
+   */
+  analyzeSimpleGesture(trail) {
+    const start = trail[0]
+    const end = trail[trail.length - 1]
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    
+    const absDx = Math.abs(dx)
+    const absDy = Math.abs(dy)
+    
+    if (absDx > absDy) {
+      return dx > 0 ? 'RIGHT' : 'LEFT'
+    } else {
+      return dy > 0 ? 'DOWN' : 'UP'
+    }
+  }
+
+  /**
+   * 複合ジェスチャーの分析
+   */
+  analyzeComplexGesture(trail) {
+    if (trail.length < 6) return null
+    
+    const directions = []
+    const segmentLength = Math.max(3, Math.floor(trail.length / 6))
+    
+    // 軌跡をセグメントに分割して方向を分析
+    for (let i = 0; i < trail.length - segmentLength; i += segmentLength) {
+      const start = trail[i]
+      const end = trail[Math.min(i + segmentLength, trail.length - 1)]
+      
+      const deltaX = end.x - start.x
+      const deltaY = end.y - start.y
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+      
+      if (distance > 10) {
+        let direction = ''
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+        } else {
+          direction = deltaY > 0 ? 'DOWN' : 'UP'
+        }
+        directions.push(direction)
+      }
+    }
+    
+    // 連続する同じ方向を統合
+    const cleanDirections = this.cleanDirections(directions)
+    
+    console.log('Complex gesture - directions:', cleanDirections)
+    
+    if (cleanDirections.length >= 2) {
+      const pattern = cleanDirections.join('')
+      console.log('Checking pattern:', pattern)
+      
+      // 複合ジェスチャーのパターンマッチング
+      const complexPatterns = {
+        'DOWNRIGHT': 'downright',     // ↓→: タブを閉じる
+        'UPRIGHT': 'upright',         // ↑→: 新しいタブ
+        'RIGHTDOWN': 'rightdown',     // →↓: タブ複製
+        'UPDOWN': 'updown',           // ↑↓: ページ更新
+        'UPDOWNUP': 'super_refresh',  // ↑↓↑: スーパーリロード
+        'LEFTRIGHT': 'prev_tab',      // ←→: 前のタブ
+        'RIGHTLEFT': 'next_tab'       // →←: 次のタブ
+      }
+      
+      return complexPatterns[pattern] || null
+    }
+    
+    return null
+  }
+
+  /**
+   * 方向配列をクリーンアップ（連続する同じ方向を統合）
+   */
+  cleanDirections(directions) {
+    const cleanDirections = []
+    let lastDirection = null
+    
+    for (const dir of directions) {
+      if (dir !== lastDirection) {
+        cleanDirections.push(dir)
+        lastDirection = dir
+      }
+    }
+    
+    return cleanDirections
+  }
+
+  /**
+   * backgroundスクリプトにジェスチャーメッセージを送信 - Clean Architecture対応
+   */
+  async sendGestureMessage(gestureType) {
+    try {
+      // Clean Architecture - Messaging Adapter経由でメッセージ送信
+      const message = this.isSimpleGesture(gestureType) 
+        ? { type: 'simpleGesture', direction: gestureType }
+        : { type: 'complexGesture', gestureType: gestureType }
+      
+      const response = await this.messagingAdapter.sendMessage(message)
+      
+      // デバッグ情報の表示
+      if (await this.debugUseCase.isDebugEnabled()) {
+        this.showDebugStatus(`✅ Action: ${response?.action || 'Success'}`)
+      }
+      
+      return response
+      
+    } catch (error) {
+      console.error('Messaging adapter failed, using fallback:', error)
+      return this.sendGestureMessageFallback(gestureType)
+    }
+  }
+  
+  /**
+   * メッセージ送信のフォールバック
+   */
+  sendGestureMessageFallback(gestureType) {
+    return new Promise((resolve) => {
+      const message = this.isSimpleGesture(gestureType) 
+        ? { type: 'simpleGesture', direction: gestureType }
+        : { type: 'complexGesture', gestureType: gestureType }
+      
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          resolve({ success: false, error: chrome.runtime.lastError.message })
+        } else {
+          resolve(response || { success: false, error: 'No response' })
+        }
+      })
+    })
+  }
+
+  /**
+   * シンプルジェスチャーかどうかの判定
+   */
+  isSimpleGesture(gestureType) {
+    return ['LEFT', 'RIGHT', 'UP', 'DOWN'].includes(gestureType)
   }
 
   /**
@@ -338,17 +763,38 @@ class CleanGestureManager {
   }
 
   /**
-   * 設定変更の監視
+   * 設定変更の監視 - Clean Architecture対応
    */
   watchSettingsChanges() {
-    if (!this.adapter) return
-    
     try {
       // chrome.storage.onChangedを監視
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.onChanged.addListener((changes, namespace) => {
-          if (namespace === 'sync') {
-            this.onSettingsChanged(changes)
+        chrome.storage.onChanged.addListener(async (changes, namespace) => {
+          if (namespace === 'sync' && changes.settings) {
+            console.log('Settings changed, reloading via UseCase...')
+            
+            // UseCase経由で最新設定を取得
+            await this.loadSettings()
+            
+            // 除外サイト/無効化チェック
+            if (!this.settings.enabled || this.isExcludedSite()) {
+              this.clearCanvas()
+              if (await this.debugUseCase.isDebugEnabled()) {
+                this.showDebugStatus('マウスジェスチャーが無効になりました')
+              }
+            } else {
+              if (await this.debugUseCase.isDebugEnabled()) {
+                this.showDebugStatus('マウスジェスチャーが有効になりました')
+              }
+            }
+            
+            // 軌跡設定が変更された場合
+            if (changes.settings.newValue) {
+              const newSettings = changes.settings.newValue
+              if (newSettings.strokeColor || newSettings.strokeWidth) {
+                this.updateCanvasStyle()
+              }
+            }
           }
         })
       }
@@ -358,60 +804,204 @@ class CleanGestureManager {
   }
 
   /**
-   * 設定変更時の処理
+   * backgroundスクリプトからのメッセージを処理
    */
-  onSettingsChanged(changes) {
-    let needsReload = false
-    
-    // 設定の更新
-    Object.keys(changes).forEach(key => {
-      if (key in this.settings) {
-        this.settings[key] = changes[key].newValue
-        needsReload = true
+  setupMessageListener() {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'scroll') {
+        this.handleScrollMessage(message.direction)
+        sendResponse({ success: true })
       }
     })
-    
-    if (needsReload) {
-      console.log('Settings changed, reloading...')
-      this.loadSettings()
+  }
+
+  /**
+   * スクロール処理
+   */
+  handleScrollMessage(direction) {
+    try {
+      if (direction === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else if (direction === 'bottom') {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
+      }
+    } catch (error) {
+      console.error('Scroll failed:', error)
     }
   }
 
   /**
-   * フォールバック初期化
+   * 軌跡を方向配列に変換
    */
-  initializeFallback() {
-    console.warn('Clean Architecture Gestures: Falling back to legacy mode')
+  convertTrailToDirections(trail) {
+    const directions = []
     
-    // 既存のgesture-simple.jsが動作している場合は、それに委譲
-    // ここでは何もしない（既存システムが動作し続ける）
+    for (let i = 0; i < trail.length - 1; i++) {
+      const start = trail[i]
+      const end = trail[i + 1]
+      
+      const deltaX = end.x - start.x
+      const deltaY = end.y - start.y
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+      
+      if (distance > 5) {
+        let direction = ''
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+        } else {
+          direction = deltaY > 0 ? 'DOWN' : 'UP'
+        }
+        directions.push(direction)
+      }
+    }
+    
+    return this.cleanDirections(directions)
   }
-
+  
   /**
-   * デバッグ情報取得
+   * ジェスチャーが有効かチェック
    */
-  getDebugInfo() {
+  isGestureEnabled(gestureId) {
+    if (!this.settings.defaultGestureStates) {
+      return true // デフォルトで有効
+    }
+    
+    const enabled = this.settings.defaultGestureStates[gestureId]
+    return enabled !== false
+  }
+  
+  /**
+   * Canvas のスタイルを更新
+   */
+  updateCanvasStyle() {
+    try {
+      if (this.canvasRenderer) {
+        this.canvasRenderer.updateStyle({
+          strokeColor: this.settings.strokeColor,
+          strokeWidth: this.settings.strokeWidth
+        })
+      } else {
+        // フォールバック
+        if (this.ctx) {
+          this.ctx.strokeStyle = this.settings.strokeColor
+          this.ctx.lineWidth = this.settings.strokeWidth
+        }
+      }
+    } catch {
+      // フォールバック
+      if (this.ctx) {
+        this.ctx.strokeStyle = this.settings.strokeColor
+        this.ctx.lineWidth = this.settings.strokeWidth
+      }
+    }
+  }
+  
+  /**
+   * Canvas をクリア
+   */
+  clearCanvas() {
+    try {
+      if (this.canvasRenderer) {
+        this.canvasRenderer.clear()
+      } else {
+        if (this.canvas && this.ctx) {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        }
+      }
+    } catch {
+      if (this.canvas && this.ctx) {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+      }
+    }
+  }
+  
+  /**
+   * デバッグステータス表示
+   */
+  async showDebugStatus(message) {
+    try {
+      if (this.debugUseCase) {
+        const isDebugEnabled = await this.debugUseCase.isDebugEnabled()
+        if (isDebugEnabled) {
+          console.log(`🐛 [Debug] ${message}`)
+          // ここで画面上にもステータスを表示する実装を追加可能
+        }
+      } else {
+        console.log(`[Debug Fallback] ${message}`)
+      }
+    } catch {
+      console.log(`[Debug Fallback] ${message}`)
+    }
+  }
+  
+  /**
+   * デバッグ情報取得 - Clean Architecture対応
+   */
+  async getDebugInfo() {
     return {
       isInitialized: this.isInitialized,
-      hasAdapter: Boolean(this.adapter),
+      hasUseCases: {
+        settings: Boolean(this.settingsUseCase),
+        customGesture: Boolean(this.customGestureUseCase),
+        learning: Boolean(this.learningUseCase),
+        debug: Boolean(this.debugUseCase)
+      },
+      hasAdapters: {
+        canvas: Boolean(this.canvasRenderer),
+        messaging: Boolean(this.messagingAdapter)
+      },
+      hasDomainServices: {
+        gestureRecognizer: Boolean(this.gestureRecognizer)
+      },
+      hasControllers: {
+        gestureController: Boolean(this.gestureController)
+      },
       gestureState: { ...this.gestureState },
       settings: { ...this.settings },
-      canvasSize: this.canvas ? { width: this.canvas.width, height: this.canvas.height } : null
+      canvasSize: this.canvas ? { width: this.canvas.width, height: this.canvas.height } : null,
+      customGesturesCount: await this.getCustomGesturesCount(),
+      isDebugEnabled: await this.debugUseCase.isDebugEnabled().catch(() => false)
+    }
+  }
+  
+  /**
+   * カスタムジェスチャー数を取得
+   */
+  async getCustomGesturesCount() {
+    try {
+      if (this.customGestureUseCase) {
+        const customGestures = await this.customGestureUseCase.getAllCustomGestures()
+        return customGestures.length
+      }
+      return 0
+    } catch {
+      return 0
     }
   }
 }
 
-// ページ読み込み完了時に初期化
+// ページ読み込み完了時に初期化 - Clean Architecture対応
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    console.log('🏗️ Clean Architecture Gesture Manager: Initializing...')
+    
     const manager = new CleanGestureManager()
     await manager.initialize()
     
     // グローバルアクセス用
     window.cleanGestureManager = manager
     
+    // デバッグ情報の表示
+    if (await manager.debugUseCase.isDebugEnabled()) {
+      const debugInfo = await manager.getDebugInfo()
+      console.log('🐛 Debug Info:', debugInfo)
+      manager.showDebugStatus('Clean Architecture Gesture Manager initialized successfully')
+    }
+    
+    console.log('✅ Clean Architecture Gesture Manager: Initialization complete')
+    
   } catch (error) {
-    console.error('Clean Gesture Manager initialization failed:', error)
+    console.error('❌ Clean Gesture Manager initialization failed:', error)
   }
 })
 
@@ -422,16 +1012,30 @@ if (document.readyState === 'loading') {
   // 既に読み込み完了している場合は即座に初期化
   (async () => {
     try {
+      console.log('🏗️ Clean Architecture Gesture Manager: Immediate initialization...')
+      
       const manager = new CleanGestureManager()
       await manager.initialize()
       window.cleanGestureManager = manager
+      
+      // デバッグ情報の表示
+      if (await manager.debugUseCase.isDebugEnabled()) {
+        const debugInfo = await manager.getDebugInfo()
+        console.log('🐛 Debug Info:', debugInfo)
+        manager.showDebugStatus('Clean Architecture Gesture Manager initialized immediately')
+      }
+      
+      console.log('✅ Clean Architecture Gesture Manager: Immediate initialization complete')
+      
     } catch (error) {
-      console.error('Clean Gesture Manager immediate initialization failed:', error)
+      console.error('❌ Clean Gesture Manager immediate initialization failed:', error)
     }
   })()
 }
 
-// CommonJS export（テスト用）
+// CommonJS export（テスト用）- Clean Architecture対応
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CleanGestureManager }
+  module.exports = { 
+    CleanGestureManager
+  }
 }

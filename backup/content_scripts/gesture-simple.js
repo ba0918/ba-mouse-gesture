@@ -1,5 +1,20 @@
-// 設定対応マウスジェスチャー検出 - TODO自動更新ルール改善テスト
-DebugLogger.info('Mouse Gesture: Settings-enabled version loaded')
+// 設定対応マウスジェスチャー検出 - Clean Architecture準拠版
+DebugLogger.info('Mouse Gesture: Clean Architecture version loaded')
+
+// 🎯 Clean Architecture実装の初期化（必須）
+if (!window.SettingsUseCase) {
+  console.error('❌ FATAL: SettingsUseCase not loaded in content script')
+  throw new Error('SettingsUseCase is required for Clean Architecture compliance')
+}
+
+let settingsUseCase
+try {
+  settingsUseCase = new window.SettingsUseCase()
+  console.log('✅ SettingsUseCase initialized in content script')
+} catch (error) {
+  console.error('❌ FATAL: Failed to initialize SettingsUseCase:', error)
+  throw error
+}
 
 // カスタムジェスチャー機能をインポート
 const customGestureManager = new CustomGestureManager()
@@ -10,7 +25,7 @@ let settings = {
   enabled: true,
   strokeColor: '#2563eb',
   strokeWidth: 3,
-  excludedSites: [],
+  excludeList: [], // 🎯 修正: excludedSites → excludeList (popup側と統一)
   gestureThreshold: 15, // ジェスチャー検出の最小距離（px）
   defaultGestureStates: {
     // 基本ジェスチャー
@@ -35,7 +50,7 @@ function isExcludedSite() {
   const currentUrl = window.location.href
   const currentHost = window.location.hostname
     
-  return settings.excludedSites.some(pattern => {
+  return settings.excludeList.some(pattern => { // 🎯 修正: excludedSites → excludeList
     // 完全URL マッチ
     if (pattern.includes('://')) {
       return currentUrl.includes(pattern) || currentUrl.match(pattern.replace(/\*/g, '.*'))
@@ -67,8 +82,9 @@ function isGestureEnabled(gestureId) {
 // 設定を読み込む
 async function loadSettings() {
   try {
-    const result = await chrome.storage.sync.get(settings)
-    settings = { ...settings, ...result }
+    // 🎯 Clean Architecture準拠: UseCase経由でのみアクセス
+    const loadedSettings = await settingsUseCase.getSettings()
+    settings = { ...settings, ...loadedSettings }
     DebugLogger.info('Settings loaded:', settings)
     
     // カスタムジェスチャー設定も読み込み
@@ -96,33 +112,24 @@ async function loadSettings() {
   }
 }
 
-// 設定変更の監視
+// 設定変更の監視 - Clean Architecture準拠
+// 🚫 直接chrome.storage.onChangedは使わず、UseCase経由で設定を再取得
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'sync') {
-    DebugLogger.info('Settings changed:', changes)
-        
-    // 設定を更新
-    Object.keys(changes).forEach(key => {
-      if (Object.prototype.hasOwnProperty.call(settings, key)) {
-        settings[key] = changes[key].newValue
-      }
-    })
-        
-    // 除外サイト/無効化チェック
-    if (changes.enabled || changes.excludeList) {
+  if (namespace === 'sync' && changes.settings) {
+    DebugLogger.info('Settings changed detected, refreshing via UseCase')
+    
+    // UseCase経由で最新設定を取得（Clean Architecture準拠）
+    loadSettings().then(() => {
+      // 除外サイト/無効化チェック
       if (!settings.enabled || isExcludedSite()) {
         removeTrailCanvas()
         DebugLogger.showStatus('マウスジェスチャーが無効になりました')
       } else {
         DebugLogger.showStatus('マウスジェスチャーが有効になりました')
       }
-    }
-    
-    // ジェスチャー個別状態の変更通知
-    if (changes.defaultGestureStates) {
-      DebugLogger.info('Gesture states updated:', changes.defaultGestureStates.newValue)
-      DebugLogger.showStatus('ジェスチャー状態が更新されました')
-    }
+    }).catch(error => {
+      DebugLogger.error('Failed to reload settings:', error)
+    })
         
     // 軌跡設定が変更された場合
     if (changes.strokeColor || changes.strokeWidth) {

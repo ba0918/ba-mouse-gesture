@@ -5,12 +5,19 @@
  * 🎯 修正：統一されたストレージアクセスでpopup-content script同期問題を解決
  */
 
-const DebugSettingsEntity = require('../../domain/entities/DebugSettingsEntity')
-const DebugStorageAdapter = require('../../infrastructure/adapters/DebugStorageAdapter')
+// ブラウザ環境では window オブジェクトから取得
+// テスト環境での安全性を考慮して存在チェックを追加
+const DebugSettingsEntity = (typeof window !== 'undefined' && window.DebugSettingsEntity) || 
+  (typeof require !== 'undefined' ? require('../../domain/entities/DebugSettingsEntity') : null)
+const DebugStorageAdapter = (typeof window !== 'undefined' && window.DebugStorageAdapter) || 
+  (typeof require !== 'undefined' ? require('../../infrastructure/adapters/DebugStorageAdapter') : null)
 
 class DebugSettingsUseCase {
   constructor() {
     // 統一されたストレージアダプターを使用
+    if (!DebugStorageAdapter) {
+      throw new Error('DebugStorageAdapter is not available')
+    }
     this.storageAdapter = new DebugStorageAdapter()
     
     // 同期リスナーの状態管理

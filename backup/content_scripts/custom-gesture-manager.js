@@ -1,4 +1,5 @@
 // カスタムジェスチャー管理クラス
+// Clean Architecture準拠 - ストレージアダプター使用
 
 class CustomGestureManager {
   constructor() {
@@ -7,6 +8,28 @@ class CustomGestureManager {
       maxCustomGestures: 20,
       minPatternLength: 1,
       matchThreshold: 0.6
+    }
+    
+    // Clean Architecture準拠: StorageAdapterを使用（フォールバック機能付き）
+    if (typeof window !== 'undefined' && window.ContentStorageAdapter) {
+      this.storageAdapter = new window.ContentStorageAdapter()
+    } else {
+      // テスト環境やStorageAdapterが利用できない場合のフォールバック
+      this.storageAdapter = {
+        isAvailable: () => typeof chrome !== 'undefined' && chrome.storage,
+        set: async (data) => {
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            return await chrome.storage.sync.set(data)
+          }
+          return false
+        },
+        get: async (keys) => {
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            return await chrome.storage.sync.get(keys)
+          }
+          return {}
+        }
+      }
     }
   }
 
@@ -132,34 +155,48 @@ class CustomGestureManager {
   }
 
   // カスタムジェスチャーを保存
+  // Clean Architecture準拠: StorageAdapterを使用
   async saveCustomGestures() {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      await chrome.storage.sync.set({
+    try {
+      if (!this.storageAdapter.isAvailable()) {
+        console.warn('⚠️ Storage adapter not available')
+        return
+      }
+      
+      await this.storageAdapter.set({
         customGestures: this.customGestures
       })
+    } catch (error) {
+      console.error('❌ Failed to save custom gestures:', error)
+      throw error
     }
   }
 
   // カスタムジェスチャーを読み込み
+  // Clean Architecture準拠: StorageAdapterを使用
   async loadCustomGestures() {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        const result = await chrome.storage.sync.get({ customGestures: [] })
-        const rawGestures = result.customGestures || []
-        
-        // データの検証とフィルタリング
-        this.customGestures = rawGestures.filter(gesture => {
-          // 必須フィールドの存在確認
-          return gesture && 
-                 typeof gesture === 'object' &&
-                 gesture.id &&
-                 gesture.name &&
-                 Array.isArray(gesture.pattern) &&
-                 gesture.pattern.length > 0 &&
-                 gesture.action &&
-                 typeof gesture.enabled === 'boolean'
-        })
+      if (!this.storageAdapter.isAvailable()) {
+        console.warn('⚠️ Storage adapter not available')
+        this.customGestures = []
+        return
       }
+      
+      const result = await this.storageAdapter.get({ customGestures: [] })
+      const rawGestures = result.customGestures || []
+      
+      // データの検証とフィルタリング
+      this.customGestures = rawGestures.filter(gesture => {
+        // 必須フィールドの存在確認
+        return gesture && 
+               typeof gesture === 'object' &&
+               gesture.id &&
+               gesture.name &&
+               Array.isArray(gesture.pattern) &&
+               gesture.pattern.length > 0 &&
+               gesture.action &&
+               typeof gesture.enabled === 'boolean'
+      })
     } catch (error) {
       console.warn('Failed to load custom gestures:', error)
       this.customGestures = [] // デフォルト状態を維持
