@@ -3,6 +3,10 @@
  * UseCaseパターンとクリーンアーキテクチャに基づく実装
  */
 
+// Clean Architecture - Infrastructure層のアダプターをインポート
+// eslint-disable-next-line no-unused-vars
+import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter.js'
+
 // Clean Architecture - Dynamic imports (ビルド時に解決)
 // SettingsUseCase, CustomGestureUseCase等のクラスは実行時に動的に読み込み
 
@@ -143,8 +147,16 @@ class CleanGestureManager {
     return {
       async isDebugEnabled() {
         try {
+          // 詳細デバッグ情報
+          console.log('🔧 [Debug] isDebugEnabled check:', {
+            windowChromeStorageAdapter: typeof window.ChromeStorageAdapter,
+            windowKeys: Object.keys(window).filter(k => k.includes('Chrome')),
+            chromeStorage: typeof chrome?.storage
+          })
+          
           // Infrastructure層のChromeStorageAdapterを使用
           if (window.ChromeStorageAdapter) {
+            console.log('🔧 [Debug] Using window.ChromeStorageAdapter')
             const storageAdapter = new window.ChromeStorageAdapter()
             const data = await storageAdapter.get(['appSettings'])
             const debugEnabled = data.appSettings?.debugSettings?.enabled || false
@@ -152,6 +164,7 @@ class CleanGestureManager {
           }
           
           // フォールバック: Chrome Storage APIを直接使用
+          console.log('🔧 [Debug] window.ChromeStorageAdapter not available, using direct chrome.storage')
           if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
             return new Promise((resolve) => {
               chrome.storage.sync.get(['appSettings'], (result) => {
@@ -171,8 +184,16 @@ class CleanGestureManager {
 
       async getDebugSettings() {
         try {
+          // 詳細デバッグ情報
+          console.log('🔧 [Debug] getDebugSettings check:', {
+            windowChromeStorageAdapter: typeof window.ChromeStorageAdapter,
+            windowKeys: Object.keys(window).filter(k => k.includes('Chrome')),
+            chromeStorage: typeof chrome?.storage
+          })
+          
           // Infrastructure層のChromeStorageAdapterを使用
           if (window.ChromeStorageAdapter) {
+            console.log('🔧 [Debug] Using window.ChromeStorageAdapter for getDebugSettings')
             const storageAdapter = new window.ChromeStorageAdapter()
             const data = await storageAdapter.get(['appSettings'])
             

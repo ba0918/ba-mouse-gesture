@@ -279,3 +279,8 @@ class ChromeStorageAdapter {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ChromeStorageAdapter }
 }
+
+// グローバル定義（ブラウザ環境用）
+if (typeof window !== 'undefined') {
+  window.ChromeStorageAdapter = ChromeStorageAdapter
+}
