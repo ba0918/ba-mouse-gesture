@@ -207,34 +207,40 @@ class CleanGestureManager {
    * 設定の読み込み - Clean Architecture対応
    */
   async loadSettings() {
-    try {
-      // UseCase経由で設定を読み込み
-      const loadedSettings = await this.settingsUseCase.getSettings()
-      this.settings = {
-        enabled: loadedSettings.enabled ?? true,
-        strokeColor: loadedSettings.strokeColor || '#2196F3',
-        strokeWidth: loadedSettings.strokeWidth || 3,
-        gestureThreshold: loadedSettings.gestureThreshold || 15,
-        excludeList: loadedSettings.excludeList || [],
-        defaultGestureStates: loadedSettings.defaultGestureStates || {}
+    // Clean Architecture UseCase が利用可能な場合のみ使用
+    if (this.settingsUseCase && this.customGestureUseCase) {
+      try {
+        // UseCase経由で設定を読み込み
+        const loadedSettings = await this.settingsUseCase.getSettings()
+        this.settings = {
+          enabled: loadedSettings.enabled ?? true,
+          strokeColor: loadedSettings.strokeColor || '#2196F3',
+          strokeWidth: loadedSettings.strokeWidth || 3,
+          gestureThreshold: loadedSettings.gestureThreshold || 15,
+          excludeList: loadedSettings.excludeList || [],
+          defaultGestureStates: loadedSettings.defaultGestureStates || {}
+        }
+        
+        // カスタムジェスチャーも読み込み
+        await this.customGestureUseCase.loadCustomGestures()
+        
+        console.log('Settings loaded via UseCase:', this.settings)
+        
+        // デバッグ情報の表示
+        if (await this.debugUseCase.isDebugEnabled()) {
+          console.log('🐛 Debug mode enabled')
+          this.showDebugStatus('設定を読み込みました')
+        }
+        
+        return
+        
+      } catch (error) {
+        console.warn('Failed to load settings via UseCase, using fallback:', error)
       }
-      
-      // カスタムジェスチャーも読み込み
-      await this.customGestureUseCase.loadCustomGestures()
-      
-      console.log('Settings loaded via UseCase:', this.settings)
-      
-      // デバッグ情報の表示
-      if (await this.debugUseCase.isDebugEnabled()) {
-        console.log('🐛 Debug mode enabled')
-        this.showDebugStatus('設定を読み込みました')
-      }
-      
-    } catch (error) {
-      console.error('Failed to load settings via UseCase:', error)
-      // フォールバック
-      await this.loadSettingsFallback()
     }
+    
+    // Clean Architecture 初期化未完了の場合は直接フォールバック使用
+    await this.loadSettingsFallback()
   }
   
   /**
@@ -298,25 +304,31 @@ class CleanGestureManager {
    * Canvas初期化 - Clean Architecture対応
    */
   initializeCanvas() {
-    try {
-      // Clean Architecture - Adapter経由でCanvas初期化
-      this.canvasRenderer.initialize({
-        canvasId: 'mouse-gesture-trail',
-        strokeColor: this.settings.strokeColor,
-        strokeWidth: this.settings.strokeWidth,
-        zIndex: 999999
-      })
-      
-      // 下位互換性のため、直接アクセス用のcanvasも保持
-      this.canvas = this.canvasRenderer.getCanvas()
-      this.ctx = this.canvasRenderer.getContext()
-      
-      console.log('Canvas initialized via CanvasRendererAdapter')
-      
-    } catch (error) {
-      console.error('Canvas adapter initialization failed, using fallback:', error)
-      this.initializeCanvasFallback()
+    // Clean Architecture Adapter が利用可能な場合のみ使用
+    if (this.canvasRenderer) {
+      try {
+        // Clean Architecture - Adapter経由でCanvas初期化
+        this.canvasRenderer.initialize({
+          canvasId: 'mouse-gesture-trail',
+          strokeColor: this.settings.strokeColor,
+          strokeWidth: this.settings.strokeWidth,
+          zIndex: 999999
+        })
+        
+        // 下位互換性のため、直接アクセス用のcanvasも保持
+        this.canvas = this.canvasRenderer.getCanvas()
+        this.ctx = this.canvasRenderer.getContext()
+        
+        console.log('Canvas initialized via CanvasRendererAdapter')
+        return
+        
+      } catch (error) {
+        console.warn('Canvas adapter initialization failed, using fallback:', error)
+      }
     }
+    
+    // Clean Architecture 初期化未完了の場合は直接フォールバック使用
+    this.initializeCanvasFallback()
   }
   
   /**
