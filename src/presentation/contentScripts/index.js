@@ -937,17 +937,99 @@ class CleanGestureManager {
   async showDebugStatus(message) {
     try {
       if (this.debugUseCase) {
-        const isDebugEnabled = await this.debugUseCase.isDebugEnabled()
-        if (isDebugEnabled) {
+        const debugSettings = await this.debugUseCase.getDebugSettings()
+        
+        // コンソールログ
+        if (debugSettings.enabled) {
           console.log(`🐛 [Debug] ${message}`)
-          // ここで画面上にもステータスを表示する実装を追加可能
+        }
+        
+        // 画面上への表示
+        if (debugSettings.shouldShowStatus()) {
+          this.createOrUpdateDebugStatusElement(message, debugSettings.statusPosition)
         }
       } else {
         console.log(`[Debug Fallback] ${message}`)
       }
-    } catch {
+    } catch (error) {
       console.log(`[Debug Fallback] ${message}`)
     }
+  }
+
+  /**
+   * デバッグステータス表示要素の作成/更新
+   */
+  createOrUpdateDebugStatusElement(message, position = 'top-right') {
+    const statusId = 'mouse-gesture-debug-status'
+    let statusElement = document.getElementById(statusId)
+    
+    // 要素が存在しない場合は作成
+    if (!statusElement) {
+      statusElement = document.createElement('div')
+      statusElement.id = statusId
+      statusElement.style.cssText = this.getDebugStatusStyles(position)
+      document.body.appendChild(statusElement)
+    }
+    
+    // メッセージを更新
+    statusElement.textContent = message
+    statusElement.style.display = 'block'
+    
+    // 位置を更新（設定が変更された場合）
+    this.updateDebugStatusPosition(statusElement, position)
+    
+    // 3秒後に自動的に非表示
+    clearTimeout(this.debugStatusTimeout)
+    this.debugStatusTimeout = setTimeout(() => {
+      if (statusElement) {
+        statusElement.style.display = 'none'
+      }
+    }, 3000)
+  }
+
+  /**
+   * デバッグステータスのスタイルを取得
+   */
+  getDebugStatusStyles(position) {
+    const baseStyles = `
+      position: fixed;
+      z-index: 9999999;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: bold;
+      pointer-events: none;
+      max-width: 300px;
+      word-wrap: break-word;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    `
+    
+    const positionStyles = {
+      'top-right': 'top: 20px; right: 20px;',
+      'top-left': 'top: 20px; left: 20px;',
+      'bottom-right': 'bottom: 20px; right: 20px;',
+      'bottom-left': 'bottom: 20px; left: 20px;'
+    }
+    
+    return baseStyles + (positionStyles[position] || positionStyles['top-right'])
+  }
+
+  /**
+   * デバッグステータスの位置を更新
+   */
+  updateDebugStatusPosition(element, position) {
+    const positionStyles = {
+      'top-right': { top: '20px', right: '20px', bottom: 'auto', left: 'auto' },
+      'top-left': { top: '20px', left: '20px', bottom: 'auto', right: 'auto' },
+      'bottom-right': { bottom: '20px', right: '20px', top: 'auto', left: 'auto' },
+      'bottom-left': { bottom: '20px', left: '20px', top: 'auto', right: 'auto' }
+    }
+    
+    const styles = positionStyles[position] || positionStyles['top-right']
+    Object.assign(element.style, styles)
   }
   
   /**
