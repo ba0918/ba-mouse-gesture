@@ -34,8 +34,8 @@ class OptionsRenderController {
 
       const html = this.buildGestureListHTML(gestures)
       listElement.innerHTML = html
+      // イベント設定は OptionsEventController でドキュメントレベルのイベントデリゲーションで処理
 
-      this.setupGestureListEvents(listElement)
 
     } catch (error) {
       console.error('ジェスチャー一覧表示エラー:', error)
@@ -56,8 +56,8 @@ class OptionsRenderController {
 
       const html = this.buildCustomGestureListHTML(customGestures)
       listElement.innerHTML = html
+      // イベント設定は OptionsEventController でドキュメントレベルのイベントデリゲーションで処理
 
-      this.setupCustomGestureListEvents(listElement)
 
     } catch (error) {
       console.error('カスタムジェスチャー一覧表示エラー:', error)
@@ -93,7 +93,6 @@ class OptionsRenderController {
       })
 
       listElement.innerHTML = html
-      this.setupExcludeListEvents(listElement)
 
     } catch (error) {
       console.error('除外サイト一覧表示エラー:', error)
@@ -209,110 +208,8 @@ class OptionsRenderController {
     return categories
   }
 
-  /**
-   * ジェスチャー一覧のイベント設定
-   * @param {HTMLElement} listElement - リスト要素
-   * @private
-   */
-  setupGestureListEvents(listElement) {
-    // イベント委譲でトグル処理
-    listElement.addEventListener('change', async (e) => {
-      if (e.target.type === 'checkbox' && e.target.dataset.gestureId) {
-        const gestureId = e.target.dataset.gestureId
-        
-        // カスタムジェスチャーかデフォルトジェスチャーかを判別
-        const isCustomGesture = gestureId.startsWith('custom_')
-        
-        try {
-          if (isCustomGesture) {
-            await this.customGestureUseCase.toggleCustomGesture(gestureId, e.target.checked)
-            await this.renderCustomGestureList() // カスタムジェスチャーセクションも更新
-          } else {
-            await this.settingsUseCase.toggleGesture(gestureId, e.target.checked)
-          }
-          
-          this.showStatus(`ジェスチャー「${gestureId}」を${e.target.checked ? '有効' : '無効'}にしました`, 'success')
-        } catch (error) {
-          console.error('ジェスチャートグルエラー:', error)
-          this.showStatus('ジェスチャー設定の変更に失敗しました', 'error')
-          // チェック状態を元に戻す
-          e.target.checked = !e.target.checked
-        }
-      }
-    })
-  }
 
-  /**
-   * カスタムジェスチャー一覧のイベント設定
-   * @param {HTMLElement} listElement - リスト要素
-   * @private
-   */
-  setupCustomGestureListEvents(listElement) {
-    // クリックイベント（編集・削除）
-    listElement.addEventListener('click', async (e) => {
-      const gestureId = e.target.dataset.gestureId
-      
-      try {
-        if (e.target.classList.contains('edit-btn')) {
-          // 編集処理は別のコントローラーに委譲
-          if (this.editCustomGesture) {
-            await this.editCustomGesture(gestureId)
-          }
-        } else if (e.target.classList.contains('delete-btn')) {
-          const confirmed = await this.showConfirm('このカスタムジェスチャーを削除しますか？')
-          if (confirmed) {
-            await this.customGestureUseCase.deleteCustomGesture(gestureId)
-            await this.renderCustomGestureList()
-            await this.renderGestureList() // ジェスチャー一覧も同期更新
-            this.showStatus('カスタムジェスチャーを削除しました', 'success')
-          }
-        }
-      } catch (error) {
-        console.error('カスタムジェスチャー操作エラー:', error)
-        this.showStatus('操作に失敗しました', 'error')
-      }
-    })
 
-    // 変更イベント（トグル）
-    listElement.addEventListener('change', async (e) => {
-      if (e.target.type === 'checkbox' && e.target.dataset.gestureId) {
-        const gestureId = e.target.dataset.gestureId
-        
-        try {
-          await this.customGestureUseCase.toggleCustomGesture(gestureId, e.target.checked)
-          await this.renderGestureList() // ジェスチャー一覧も同期更新
-          this.showStatus('ジェスチャー状態を変更しました', 'success')
-        } catch (error) {
-          console.error('カスタムジェスチャートグルエラー:', error)
-          this.showStatus('ジェスチャー設定の変更に失敗しました', 'error')
-          // チェック状態を元に戻す
-          e.target.checked = !e.target.checked
-        }
-      }
-    })
-  }
-
-  /**
-   * 除外サイト一覧のイベント設定
-   * @param {HTMLElement} listElement - リスト要素
-   * @private
-   */
-  setupExcludeListEvents(listElement) {
-    listElement.addEventListener('click', async (e) => {
-      if (e.target.classList.contains('remove-exclude-btn')) {
-        const pattern = e.target.dataset.pattern
-        
-        try {
-          await this.settingsUseCase.removeExcludeSite(pattern)
-          await this.renderExcludeList()
-          this.showStatus('除外サイトを削除しました', 'success')
-        } catch (error) {
-          console.error('除外サイト削除エラー:', error)
-          this.showStatus('除外サイトの削除に失敗しました', 'error')
-        }
-      }
-    })
-  }
 
   /**
    * HTMLエスケープ
@@ -353,8 +250,10 @@ class OptionsRenderController {
 // CommonJS用のエクスポート（テスト対応）
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { OptionsRenderController }
-  // グローバル定義もテスト環境で必要
-  global.OptionsRenderController = OptionsRenderController
+  // グローバル定義もテスト環境で必要（globalが存在する場合のみ）
+  if (typeof global !== 'undefined') {
+    global.OptionsRenderController = OptionsRenderController
+  }
 }
 
 // グローバル定義（ブラウザ環境用）

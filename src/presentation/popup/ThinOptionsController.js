@@ -31,10 +31,10 @@ class ThinOptionsController {
     this.loadDependencies()
     
     // パターンフォーマッター
-    this.patternFormatter = new GesturePatternFormatter()
+    this.patternFormatter = new window.GesturePatternFormatter()
     
     // 描画コントローラー
-    this.renderController = new OptionsRenderController({
+    this.renderController = new window.OptionsRenderController({
       settingsUseCase: this.settingsUseCase,
       customGestureUseCase: this.customGestureUseCase,
       gestureListUseCase: this.gestureListUseCase,
@@ -43,7 +43,7 @@ class ThinOptionsController {
     })
     
     // イベントコントローラー
-    this.eventController = new OptionsEventController({
+    this.eventController = new window.OptionsEventController({
       settingsUseCase: this.settingsUseCase,
       customGestureUseCase: this.customGestureUseCase,
       showStatus: (message, type, duration) => this.showStatus(message, type, duration),
@@ -67,11 +67,51 @@ class ThinOptionsController {
       (message) => this.showConfirm(message)
     )
     
+    // 外部レンダリングコールバックを設定
+    this.renderController.externalRenderCustomGestureList = () => this.renderCustomGestureList()
+    this.renderController.externalRenderGestureList = () => this.renderGestureList()
+    
     // イベントコントローラーにコールバックを設定
     this.eventController.setCallbacks(
       async () => {
         await this.renderController.renderCustomGestureList()
         await this.renderController.renderGestureList()
+      },
+      (gestureId) => this.editCustomGesture(gestureId),
+      (message) => this.showConfirm(message),
+      () => this.editingGestureId,
+      () => this.exitEditMode(),
+      async () => {
+        // 削除時はアクションフィールドのみ保持、他はクリア
+        console.log('🔧 [Debug] Delete callback: preserving action field only')
+        
+        // アクションフィールドの値を保存
+        const actionField = document.getElementById('gestureAction')
+        const preservedAction = actionField?.value || ''
+        console.log('🔧 [Debug] Preserving action:', preservedAction)
+        
+        // UI更新
+        await this.renderController.renderCustomGestureList()
+        await this.renderController.renderGestureList()
+        
+        // アクションフィールドのみ復元（名前とパターンはクリア）
+        const nameField = document.getElementById('gestureName')
+        if (nameField) nameField.value = ''
+        
+        if (actionField && preservedAction) {
+          actionField.value = preservedAction
+          // changeイベントを発火して状態を同期
+          actionField.dispatchEvent(new window.Event('change', { bubbles: true }))
+          console.log('🔧 [Debug] Action field restored:', actionField.value)
+        }
+        
+        // パターンをクリア
+        if (this.eventController) {
+          this.eventController.currentPattern = []
+          this.eventController.updatePatternDisplay()
+        }
+        
+        console.log('🔧 [Debug] Delete callback completed')
       }
     )
   }
@@ -142,10 +182,17 @@ class ThinOptionsController {
     
     // デバッグ設定
     const debugSettings = settings.debugSettings || {}
-    this.updateElement('debugEnabled', debugSettings.enabled || false, 'checked')
+    const debugEnabled = debugSettings.enabled || false
+    this.updateElement('debugEnabled', debugEnabled, 'checked')
     this.updateElement('debugLogLevel', debugSettings.logLevel || 2, 'value')
     this.updateElement('debugShowStatus', debugSettings.showStatus || false, 'checked')
     this.updateElement('debugStatusPosition', debugSettings.statusPosition || 'top-right', 'value')
+    
+    // デバッグオプションの表示/非表示制御
+    const debugOptionsElement = document.getElementById('debugOptions')
+    if (debugOptionsElement) {
+      debugOptionsElement.style.display = debugEnabled ? 'block' : 'none'
+    }
     
     // プレビュー更新
     this.updatePreview()
@@ -156,7 +203,8 @@ class ThinOptionsController {
    * @private
    */
   loadDependencies() {
-    // Node.js/テスト環境での依存クラス読み込み
+    // ブラウザ環境では何もしない（グローバルスコープから直接参照）
+    // テスト環境ではrequireで読み込み
     if (typeof module !== 'undefined' && typeof require !== 'undefined') {
       try {
         const { GesturePatternFormatter } = require('../controllers/GesturePatternFormatter')
@@ -285,13 +333,134 @@ class ThinOptionsController {
    */
   async editCustomGesture(gestureId) {
     try {
-      // 編集ダイアログの表示（実装省略）
-      console.log('Edit gesture:', gestureId)
-      this.showStatus('編集機能は実装中です', 'info')
+      // 編集対象のジェスチャーを取得
+      const customGestures = await this.customGestureUseCase.getAllCustomGestures()
+      const gesture = customGestures.find(g => g.id === gestureId)
+      
+      if (!gesture) {
+        this.showStatus('編集対象のジェスチャーが見つかりません', 'error')
+        return
+      }
+
+      // 編集フォームに値を設定
+      this.updateElement('gestureName', gesture.name, 'value')
+      this.updateElement('gestureAction', gesture.action, 'value')
+      
+      // パターンを設定（eventControllerの内部状態を更新）
+      if (this.eventController) {
+        this.eventController.currentPattern = this.convertPatternToDirectionArray(gesture.pattern)
+        this.eventController.updatePatternDisplay()
+      }
+      
+      // 編集モードに切り替え
+      this.enterEditMode(gestureId)
+      
+      // カスタムジェスチャーセクションまでスクロール
+      const customGestureSection = document.getElementById('customGestureSection')
+      if (customGestureSection) {
+        customGestureSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      
+      this.showStatus('編集モードに入りました。フォームを変更して「更新」ボタンを押してください', 'info', 5000)
+      
     } catch (error) {
       console.error('カスタムジェスチャー編集エラー:', error)
       this.showStatus('編集に失敗しました', 'error')
     }
+  }
+
+  /**
+   * パターンを方向配列に変換
+   * @param {Array|string} pattern - ジェスチャーパターン
+   * @returns {Array} 方向配列
+   * @private
+   */
+  convertPatternToDirectionArray(pattern) {
+    if (Array.isArray(pattern)) {
+      // 既に配列の場合はそのまま返す
+      return pattern
+    }
+    
+    if (typeof pattern === 'string') {
+      // 文字列パターンの場合は方向に変換
+      const directionMap = {
+        '↑': 'UP',
+        '↓': 'DOWN', 
+        '←': 'LEFT',
+        '→': 'RIGHT'
+      }
+      
+      return pattern.split('').map(char => directionMap[char]).filter(Boolean)
+    }
+    
+    // その他の形式の場合は空配列を返す
+    return []
+  }
+
+  /**
+   * 編集モードに入る
+   * @param {string} gestureId - 編集中のジェスチャーID
+   * @private
+   */
+  enterEditMode(gestureId) {
+    // 編集状態を保存
+    this.editingGestureId = gestureId
+    
+    // ボタンテキスト変更
+    const addButton = document.getElementById('addGestureBtn')
+    if (addButton) {
+      addButton.textContent = '更新'
+      addButton.classList.add('edit-mode')
+    }
+    
+    // キャンセルボタンを表示
+    let cancelButton = document.getElementById('cancelEditBtn')
+    if (!cancelButton) {
+      cancelButton = document.createElement('button')
+      cancelButton.id = 'cancelEditBtn'
+      cancelButton.type = 'button'
+      cancelButton.textContent = '編集をキャンセル'
+      cancelButton.className = 'cancel-btn'
+      
+      if (addButton && addButton.parentNode) {
+        addButton.parentNode.insertBefore(cancelButton, addButton.nextSibling)
+      }
+    }
+    cancelButton.style.display = 'inline-block'
+    
+    // キャンセルボタンのイベント設定
+    cancelButton.onclick = () => this.exitEditMode()
+  }
+
+  /**
+   * 編集モードを終了
+   * @private
+   */
+  exitEditMode() {
+    // 編集状態をクリア
+    this.editingGestureId = null
+    
+    // ボタンテキストを元に戻す
+    const addButton = document.getElementById('addGestureBtn')
+    if (addButton) {
+      addButton.textContent = 'カスタムジェスチャーを追加'
+      addButton.classList.remove('edit-mode')
+    }
+    
+    // キャンセルボタンを非表示
+    const cancelButton = document.getElementById('cancelEditBtn')
+    if (cancelButton) {
+      cancelButton.style.display = 'none'
+    }
+    
+    // フォームをクリア
+    this.updateElement('gestureName', '', 'value')
+    this.updateElement('gestureAction', '', 'value')
+    if (this.eventController) {
+      this.eventController.clearPattern()
+    }
+    
+    this.showStatus('編集をキャンセルしました', 'info')
   }
 
   /**
@@ -311,24 +480,63 @@ class ThinOptionsController {
    * ジェスチャー一覧を再描画
    * @returns {Promise<void>}
    */
-  async renderGestureList() {
-    return await this.renderController.renderGestureList()
+  renderGestureList() {
+    return this.renderController.renderGestureList()
   }
 
   /**
    * カスタムジェスチャー一覧を再描画
    * @returns {Promise<void>}
    */
-  async renderCustomGestureList() {
-    return await this.renderController.renderCustomGestureList()
+  renderCustomGestureList() {
+    return this.renderController.renderCustomGestureList()
   }
 
   /**
    * 除外サイト一覧を再描画
    * @returns {Promise<void>}
    */
-  async renderExcludeList() {
-    return await this.renderController.renderExcludeList()
+  renderExcludeList() {
+    return this.renderController.renderExcludeList()
+  }
+
+  // ========== GesturePatternFormatter委譲メソッド（テスト互換性のため） ==========
+
+  /**
+   * パターンを矢印表記に変換（委譲）
+   * @param {*} pattern - ジェスチャーパターン
+   * @param {number} maxLength - 最大表示長
+   * @returns {string} 矢印表記のパターン
+   */
+  formatPatternToArrows(pattern, maxLength = 8) {
+    return this.patternFormatter.formatPatternToArrows(pattern, maxLength)
+  }
+
+  /**
+   * アクションの表示名を取得（委譲）
+   * @param {string} action - アクション名
+   * @returns {string} 表示用アクション名
+   */
+  getActionDisplayName(action) {
+    return this.patternFormatter.getActionDisplayName(action)
+  }
+
+  /**
+   * カスタムジェスチャー一覧のHTML生成（委譲）
+   * @param {Array} gestures - ジェスチャー配列
+   * @returns {string} HTML文字列
+   */
+  buildCustomGestureListHTML(gestures) {
+    return this.renderController.buildCustomGestureListHTML(gestures)
+  }
+
+  /**
+   * 方向文字列を矢印に変換（委譲）
+   * @param {string} direction - 方向文字列
+   * @returns {string} 矢印文字
+   */
+  directionToArrow(direction) {
+    return this.patternFormatter.directionToArrow(direction)
   }
 }
 

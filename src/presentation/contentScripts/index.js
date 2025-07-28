@@ -163,6 +163,12 @@ class CleanGestureManager {
           if (window.ChromeStorageAdapter) {
             const storageAdapter = new window.ChromeStorageAdapter()
             const data = await storageAdapter.get(['appSettings'])
+            
+            // 詳細なデバッグログ
+            console.log('🔧 [Debug] Raw storage data:', JSON.stringify(data, null, 2))
+            console.log('🔧 [Debug] appSettings:', JSON.stringify(data.appSettings, null, 2))
+            console.log('🔧 [Debug] appSettings.debugSettings:', JSON.stringify(data.appSettings?.debugSettings, null, 2))
+            
             const debugSettings = data.appSettings?.debugSettings || {
               enabled: false,
               logLevel: 2,
@@ -172,28 +178,43 @@ class CleanGestureManager {
             
             // shouldShowStatus メソッドを追加
             debugSettings.shouldShowStatus = function () {
-              return this.enabled && this.showStatus
+              const result = this.enabled && this.showStatus
+              console.log('🔧 [Debug] shouldShowStatus calculation:', {
+                enabled: this.enabled,
+                showStatus: this.showStatus,
+                result: result
+              })
+              return result
             }
+            
+            console.log('🔧 [Debug] Final debug settings:', JSON.stringify(debugSettings, null, 2))
             
             return debugSettings
           }
           
           // フォールバック実装
+          console.warn('🔧 [Debug] ChromeStorageAdapter not available, using fallback')
           return {
             enabled: false,
             logLevel: 2,
             showStatus: false,
             statusPosition: 'top-right',
-            shouldShowStatus: () => false
+            shouldShowStatus: () => {
+              console.log('🔧 [Debug] Fallback shouldShowStatus called')
+              return false
+            }
           }
         } catch (error) {
-          console.error('Get debug settings failed:', error)
+          console.error('🔧 [Debug] Get debug settings failed:', error)
           return {
             enabled: false,
             logLevel: 2,
             showStatus: false,
             statusPosition: 'top-right',
-            shouldShowStatus: () => false
+            shouldShowStatus: () => {
+              console.log('🔧 [Debug] Error fallback shouldShowStatus called')
+              return false
+            }
           }
         }
       }

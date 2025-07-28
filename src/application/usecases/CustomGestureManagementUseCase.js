@@ -89,40 +89,57 @@ class CustomGestureManagementUseCase {
    * @returns {Promise<CustomGesture>}
    */
   async createCustomGesture(name, rawPoints, action) {
+    console.log('🔧 [Debug] createCustomGesture called:', { name, rawPointsLength: rawPoints?.length, action })
+    
     if (!this.isInitialized) {
+      console.log('🔧 [Debug] UseCase not initialized, initializing...')
       this.initialize()
     }
 
     try {
+      console.log('🔧 [Debug] Validating gesture creation input...')
+      
       // 入力値の検証
       this.validateGestureCreation(name, rawPoints, action)
+      console.log('🔧 [Debug] Input validation passed')
 
       // 重複チェック
+      console.log('🔧 [Debug] Checking for duplicate names...')
       await this.checkDuplicateName(name)
+      console.log('🔧 [Debug] Duplicate check passed')
 
       // 軌跡をPointオブジェクトに変換
+      console.log('🔧 [Debug] Converting raw points to Point objects...')
       const points = this.convertToPoints(rawPoints)
+      console.log('🔧 [Debug] Points conversion completed:', { pointsLength: points.length })
 
       // パターンを生成
+      console.log('🔧 [Debug] Generating gesture pattern...')
       const threshold = await this.getThreshold()
       const pattern = GesturePattern.fromPoints(points, threshold)
+      console.log('🔧 [Debug] Pattern generated:', { isEmpty: pattern.isEmpty(), directions: pattern.getDirections() })
 
       if (pattern.isEmpty()) {
-        throw new Error('Invalid gesture pattern. Insufficient movement detected')
+        const errorMessage = 'Invalid gesture pattern. Insufficient movement detected'
+        console.error('🔧 [Debug] Pattern validation failed:', errorMessage)
+        throw new Error(errorMessage)
       }
 
       // 既存パターンとの類似度チェック
+      console.log('🔧 [Debug] Checking pattern similarity...')
       await this.checkPatternSimilarity(pattern, name)
+      console.log('🔧 [Debug] Pattern similarity check passed')
 
       // カスタムジェスチャーエンティティを作成
+      console.log('🔧 [Debug] Creating CustomGesture entity...')
       const gestureId = this.generateGestureId(name)
       const customGesture = new CustomGesture(gestureId, name, pattern, action, true, 1) // enabled=true, priority=1
+      console.log('🔧 [Debug] CustomGesture entity created:', { id: gestureId, name: customGesture.name })
 
       // 保存
+      console.log('🔧 [Debug] Saving custom gesture to repository...')
       await this.gestureRepository.addCustomGesture(customGesture)
-
-      // 学習データを初期化
-      await this.initializeLearningForGesture(customGesture, pattern)
+      console.log('🔧 [Debug] Custom gesture saved successfully')
 
       return customGesture
 
@@ -214,8 +231,7 @@ class CustomGestureManagementUseCase {
       // 保存
       await this.gestureRepository.addCustomGesture(customGesture)
 
-      // 学習データを初期化
-      await this.initializeLearningForGesture(customGesture, gesturePattern)
+      // 学習機能は削除済み
 
       return customGesture
 
@@ -246,11 +262,6 @@ class CustomGestureManagementUseCase {
       // 更新実行
       const updatedGesture = await this.gestureRepository.updateCustomGesture(gestureId, updates)
 
-      // パターンが変更された場合、学習データをリセット
-      if (updates.pattern) {
-        await this.resetLearningDataForGesture(gestureId)
-      }
-
       return updatedGesture
 
     } catch (error) {
@@ -264,16 +275,23 @@ class CustomGestureManagementUseCase {
    * @returns {Promise<CustomGesture[]>}
    */
   async deleteCustomGesture(gestureId) {
+    console.log('🔧 [Debug] deleteCustomGesture called:', { gestureId })
+    
     try {
+      // 削除前の状態確認
+      const beforeGestures = await this.gestureRepository.getCustomGestures()
+      console.log('🔧 [Debug] Gestures before delete:', beforeGestures.map(g => ({ id: g.id, name: g.name })))
+      
       // 削除実行
+      console.log('🔧 [Debug] Calling repository deleteCustomGesture...')
       const remainingGestures = await this.gestureRepository.deleteCustomGesture(gestureId)
+      console.log('🔧 [Debug] Delete completed, remaining gestures:', remainingGestures.map(g => ({ id: g.id, name: g.name })))
 
-      // 学習データも削除
-      await this.resetLearningDataForGesture(gestureId)
-
+      console.log('🔧 [Debug] deleteCustomGesture completed successfully')
       return remainingGestures
 
     } catch (error) {
+      console.error('🔧 [Debug] deleteCustomGesture failed:', error)
       throw new CustomGestureManagementError('Failed to delete custom gesture', error)
     }
   }
@@ -332,10 +350,8 @@ class CustomGestureManagementUseCase {
           bestMatch = gesture
           bestSimilarity = similarity
           
-          // 学習データを使用して信頼度を計算
-          bestConfidence = this.calculateConfidenceWithLearning(
-            inputPattern, gesture, similarity
-          )
+          // 基本的な信頼度計算（学習機能は削除済み）
+          bestConfidence = similarity
         }
       }
 
@@ -347,8 +363,7 @@ class CustomGestureManagementUseCase {
         // 使用統計を更新
         await this.gestureRepository.recordGestureUsage(bestMatch.id, true)
         
-        // 学習データを更新
-        await this.updateLearningData(bestMatch.id, inputPattern, true)
+        // 学習機能は削除済み
 
         return {
           match: bestMatch,
@@ -377,11 +392,9 @@ class CustomGestureManagementUseCase {
   async getGestureStatistics() {
     try {
       const performanceStats = await this.gestureRepository.getPerformanceStats()
-      const learningStats = this.learningEngine.getLearningStats()
       
       return {
         performance: performanceStats,
-        learning: learningStats,
         timestamp: new Date().toISOString()
       }
     } catch (error) {
@@ -414,8 +427,7 @@ class CustomGestureManagementUseCase {
       // インポート実行
       await this.gestureRepository.restoreFromBackup(backup)
 
-      // 学習エンジンの再初期化
-      await this.initialize()
+      // 学習エンジンは削除済み
 
     } catch (error) {
       throw new CustomGestureManagementError('Failed to import custom gestures', error)
@@ -460,11 +472,23 @@ class CustomGestureManagementUseCase {
     }
 
     // アクションの形式チェック
-    const validActions = ['url:', 'script:', 'browser_back', 'browser_forward', 'new_tab', 'close_tab', 'refresh', 'scroll_top', 'scroll_bottom']
+    const validActions = [
+      // ブラウザ操作
+      'back', 'forward', 'refresh',
+      'browser_back', 'browser_forward', // 旧形式対応
+      // タブ操作
+      'new_tab', 'close_tab', 'duplicate_tab',
+      'prev_tab', 'next_tab', 'super_refresh',
+      // スクロール操作
+      'scroll_up', 'scroll_down',
+      'scroll_top', 'scroll_bottom', // 旧形式対応
+      // 拡張可能なアクション
+      'url:', 'script:'
+    ]
     const isValidAction = validActions.some(valid => action === valid || action.startsWith(valid))
     
     if (!isValidAction) {
-      throw new Error('Invalid action format')
+      throw new Error(`Invalid action format: ${action}. Valid actions: ${validActions.filter(a => !a.includes(':')).join(', ')}`)
     }
   }
 
@@ -501,14 +525,29 @@ class CustomGestureManagementUseCase {
    * @param {string} excludeId - 除外するジェスチャーID
    */
   async checkDuplicateName(name, excludeId = null) {
+    console.log('🔧 [Debug] checkDuplicateName called:', { name, excludeId })
+    
     const existingGestures = await this.gestureRepository.getCustomGestures()
+    console.log('🔧 [Debug] Existing gestures:', existingGestures.map(g => ({ id: g.id, name: g.name })))
+    
     const duplicate = existingGestures.find(g => 
       g.name.toLowerCase() === name.toLowerCase() && g.id !== excludeId
     )
     
+    console.log('🔧 [Debug] Duplicate check result:', {
+      searchName: name.toLowerCase(),
+      foundDuplicate: Boolean(duplicate),
+      duplicateId: duplicate?.id,
+      duplicateName: duplicate?.name
+    })
+    
     if (duplicate) {
-      throw new Error(`Gesture name "${name}" already exists`)
+      const errorMessage = `Gesture name "${name}" already exists`
+      console.error('🔧 [Debug] Duplicate name error:', errorMessage)
+      throw new Error(errorMessage)
     }
+    
+    console.log('🔧 [Debug] No duplicate found, proceeding')
   }
 
   /**
@@ -557,77 +596,10 @@ class CustomGestureManagementUseCase {
     return `custom_${sanitized}_${timestamp}`
   }
 
-  /**
-   * 学習データを使った信頼度計算
-   * @param {GesturePattern} inputPattern
-   * @param {CustomGesture} gesture
-   * @param {number} similarity
-   * @returns {number}
-   */
-  calculateConfidenceWithLearning(inputPattern, gesture, similarity) {
-    // 基本信頼度は類似度
-    let confidence = similarity
+  // 学習関連の信頼度計算は削除済み
 
-    // 学習データによる調整
-    if (this.learningEngine.hasLearningData(gesture.id)) {
-      const learningBonus = this.learningEngine.calculateConfidenceBonus(gesture.id, inputPattern)
-      confidence = Math.min(1.0, confidence + learningBonus)
-    }
+  // 学習関連機能は削除済み
 
-    // 使用統計による調整
-    const successRate = gesture.getSuccessRate()
-    if (successRate > 0.8) {
-      confidence *= 1.1 // 成功率が高い場合はボーナス
-    } else if (successRate < 0.5) {
-      confidence *= 0.9 // 成功率が低い場合はペナルティ
-    }
-
-    return Math.min(1.0, confidence)
-  }
-
-  /**
-   * ジェスチャーの学習データを初期化
-   * @param {CustomGesture} gesture
-   * @param {GesturePattern} pattern
-   */
-  async initializeLearningForGesture(gesture, pattern) {
-    try {
-      this.learningEngine.learnPattern(gesture.id, pattern, true)
-      const learningData = this.learningEngine.exportLearningData()
-      await this.gestureRepository.saveLearningData(learningData)
-    } catch (error) {
-      console.error('Failed to initialize learning data:', error)
-    }
-  }
-
-  /**
-   * 学習データを更新
-   * @param {string} gestureId
-   * @param {GesturePattern} pattern
-   * @param {boolean} success
-   */
-  async updateLearningData(gestureId, pattern, success) {
-    try {
-      this.learningEngine.learnPattern(gestureId, pattern, success)
-      const learningData = this.learningEngine.exportLearningData()
-      await this.gestureRepository.saveLearningData(learningData)
-    } catch (error) {
-      console.error('Failed to update learning data:', error)
-    }
-  }
-
-  /**
-   * 特定ジェスチャーの学習データをリセット
-   * @param {string} gestureId
-   */
-  async resetLearningDataForGesture(gestureId) {
-    try {
-      await this.gestureRepository.resetLearningData(gestureId)
-      this.learningEngine.resetLearningData(gestureId)
-    } catch (error) {
-      console.error('Failed to reset learning data:', error)
-    }
-  }
 
   /**
    * バックアップデータの検証

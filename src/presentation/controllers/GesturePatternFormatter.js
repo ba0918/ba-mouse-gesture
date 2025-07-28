@@ -104,8 +104,9 @@ class GesturePatternFormatter {
       duplicate_tab: 'タブ複製',
       refresh: 'ページ更新',
       hard_refresh: 'スーパーリロード',
-      prev_tab: '前のタブ',
-      next_tab: '次のタブ',
+      super_refresh: 'スーパーリロード（キャッシュクリア付き）',
+      prev_tab: '前のタブに切り替え',
+      next_tab: '次のタブに切り替え',
       
       // 追加のアクション名（将来拡張用）
       bookmark: 'ブックマーク追加',
@@ -185,8 +186,10 @@ class GesturePatternFormatter {
 // CommonJS用のエクスポート（テスト対応）
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { GesturePatternFormatter }
-  // グローバル定義もテスト環境で必要
-  global.GesturePatternFormatter = GesturePatternFormatter
+  // グローバル定義もテスト環境で必要（globalが存在する場合のみ）
+  if (typeof global !== 'undefined') {
+    global.GesturePatternFormatter = GesturePatternFormatter
+  }
 }
 
 // グローバル定義（ブラウザ環境用）

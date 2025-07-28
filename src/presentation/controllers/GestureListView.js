@@ -220,9 +220,9 @@ class GestureListView {
         <div class="empty-message">${message}</div>
         <div class="empty-suggestion">
           ${filter === 'custom' ? 
-            'カスタムジェスチャー作成で新しいジェスチャーを追加できます' : 
-            'フィルターを変更するか、検索条件を調整してください'
-          }
+    'カスタムジェスチャー作成で新しいジェスチャーを追加できます' : 
+    'フィルターを変更するか、検索条件を調整してください'
+}
         </div>
       </div>
     `
