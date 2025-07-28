@@ -13,12 +13,18 @@ const DebugStorageAdapter = (typeof window !== 'undefined' && window.DebugStorag
   (typeof require !== 'undefined' ? require('../../infrastructure/adapters/DebugStorageAdapter').DebugStorageAdapter : null)
 
 class DebugSettingsUseCase {
-  constructor() {
-    // 統一されたストレージアダプターを使用
-    if (!DebugStorageAdapter) {
-      throw new Error('DebugStorageAdapter is not available')
+  constructor(settingsRepository = null) {
+    // 引数が与えられた場合は互換性モード、そうでなければ独自実装
+    if (settingsRepository) {
+      this.settingsRepository = settingsRepository
+      this.storageAdapter = null
+    } else {
+      // 統一されたストレージアダプターを使用
+      if (!DebugStorageAdapter) {
+        throw new Error('DebugStorageAdapter is not available')
+      }
+      this.storageAdapter = new DebugStorageAdapter()
     }
-    this.storageAdapter = new DebugStorageAdapter()
     
     // 同期リスナーの状態管理
     this.isListenerStarted = false
@@ -43,6 +49,19 @@ class DebugSettingsUseCase {
       console.error('❌ DebugSettingsUseCase: Failed to load debug settings:', error)
       // フォールバックとしてデフォルト設定を返す
       return DebugSettingsEntity.getDefault()
+    }
+  }
+
+  /**
+   * デバッグが有効かチェック
+   */
+  async isDebugEnabled() {
+    try {
+      const debugSettings = await this.getDebugSettings()
+      return debugSettings.enabled
+    } catch (error) {
+      console.error('❌ DebugSettingsUseCase: Failed to check if debug enabled:', error)
+      return false
     }
   }
 

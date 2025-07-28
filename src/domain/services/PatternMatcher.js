@@ -342,6 +342,18 @@ class PatternMatcher {
   }
 
   /**
+   * パターン間の類似度を計算（シンプルなインターフェース）
+   * @param {GesturePattern} pattern1
+   * @param {GesturePattern} pattern2
+   * @param {string} strategy - マッチング戦略（デフォルト: adaptive）
+   * @returns {number} 類似度（0.0-1.0）
+   */
+  calculateSimilarity(pattern1, pattern2, strategy = 'adaptive') {
+    const result = this.match(pattern1, pattern2, strategy)
+    return result.similarity
+  }
+
+  /**
    * 閾値を更新
    * @param {Threshold} newThreshold
    */

@@ -236,6 +236,22 @@ class CanvasRendererAdapter {
   }
 
   /**
+   * Canvasエレメントを取得
+   * @returns {HTMLCanvasElement|null}
+   */
+  getCanvas() {
+    return this.canvas
+  }
+
+  /**
+   * Canvas描画コンテキストを取得
+   * @returns {CanvasRenderingContext2D|null}
+   */
+  getContext() {
+    return this.ctx
+  }
+
+  /**
    * Canvasの情報を取得
    * @returns {Object}
    */

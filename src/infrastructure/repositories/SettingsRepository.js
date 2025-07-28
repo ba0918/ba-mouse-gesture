@@ -1,203 +1,361 @@
 /**
- * 設定リポジトリ
- * Infrastructure層 - 外部システムとのインターフェース
+ * SettingsRepository
+ * 設定データの永続化を担当するリポジトリ
  */
 
+// 依存関係のインポート
+let Settings
+if (typeof require !== 'undefined') {
+  ({ Settings } = require('../../domain/entities/Settings'))
+}
+
 class SettingsRepository {
+  /**
+   * @param {ChromeStorageAdapter} storageAdapter - ストレージアダプター
+   */
   constructor(storageAdapter) {
     this.storageAdapter = storageAdapter
-    this.defaultSettings = {
-      enabled: true,
-      strokeColor: '#2196F3',
-      strokeWidth: 3,
-      gestureThreshold: 15,
-      excludeList: [],
-      defaultGestureStates: {
-        // 基本ジェスチャー
-        left: true,
-        right: true,
-        up: true,
-        down: true,
-        // 複合ジェスチャー
-        downright: true,
-        upright: true,
-        rightdown: true,
-        updown: true,
-        // Phase 10新機能
-        super_refresh: true,
-        prev_tab: true,
-        next_tab: true
-      },
-      debugSettings: {
-        enabled: true,
-        logLevel: 2, // INFO
-        showStatus: true,
-        statusPosition: 'top-right'
-      }
-    }
+    this.settingsKey = 'appSettings'
+    this.cache = new Map()
+    this.cacheTimeout = 5000 // 5秒でキャッシュ無効化
   }
 
   /**
    * 設定を取得
+   * @returns {Promise<Settings>}
    */
   async getSettings() {
+    // キャッシュチェック
+    const cachedData = this.cache.get(this.settingsKey)
+    if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
+      return this.deserializeSettings(cachedData.data)
+    }
+
     try {
-      console.log('🔧 SettingsRepository: Loading settings')
+      const result = await this.storageAdapter.get(this.settingsKey)
+      const settingsData = result[this.settingsKey]
       
-      const settings = await this.storageAdapter.get(Object.keys(this.defaultSettings))
-      
-      // デフォルト値とマージ
-      const mergedSettings = { ...this.defaultSettings, ...settings }
-      
-      console.log('🔧 SettingsRepository: Settings loaded successfully')
-      return mergedSettings
-      
+      if (settingsData) {
+        // キャッシュに保存
+        this.cache.set(this.settingsKey, {
+          data: settingsData,
+          timestamp: Date.now()
+        })
+        
+        return this.deserializeSettings(settingsData)
+      } else {
+        // デフォルト設定を返す
+        return this.getDefaultSettings()
+      }
     } catch (error) {
-      console.error('🚨 SettingsRepository: Failed to load settings:', error)
-      // フォールバックとしてデフォルト設定を返す
-      return { ...this.defaultSettings }
+      console.error('Failed to load settings:', error)
+      return this.getDefaultSettings()
     }
   }
 
   /**
    * 設定を保存
+   * @param {Settings} settings - 設定エンティティ
+   * @returns {Promise<void>}
    */
   async saveSettings(settings) {
     try {
-      console.log('🔧 SettingsRepository: Saving settings')
+      // バリデーション
+      if (!settings || typeof settings.isValid !== 'function' || !settings.isValid()) {
+        throw new Error('Invalid settings object')
+      }
+
+      const serializedData = this.serializeSettings(settings)
+      await this.storageAdapter.set({ [this.settingsKey]: serializedData })
       
-      // 妥当性検証
-      this.validateSettings(settings)
-      
-      await this.storageAdapter.set(settings)
-      
-      console.log('🔧 SettingsRepository: Settings saved successfully')
-      return true
+      // キャッシュ更新
+      this.cache.set(this.settingsKey, {
+        data: serializedData,
+        timestamp: Date.now()
+      })
       
     } catch (error) {
-      console.error('🚨 SettingsRepository: Failed to save settings:', error)
-      throw new Error(`Failed to save settings: ${error.message}`)
+      console.error('Failed to save settings:', error)
+      throw new SettingsRepositoryError('Failed to save settings', error)
     }
   }
 
   /**
-   * 特定の設定項目を更新
+   * 特定の設定値を更新
+   * @param {string} key - 設定キー
+   * @param {*} value - 新しい値
+   * @returns {Promise<Settings>}
    */
   async updateSetting(key, value) {
-    try {
-      const currentSettings = await this.getSettings()
-      currentSettings[key] = value
-      
-      await this.saveSettings(currentSettings)
-      return true
-      
-    } catch (error) {
-      console.error('🚨 SettingsRepository: Failed to update setting:', error)
-      throw error
+    const settings = await this.getSettings()
+    
+    // 設定値を更新
+    if (key in settings) {
+      settings[key] = value
+      settings.updateModified()
+      await this.saveSettings(settings)
+    } else {
+      throw new Error(`Setting key '${key}' does not exist`)
+    }
+    
+    return settings
+  }
+
+  /**
+   * ジェスチャーの有効/無効を更新
+   * @param {string} gestureId - ジェスチャーID
+   * @param {boolean} enabled - 有効/無効
+   * @returns {Promise<Settings>}
+   */
+  async updateGestureState(gestureId, enabled) {
+    const settings = await this.getSettings()
+    settings.setGestureEnabled(gestureId, enabled)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 除外サイトを追加
+   * @param {string} pattern - URLパターン
+   * @returns {Promise<Settings>}
+   */
+  async addExcludeSite(pattern) {
+    const settings = await this.getSettings()
+    settings.addExcludeSite(pattern)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 除外サイトを削除
+   * @param {string} pattern - URLパターン
+   * @returns {Promise<Settings>}
+   */
+  async removeExcludeSite(pattern) {
+    const settings = await this.getSettings()
+    settings.removeExcludeSite(pattern)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 軌跡設定を更新
+   * @param {string} color - 色
+   * @param {number} width - 太さ
+   * @returns {Promise<Settings>}
+   */
+  async updateStrokeSettings(color, width) {
+    const settings = await this.getSettings()
+    settings.setStrokeSettings(color, width)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 閾値を更新
+   * @param {number} threshold - 新しい閾値
+   * @returns {Promise<Settings>}
+   */
+  async updateThreshold(threshold) {
+    const settings = await this.getSettings()
+    settings.setThreshold(threshold)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * デバッグ設定を更新
+   * @param {Object} debugConfig - デバッグ設定
+   * @returns {Promise<Settings>}
+   */
+  async updateDebugSettings(debugConfig) {
+    const settings = await this.getSettings()
+    settings.setDebugSettings(debugConfig)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 設定をデフォルトにリセット
+   * @returns {Promise<Settings>}
+   */
+  async resetToDefaults() {
+    const defaultSettings = this.getDefaultSettings()
+    await this.saveSettings(defaultSettings)
+    return defaultSettings
+  }
+
+  /**
+   * 設定データのバックアップを作成
+   * @returns {Promise<Object>}
+   */
+  async createBackup() {
+    const settings = await this.getSettings()
+    return {
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      settings: this.serializeSettings(settings)
     }
   }
 
   /**
-   * デバッグ設定を同期（content_script通知用）
+   * バックアップから設定を復元
+   * @param {Object} backup - バックアップデータ
+   * @returns {Promise<Settings>}
    */
-  async syncDebugSettings(debugSettings) {
+  async restoreFromBackup(backup) {
+    if (!backup.settings) {
+      throw new Error('Invalid backup data')
+    }
+    
+    const settings = this.deserializeSettings(backup.settings)
+    await this.saveSettings(settings)
+    return settings
+  }
+
+  /**
+   * 設定変更を監視
+   * @param {Function} callback - 変更時コールバック
+   * @returns {Function} リスナー削除関数
+   */
+  onSettingsChanged(callback) {
+    return this.storageAdapter.addChangeListener((changes, namespace) => {
+      if (namespace === 'sync' && changes[this.settingsKey]) {
+        // キャッシュを無効化
+        this.cache.delete(this.settingsKey)
+        
+        const newSettings = this.deserializeSettings(changes[this.settingsKey].newValue)
+        const oldSettings = changes[this.settingsKey].oldValue ? 
+          this.deserializeSettings(changes[this.settingsKey].oldValue) : null
+        
+        callback(newSettings, oldSettings)
+      }
+    })
+  }
+
+  /**
+   * 設定データをシリアライズ
+   * @param {Settings} settings
+   * @returns {Object}
+   */
+  serializeSettings(settings) {
+    return settings.toJSON()
+  }
+
+  /**
+   * 設定データをデシリアライズ
+   * @param {Object} data
+   * @returns {Settings}
+   */
+  deserializeSettings(data) {
+    // Settings クラスのインポート
+    if (!Settings) {
+      ({ Settings } = require('../../domain/entities/Settings'))
+    }
+    return Settings.fromJSON(data)
+  }
+
+  /**
+   * デフォルト設定を取得
+   * @returns {Settings}
+   */
+  getDefaultSettings() {
+    if (!Settings) {
+      ({ Settings } = require('../../domain/entities/Settings'))
+    }
+    return Settings.getDefaults()
+  }
+
+  /**
+   * キャッシュをクリア
+   */
+  clearCache() {
+    this.cache.clear()
+  }
+
+  /**
+   * リポジトリの状態確認
+   * @returns {Promise<Object>}
+   */
+  async getRepositoryStatus() {
     try {
-      console.log('🔧 SettingsRepository: Syncing debug settings to content script')
+      const settings = await this.getSettings()
+      const isStorageAvailable = this.storageAdapter.isAvailable()
       
-      // Chrome storage.sync経由で通知
-      // DebugLoggerがstorage.onChangedリスナーで反応
-      await this.storageAdapter.syncSet({ debugSettings })
-      
-      console.log('🔧 SettingsRepository: Debug settings synced successfully')
-      return true
-      
+      return {
+        isHealthy: true,
+        settingsLoaded: Boolean(settings),
+        cacheSize: this.cache.size,
+        storageAvailable: isStorageAvailable,
+        lastModified: settings ? settings.lastModified : null
+      }
     } catch (error) {
-      console.error('🚨 SettingsRepository: Failed to sync debug settings:', error)
-      throw error
+      return {
+        isHealthy: false,
+        error: error.message,
+        cacheSize: this.cache.size
+      }
     }
   }
 
   /**
-   * 設定のリセット
+   * 設定の整合性チェック
+   * @returns {Promise<Object>}
    */
-  async resetSettings() {
+  async validateSettings() {
+    const validation = {
+      isValid: true,
+      errors: [],
+      warnings: []
+    }
+    
     try {
-      console.log('🔧 SettingsRepository: Resetting settings to defaults')
+      const settings = await this.getSettings()
       
-      await this.saveSettings(this.defaultSettings)
+      // 基本バリデーション
+      if (!settings.isValid()) {
+        validation.isValid = false
+        validation.errors.push('Settings object is invalid')
+      }
       
-      console.log('🔧 SettingsRepository: Settings reset successfully')
-      return true
+      // 閾値範囲チェック
+      if (settings.gestureThreshold < 5 || settings.gestureThreshold > 100) {
+        validation.warnings.push('Gesture threshold is outside recommended range (5-100)')
+      }
+      
+      // 除外リストチェック
+      const excludeList = settings.getExcludeList()
+      if (excludeList.length > 20) {
+        validation.warnings.push('Exclude list is very long (>20 items)')
+      }
+      
+      // 色設定チェック
+      if (!settings.isValidColor(settings.strokeColor)) {
+        validation.errors.push('Invalid stroke color format')
+        validation.isValid = false
+      }
       
     } catch (error) {
-      console.error('🚨 SettingsRepository: Failed to reset settings:', error)
-      throw error
-    }
-  }
-
-  /**
-   * 設定の妥当性検証
-   */
-  validateSettings(settings) {
-    if (!settings || typeof settings !== 'object') {
-      throw new Error('Settings must be an object')
-    }
-
-    // 必須フィールドの検証
-    const requiredFields = ['enabled', 'strokeColor', 'strokeWidth', 'gestureThreshold']
-    for (const field of requiredFields) {
-      if (settings[field] === undefined) {
-        throw new Error(`Required field missing: ${field}`)
-      }
-    }
-
-    // 型の検証
-    if (typeof settings.enabled !== 'boolean') {
-      throw new Error('enabled must be boolean')
+      validation.isValid = false
+      validation.errors.push(`Validation error: ${error.message}`)
     }
     
-    if (typeof settings.strokeColor !== 'string') {
-      throw new Error('strokeColor must be string')
-    }
-    
-    if (!Number.isInteger(settings.strokeWidth) || settings.strokeWidth < 1 || settings.strokeWidth > 10) {
-      throw new Error('strokeWidth must be integer between 1-10')
-    }
-    
-    if (!Number.isInteger(settings.gestureThreshold) || settings.gestureThreshold < 5 || settings.gestureThreshold > 50) {
-      throw new Error('gestureThreshold must be integer between 5-50')
-    }
-
-    // 除外リストの検証
-    if (settings.excludeList && !Array.isArray(settings.excludeList)) {
-      throw new Error('excludeList must be array')
-    }
-
-    // デフォルトジェスチャー状態の検証
-    if (settings.defaultGestureStates && typeof settings.defaultGestureStates !== 'object') {
-      throw new Error('defaultGestureStates must be object')
-    }
-
-    // デバッグ設定の検証
-    if (settings.debugSettings) {
-      const debug = settings.debugSettings
-      if (typeof debug !== 'object') {
-        throw new Error('debugSettings must be object')
-      }
-      
-      if (debug.enabled !== undefined && typeof debug.enabled !== 'boolean') {
-        throw new Error('debugSettings.enabled must be boolean')
-      }
-      
-      if (debug.logLevel !== undefined && (!Number.isInteger(debug.logLevel) || debug.logLevel < 0 || debug.logLevel > 3)) {
-        throw new Error('debugSettings.logLevel must be integer between 0-3')
-      }
-    }
-
-    return true
+    return validation
   }
 }
 
+/**
+ * SettingsRepository専用エラークラス
+ */
+class SettingsRepositoryError extends Error {
+  constructor(message, originalError) {
+    super(message)
+    this.name = 'SettingsRepositoryError'
+    this.originalError = originalError
+  }
+}
+
+// ES6 Module export
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SettingsRepository }
+  module.exports = { SettingsRepository, SettingsRepositoryError }
 }

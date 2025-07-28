@@ -250,15 +250,22 @@ class ChromeStorageAdapter {
 
   /**
    * ストレージ変更リスナーを設定
+   * @param {Function} callback - 変更時のコールバック関数
+   * @returns {Function} リスナー削除関数
    */
   addChangeListener(callback) {
     if (!this.storage?.onChanged) {
       console.warn('⚠️ Chrome storage.onChanged not available')
-      return
+      return () => {} // 空の削除関数を返す
     }
 
     this.storage.onChanged.addListener(callback)
     console.log('🔧 ChromeStorageAdapter: Change listener added')
+    
+    // リスナー削除関数を返す
+    return () => {
+      this.removeChangeListener(callback)
+    }
   }
 
   /**

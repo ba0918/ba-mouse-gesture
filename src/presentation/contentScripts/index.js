@@ -7,6 +7,44 @@
 // eslint-disable-next-line no-unused-vars
 import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter.js'
 
+// Clean Architecture - 必要なクラスをインポート（ビルドに含めるため）
+import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase.js'
+import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase.js'
+import { DebugSettingsUseCase } from '../../application/usecases/DebugSettingsUseCase.js'
+import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js'
+import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter.js'
+import { SimpleMessagingAdapter } from '../../infrastructure/adapters/SimpleMessagingAdapter.js'
+import { GestureManager } from '../../presentation/controllers/GestureManager.js'
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js'
+import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js'
+import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter.js'
+import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity.js'
+
+// グローバルに公開（後方互換性のため）
+if (typeof window !== 'undefined') {
+  // window.SettingsUseCaseとwindow.SettingsManagementUseCaseの両方をサポート
+  window.SettingsUseCase = SettingsManagementUseCase
+  window.SettingsManagementUseCase = SettingsManagementUseCase
+  
+  // window.CustomGestureUseCaseとwindow.CustomGestureManagementUseCaseの両方をサポート
+  window.CustomGestureUseCase = CustomGestureManagementUseCase  
+  window.CustomGestureManagementUseCase = CustomGestureManagementUseCase
+  
+  window.DebugSettingsUseCase = DebugSettingsUseCase
+  window.SimpleGestureRecognizer = SimpleGestureRecognizer
+  window.CanvasRendererAdapter = CanvasRendererAdapter
+  window.SimpleMessagingAdapter = SimpleMessagingAdapter
+  window.GestureManager = GestureManager
+  
+  // Repository層も公開
+  window.SettingsRepository = SettingsRepository
+  window.GestureRepository = GestureRepository
+  
+  // Debug関連のAdapterも公開
+  window.DebugStorageAdapter = DebugStorageAdapter
+  window.DebugSettingsEntity = DebugSettingsEntity
+}
+
 // Clean Architecture - Dynamic imports (ビルド時に解決)
 // SettingsUseCase, CustomGestureUseCase等のクラスは実行時に動的に読み込み
 
@@ -96,21 +134,35 @@ class CleanGestureManager {
       
       // グローバルに存在するクラスを使用（ビルド時に統合される前提）
       if (typeof window !== 'undefined') {
-        this.settingsUseCase = window.SettingsUseCase ? new window.SettingsUseCase() : null
-        this.customGestureUseCase = window.CustomGestureUseCase ? new window.CustomGestureUseCase() : null
-        this.learningUseCase = window.GestureLearningUseCase ? new window.GestureLearningUseCase() : null
+        // Infrastructure層の初期化（依存関係注入のため）
+        const storageAdapter = window.ChromeStorageAdapter ? new window.ChromeStorageAdapter() : null
         
-        // より高度なデバッグUseCaseが利用可能な場合は置き換え
-        if (window.DebugSettingsUseCase) {
-          try {
-            this.debugUseCase = new window.DebugSettingsUseCase()
-          } catch (error) {
-            console.warn('Failed to initialize DebugSettingsUseCase, using fallback:', error)
+        if (storageAdapter) {
+          // Repository層の初期化
+          const settingsRepository = window.SettingsRepository ? new window.SettingsRepository(storageAdapter) : null
+          const gestureRepository = window.GestureRepository ? new window.GestureRepository(storageAdapter) : null
+          
+          // Application層の初期化（依存関係注入）
+          if (settingsRepository) {
+            this.settingsUseCase = window.SettingsUseCase ? new window.SettingsUseCase(settingsRepository) : null
+          }
+          
+          if (gestureRepository && settingsRepository) {
+            this.customGestureUseCase = window.CustomGestureUseCase ? new window.CustomGestureUseCase(gestureRepository, settingsRepository) : null
+          }
+          
+          // Debug設定は独自のDebugStorageAdapterを使用
+          if (window.DebugSettingsUseCase) {
+            try {
+              this.debugUseCase = new window.DebugSettingsUseCase()
+            } catch (error) {
+              console.warn('Failed to initialize DebugSettingsUseCase, using fallback:', error)
+            }
           }
         }
         
+        this.learningUseCase = window.GestureLearningUseCase ? new window.GestureLearningUseCase() : null
         this.gestureRecognizer = window.SimpleGestureRecognizer ? new window.SimpleGestureRecognizer() : null
-        
         this.canvasRenderer = window.CanvasRendererAdapter ? new window.CanvasRendererAdapter() : null
         this.messagingAdapter = window.SimpleMessagingAdapter ? new window.SimpleMessagingAdapter() : null
         
@@ -269,7 +321,7 @@ class CleanGestureManager {
         }
         
         // カスタムジェスチャーも読み込み
-        await this.customGestureUseCase.loadCustomGestures()
+        await this.customGestureUseCase.getAllCustomGestures()
         
         console.log('Settings loaded via UseCase:', this.settings)
         
@@ -355,7 +407,7 @@ class CleanGestureManager {
     if (this.canvasRenderer) {
       try {
         // Clean Architecture - Adapter経由でCanvas初期化
-        this.canvasRenderer.initialize({
+        this.canvasRenderer.initializeCanvas({
           canvasId: 'mouse-gesture-trail',
           strokeColor: this.settings.strokeColor,
           strokeWidth: this.settings.strokeWidth,
