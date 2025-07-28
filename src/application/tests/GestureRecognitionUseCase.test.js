@@ -100,7 +100,6 @@ describe('GestureRecognitionUseCase', () => {
       expect(useCase.isInitialized).toBe(true)
       expect(useCase.gestureRecognizer).toBeDefined()
       expect(useCase.patternMatcher).toBeDefined()
-      expect(useCase.learningEngine).toBeDefined()
     })
 
     test('設定リポジトリエラー時は初期化失敗', async () => {
@@ -227,7 +226,6 @@ describe('GestureRecognitionUseCase', () => {
       
       expect(stats).toHaveProperty('recognition')
       expect(stats).toHaveProperty('performance')
-      expect(stats).toHaveProperty('learning')
       expect(stats).toHaveProperty('timestamp')
       expect(stats.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })

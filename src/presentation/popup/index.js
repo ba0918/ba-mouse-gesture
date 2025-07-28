@@ -45,32 +45,11 @@ class CleanOptionsEntry {
       const customGestureUseCase = new CustomGestureManagementUseCase(gestureRepository, settingsRepository)
       const gestureListUseCase = new GestureListUseCase(gestureRepository, settingsRepository)
       
-      // 学習統計用UseCase（簡易実装）
-      const learningStatsUseCase = {
-        getLearningStatistics: async () => ({
-          learnedPatternsCount: 0,
-          averagePatternLength: 2.5,
-          totalGestures: 0
-        }),
-        resetLearningData: async () => {
-          // Chrome storageから学習データを削除
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            await chrome.storage.sync.remove([
-              'learningStats',
-              'adaptiveThresholds', 
-              'learnedPatterns',
-              'gestureStatistics'
-            ])
-          }
-        }
-      }
-      
       // Presentation層の初期化（薄いController）
       this.controller = new ThinOptionsController({
         settingsUseCase,
         customGestureUseCase,
-        gestureListUseCase,
-        learningStatsUseCase
+        gestureListUseCase
       })
       
       // Controller初期化

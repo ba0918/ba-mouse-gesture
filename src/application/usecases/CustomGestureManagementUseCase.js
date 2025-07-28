@@ -4,13 +4,12 @@
  */
 
 // 依存関係のインポート
-let CustomGesture, GesturePattern, Point, PatternMatcher, LearningEngine
+let CustomGesture, GesturePattern, Point, PatternMatcher
 if (typeof require !== 'undefined') {
   ({ CustomGesture } = require('../../domain/entities/CustomGesture'));
   ({ GesturePattern } = require('../../domain/valueObjects/GesturePattern'));
   ({ Point } = require('../../domain/valueObjects/Point'));
-  ({ PatternMatcher } = require('../../domain/services/PatternMatcher'));
-  ({ LearningEngine } = require('../../domain/services/LearningEngine'))
+  ({ PatternMatcher } = require('../../domain/services/PatternMatcher'))
 }
 
 class CustomGestureManagementUseCase {
@@ -22,7 +21,6 @@ class CustomGestureManagementUseCase {
     this.gestureRepository = gestureRepository
     this.settingsRepository = settingsRepository
     this.patternMatcher = new PatternMatcher()
-    this.learningEngine = new LearningEngine()
     this.isInitialized = false
   }
 
@@ -32,10 +30,6 @@ class CustomGestureManagementUseCase {
    */
   async initialize() {
     try {
-      // 学習データを読み込み
-      const learningData = await this.gestureRepository.getLearningData()
-      this.learningEngine.loadLearningData(learningData)
-      
       this.isInitialized = true
     } catch (error) {
       throw new CustomGestureManagementError('Failed to initialize custom gesture use case', error)
@@ -64,6 +58,26 @@ class CustomGestureManagementUseCase {
       return allGestures.filter(gesture => gesture.enabled)
     } catch (error) {
       throw new CustomGestureManagementError('Failed to get enabled custom gestures', error)
+    }
+  }
+
+  /**
+   * 特定のカスタムジェスチャーを取得
+   * @param {string} gestureId - ジェスチャーID
+   * @returns {Promise<CustomGesture>}
+   */
+  async getCustomGesture(gestureId) {
+    try {
+      const allGestures = await this.gestureRepository.getCustomGestures()
+      const gesture = allGestures.find(g => g.id === gestureId)
+      
+      if (!gesture) {
+        throw new Error(`カスタムジェスチャーが見つかりません: ${gestureId}`)
+      }
+      
+      return gesture
+    } catch (error) {
+      throw new CustomGestureManagementError('Failed to get custom gesture', error)
     }
   }
 

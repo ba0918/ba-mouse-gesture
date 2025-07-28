@@ -4,11 +4,10 @@
  */
 
 // 依存関係のインポート
-let GestureRecognizer, PatternMatcher, LearningEngine, Point, GesturePattern, Gesture
+let GestureRecognizer, PatternMatcher, Point, GesturePattern, Gesture
 if (typeof require !== 'undefined') {
   ({ GestureRecognizer } = require('../../domain/services/GestureRecognizer'));
   ({ PatternMatcher } = require('../../domain/services/PatternMatcher'));
-  ({ LearningEngine } = require('../../domain/services/LearningEngine'));
   ({ Point } = require('../../domain/valueObjects/Point'));
   ({ GesturePattern } = require('../../domain/valueObjects/GesturePattern'));
   ({ Gesture } = require('../../domain/entities/Gesture'))
@@ -24,7 +23,6 @@ class GestureRecognitionUseCase {
     this.gestureRepository = gestureRepository
     this.gestureRecognizer = null
     this.patternMatcher = null
-    this.learningEngine = null
     this.isInitialized = false
   }
 
@@ -41,11 +39,6 @@ class GestureRecognitionUseCase {
       // ドメインサービスを初期化
       this.gestureRecognizer = new GestureRecognizer(threshold)
       this.patternMatcher = new PatternMatcher()
-      this.learningEngine = new LearningEngine()
-
-      // 学習データを読み込み
-      const learningData = await this.gestureRepository.getLearningData()
-      this.learningEngine.loadLearningData(learningData)
 
       this.isInitialized = true
     } catch (error) {
@@ -90,11 +83,8 @@ class GestureRecognitionUseCase {
       // より良いマッチを選択（カスタムジェスチャーを優先）
       const bestResult = this.selectBestMatch(defaultResult, customResult)
       
-      // 学習データを更新
+      // 使用統計を記録
       if (bestResult.isSuccess()) {
-        await this.updateLearningData(pattern, bestResult.gesture, true)
-        
-        // 使用統計を記録
         await this.gestureRepository.recordGestureUsage(bestResult.gesture.id, true)
       }
 
@@ -171,14 +161,10 @@ class GestureRecognitionUseCase {
       
       // パフォーマンス統計
       const performanceStats = await this.gestureRepository.getPerformanceStats()
-      
-      // 学習統計
-      const learningStats = this.learningEngine.getLearningStats()
 
       return {
         recognition: recognitionStats,
         performance: performanceStats,
-        learning: learningStats,
         timestamp: new Date().toISOString()
       }
     } catch (error) {
@@ -277,28 +263,6 @@ class GestureRecognitionUseCase {
     return defaultResult
   }
 
-  /**
-   * 学習データを更新
-   * @param {GesturePattern} pattern
-   * @param {Gesture} gesture
-   * @param {boolean} success
-   * @returns {Promise<void>}
-   */
-  async updateLearningData(pattern, gesture, success) {
-    if (!this.learningEngine) return
-
-    try {
-      // 学習エンジンにデータを追加
-      this.learningEngine.learnPattern(gesture.id, pattern, success)
-      
-      // 学習データを永続化
-      const learningData = this.learningEngine.exportLearningData()
-      await this.gestureRepository.saveLearningData(learningData)
-      
-    } catch (error) {
-      console.error('Failed to update learning data:', error)
-    }
-  }
 
   /**
    * リソースのクリーンアップ

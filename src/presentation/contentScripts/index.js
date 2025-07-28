@@ -636,12 +636,7 @@ class CleanGestureManager {
       const customResult = await this.customGestureUseCase.matchPattern(directions)
       
       if (customResult.matched) {
-        // 学習機能: 成功したパターンを記録
-        await this.learningUseCase.recordSuccessfulMatch({
-          pattern: directions,
-          gestureName: customResult.gestureName,
-          confidence: customResult.confidence
-        })
+        // パターンマッチ成功
         
         return {
           type: 'custom',

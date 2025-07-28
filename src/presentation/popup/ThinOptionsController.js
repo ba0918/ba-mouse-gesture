@@ -4,11 +4,10 @@
  */
 
 class ThinOptionsController {
-  constructor({ settingsUseCase, customGestureUseCase, gestureListUseCase, learningStatsUseCase }) {
+  constructor({ settingsUseCase, customGestureUseCase, gestureListUseCase }) {
     this.settingsUseCase = settingsUseCase
     this.customGestureUseCase = customGestureUseCase
     this.gestureListUseCase = gestureListUseCase
-    this.learningStatsUseCase = learningStatsUseCase
     this.isInitialized = false
   }
 
@@ -22,7 +21,6 @@ class ThinOptionsController {
       this.setupGestureListEvents()
       this.setupCustomGestureEvents()
       this.setupExcludeSiteEvents()
-      this.setupLearningStatsEvents()
       this.setupDebugEvents()
       
       await this.loadInitialData()
@@ -101,8 +99,7 @@ class ThinOptionsController {
       })
     })
 
-    // 記録・クリア・追加ボタン
-    this.bindEvent('recordPatternBtn', 'click', () => this.togglePatternRecording())
+    // クリア・追加ボタン
     this.bindEvent('clearPatternBtn', 'click', () => this.clearPattern())
     this.bindEvent('addGestureBtn', 'click', () => this.handleAddGesture())
   }
@@ -128,20 +125,6 @@ class ThinOptionsController {
     })
   }
 
-  /**
-   * 学習統計のイベント設定
-   */
-  setupLearningStatsEvents() {
-    this.bindEvent('refreshStats', 'click', () => this.refreshLearningStats())
-    this.bindEvent('resetLearning', 'click', async () => {
-      const confirmed = await this.showConfirm('学習データをすべてリセットしますか？')
-      if (confirmed) {
-        await this.learningStatsUseCase.resetLearningData()
-        this.refreshLearningStats()
-        this.showStatus('学習データをリセットしました', 'success')
-      }
-    })
-  }
 
   /**
    * デバッグ設定のイベント設定
@@ -217,7 +200,6 @@ class ThinOptionsController {
       await this.renderExcludeList()
 
       // 学習統計表示
-      await this.refreshLearningStats()
 
     } catch (error) {
       console.error('Initial data loading failed:', error)
@@ -378,24 +360,6 @@ class ThinOptionsController {
     }
   }
 
-  /**
-   * 学習統計更新（UseCaseから取得）
-   */
-  async refreshLearningStats() {
-    try {
-      const stats = await this.learningStatsUseCase.getLearningStatistics()
-      
-      this.updateElement('learnedGesturesCount', stats.learnedPatternsCount.toLocaleString())
-      this.updateElement('avgPatternLength', stats.averagePatternLength)
-      this.updateElement('totalUsage', stats.totalGestures.toLocaleString())
-      
-      this.showStatus('学習統計を更新しました', 'success', 2000)
-      
-    } catch (error) {
-      console.error('学習統計更新エラー:', error)
-      this.showStatus('学習統計の更新に失敗しました', 'error')
-    }
-  }
 
   // ========== ユーティリティメソッド（薄いUIロジック） ==========
 
@@ -757,13 +721,6 @@ class ThinOptionsController {
     }
   }
 
-  togglePatternRecording() {
-    // 簡易実装：記録ロジックは別途
-    const recordBtn = document.getElementById('recordPatternBtn')
-    if (recordBtn) {
-      recordBtn.textContent = recordBtn.textContent === '記録開始' ? '記録停止' : '記録開始'
-    }
-  }
 
   clearPattern() {
     this.currentPattern = []

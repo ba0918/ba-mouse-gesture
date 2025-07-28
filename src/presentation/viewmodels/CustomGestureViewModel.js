@@ -38,13 +38,6 @@ class CustomGestureViewModel extends BaseViewModel {
         recordedPoints: []
       },
       
-      // 学習統計
-      learningStats: {
-        totalGestures: 0,
-        averageAccuracy: 0,
-        totalUsage: 0,
-        lastUpdated: null
-      },
       
       // フィルター・ソート
       filters: {
@@ -262,20 +255,6 @@ class CustomGestureViewModel extends BaseViewModel {
     this.set('customGestures', gestures)
   }
 
-  /**
-   * 学習統計を更新
-   * @param {Object} learningStatsDTO - 学習統計DTO
-   */
-  updateLearningStats(learningStatsDTO) {
-    if (!learningStatsDTO) return
-    
-    this.set('learningStats', {
-      totalGestures: learningStatsDTO.totalGestures || 0,
-      averageAccuracy: learningStatsDTO.averageAccuracy || 0,
-      totalUsage: learningStatsDTO.totalUsage || 0,
-      lastUpdated: learningStatsDTO.lastUpdated || new Date().toISOString()
-    })
-  }
 
   /**
    * 新しいジェスチャーの作成を開始
