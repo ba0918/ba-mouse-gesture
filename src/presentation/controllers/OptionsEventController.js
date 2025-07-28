@@ -165,6 +165,12 @@ class OptionsEventController {
         try {
           if (e.target.classList.contains('edit-btn')) {
             // 編集ボタン
+            console.log('🔧 [Debug] Edit button clicked for gesture:', gestureId)
+            
+            // 内部状態として編集モードを開始
+            this.enterEditMode(gestureId)
+            
+            // 外部コールバックも呼び出し（データロードなど）
             if (this.editCustomGesture) {
               await this.editCustomGesture(gestureId)
             }
@@ -176,20 +182,20 @@ class OptionsEventController {
             console.log('🔧 [Debug] Delete confirmation result:', confirmed)
             
             if (confirmed) {
-              // 削除対象が編集中のジェスチャーかチェック
-              const editingGestureId = this.getEditingGestureId && this.getEditingGestureId()
+              // 削除対象が編集中のジェスチャーかチェック（内部状態を優先）
+              const editingGestureId = this.editingGestureId || (this.getEditingGestureId && this.getEditingGestureId())
               console.log('🔧 [Debug] Checking edit mode before delete:', {
-                editingGestureId: editingGestureId,
+                internalEditingGestureId: this.editingGestureId,
+                externalEditingGestureId: this.getEditingGestureId && this.getEditingGestureId(),
+                finalEditingGestureId: editingGestureId,
                 deleteTargetId: gestureId,
                 isEditingTarget: editingGestureId === gestureId
               })
               
               if (editingGestureId === gestureId) {
-                // 編集モードを終了
+                // 編集モードを終了（内部実装を優先）
                 console.log('🔧 [Debug] Exiting edit mode before delete')
-                if (this.exitEditMode) {
-                  this.exitEditMode()
-                }
+                this.exitEditModeInternal()
               }
               
               console.log('🔧 [Debug] Calling deleteCustomGesture for:', gestureId)
@@ -598,12 +604,14 @@ class OptionsEventController {
         })
       })
 
-      // 編集モードかどうかチェック（外部コントローラーから取得）
-      const isEditMode = this.getEditingGestureId && this.getEditingGestureId()
+      // 編集モードかどうかチェック（内部状態を優先、外部からのコールバックは補助）
+      const isEditMode = this.editingGestureId || (this.getEditingGestureId && this.getEditingGestureId())
       
       console.log('🔧 [Debug] Edit mode check:', {
+        internalEditingGestureId: this.editingGestureId,
         hasGetEditingGestureId: Boolean(this.getEditingGestureId),
-        isEditMode: isEditMode
+        externalEditingGestureId: this.getEditingGestureId && this.getEditingGestureId(),
+        finalIsEditMode: isEditMode
       })
       
       if (isEditMode) {
@@ -616,10 +624,8 @@ class OptionsEventController {
         }
         await this.customGestureUseCase.updateCustomGesture(isEditMode, updates)
         
-        // 編集モード終了
-        if (this.exitEditMode) {
-          this.exitEditMode()
-        }
+        // 編集モード終了（内部実装を優先）
+        this.exitEditModeInternal()
         
         this.showStatus('カスタムジェスチャーを更新しました', 'success')
       } else {
