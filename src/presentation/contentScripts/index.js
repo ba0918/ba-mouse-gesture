@@ -87,12 +87,23 @@ class CleanGestureManager {
    */
   initializeCleanArchitecture() {
     try {
+      // 簡易実装でデバッグ機能を確保
+      this.debugUseCase = this.createSimpleDebugUseCase()
+      
       // グローバルに存在するクラスを使用（ビルド時に統合される前提）
       if (typeof window !== 'undefined') {
         this.settingsUseCase = window.SettingsUseCase ? new window.SettingsUseCase() : null
         this.customGestureUseCase = window.CustomGestureUseCase ? new window.CustomGestureUseCase() : null
         this.learningUseCase = window.GestureLearningUseCase ? new window.GestureLearningUseCase() : null
-        this.debugUseCase = window.DebugSettingsUseCase ? new window.DebugSettingsUseCase() : null
+        
+        // より高度なデバッグUseCaseが利用可能な場合は置き換え
+        if (window.DebugSettingsUseCase) {
+          try {
+            this.debugUseCase = new window.DebugSettingsUseCase()
+          } catch (error) {
+            console.warn('Failed to initialize DebugSettingsUseCase, using fallback:', error)
+          }
+        }
         
         this.gestureRecognizer = window.SimpleGestureRecognizer ? new window.SimpleGestureRecognizer() : null
         
@@ -121,6 +132,74 @@ class CleanGestureManager {
       
     } catch (error) {
       console.warn('Clean Architecture initialization failed, using fallback:', error)
+    }
+  }
+
+  /**
+   * シンプルなデバッグUseCase実装（フォールバック用）
+   */
+  createSimpleDebugUseCase() {
+    return {
+      async isDebugEnabled() {
+        try {
+          const result = await new Promise((resolve) => {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+              chrome.storage.sync.get(['appSettings'], (data) => {
+                const debugEnabled = data.appSettings?.debugSettings?.enabled || false
+                resolve(debugEnabled)
+              })
+            } else {
+              resolve(false)
+            }
+          })
+          return result
+        } catch (error) {
+          console.error('Debug enabled check failed:', error)
+          return false
+        }
+      },
+
+      async getDebugSettings() {
+        try {
+          const result = await new Promise((resolve) => {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+              chrome.storage.sync.get(['appSettings'], (data) => {
+                const debugSettings = data.appSettings?.debugSettings || {
+                  enabled: false,
+                  logLevel: 2,
+                  showStatus: false,
+                  statusPosition: 'top-right'
+                }
+                
+                // shouldShowStatus メソッドを追加
+                debugSettings.shouldShowStatus = function () {
+                  return this.enabled && this.showStatus
+                }
+                
+                resolve(debugSettings)
+              })
+            } else {
+              resolve({
+                enabled: false,
+                logLevel: 2,
+                showStatus: false,
+                statusPosition: 'top-right',
+                shouldShowStatus: () => false
+              })
+            }
+          })
+          return result
+        } catch (error) {
+          console.error('Get debug settings failed:', error)
+          return {
+            enabled: false,
+            logLevel: 2,
+            showStatus: false,
+            statusPosition: 'top-right',
+            shouldShowStatus: () => false
+          }
+        }
+      }
     }
   }
 
