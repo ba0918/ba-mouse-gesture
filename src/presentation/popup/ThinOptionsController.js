@@ -17,7 +17,6 @@ class ThinOptionsController {
    */
   async initialize() {
     try {
-      console.log('🎯 Thin Options Controller: Initializing...')
       
       this.setupBasicSettingsEvents()
       this.setupGestureListEvents()
@@ -29,7 +28,6 @@ class ThinOptionsController {
       await this.loadInitialData()
       
       this.isInitialized = true
-      console.log('✅ Thin Options Controller: Initialization complete')
       
     } catch (error) {
       console.error('❌ Thin Options Controller: Initialization failed:', error)
@@ -87,11 +85,6 @@ class ThinOptionsController {
     // フィルター
     this.bindEvent('gestureFilter', 'change', (e) => {
       this.filterGesturesByType(e.target.value)
-    })
-
-    // 表示切替
-    this.bindEvent('toggleViewMode', 'click', () => {
-      this.toggleGestureViewMode()
     })
   }
 
@@ -219,7 +212,17 @@ class ThinOptionsController {
       listElement.addEventListener('change', async (e) => {
         if (e.target.type === 'checkbox' && e.target.dataset.gestureId) {
           const gestureId = e.target.dataset.gestureId
-          await this.settingsUseCase.toggleGesture(gestureId, e.target.checked)
+          
+          // カスタムジェスチャーかデフォルトジェスチャーかを判別
+          const isCustomGesture = gestureId.startsWith('custom_')
+          
+          if (isCustomGesture) {
+            await this.customGestureUseCase.toggleCustomGesture(gestureId, e.target.checked)
+            await this.renderCustomGestureList() // カスタムジェスチャーセクションも更新
+          } else {
+            await this.settingsUseCase.toggleGesture(gestureId, e.target.checked)
+          }
+          
           this.showStatus(`ジェスチャー「${gestureId}」を${e.target.checked ? '有効' : '無効'}にしました`, 'success')
         }
       })
@@ -239,6 +242,7 @@ class ThinOptionsController {
       
       if (!listElement) return
 
+
       const html = this.buildCustomGestureListHTML(customGestures)
       listElement.innerHTML = html
 
@@ -252,7 +256,8 @@ class ThinOptionsController {
           const confirmed = await this.showConfirm('このカスタムジェスチャーを削除しますか？')
           if (confirmed) {
             await this.customGestureUseCase.deleteCustomGesture(gestureId)
-            this.renderCustomGestureList()
+            await this.renderCustomGestureList()
+            await this.renderGestureList() // ジェスチャー一覧も同期更新
             this.showStatus('カスタムジェスチャーを削除しました', 'success')
           }
         }
@@ -262,6 +267,7 @@ class ThinOptionsController {
         if (e.target.type === 'checkbox' && e.target.dataset.gestureId) {
           const gestureId = e.target.dataset.gestureId
           await this.customGestureUseCase.toggleCustomGesture(gestureId, e.target.checked)
+          await this.renderGestureList() // ジェスチャー一覧も同期更新
           this.showStatus('ジェスチャー状態を変更しました', 'success')
         }
       })
@@ -465,9 +471,13 @@ class ThinOptionsController {
         html += `<div class="gesture-category"><div class="category-header">${categoryName} (${categoryGestures.length})</div>`
         
         categoryGestures.forEach(gesture => {
+          const pattern = gesture.getFormattedPattern(8) // 統一パターン表示
+          
           html += `
             <div class="all-gesture-item ${gesture.enabled ? '' : 'disabled'}">
-              <div class="gesture-visual">${gesture.getFormattedPattern()}</div>
+              <div class="gesture-visual">
+                <div class="gesture-pattern-large">${pattern}</div>
+              </div>
               <div class="gesture-info">
                 <div class="gesture-name">${gesture.name}${gesture.isNew ? ' <span class="new-badge">NEW</span>' : ''}</div>
                 <div class="gesture-description">${gesture.getActionDisplayName()}</div>
@@ -501,13 +511,18 @@ class ThinOptionsController {
 
     let html = ''
     customGestures.forEach(gesture => {
+      // パターンを矢印表記に統一変換
+      const formattedPattern = this.formatPatternToArrows(gesture.pattern, 8)
+      const actionDisplayName = this.getActionDisplayName(gesture.action)
+      
+      
       html += `
         <div class="gesture-item ${gesture.enabled ? '' : 'disabled'}">
           <div class="gesture-info">
             <div class="gesture-name">${this.escapeHtml(gesture.name)}</div>
             <div>
-              <span class="gesture-pattern">${gesture.getFormattedPattern()}</span>
-              <span class="gesture-action">${gesture.getActionDisplayName()}</span>
+              <span class="gesture-pattern">${formattedPattern}</span>
+              <span class="gesture-action">${actionDisplayName}</span>
             </div>
           </div>
           <div class="gesture-controls">
@@ -528,21 +543,119 @@ class ThinOptionsController {
   groupGesturesByCategory(gestures) {
     const categories = {
       '標準ジェスチャー': [],
-      '新機能 (Phase 10)': [],
       'カスタムジェスチャー': []
     }
 
     gestures.forEach(gesture => {
-      if (gesture.category === 'custom') {
+      if (gesture.category === 'custom' || gesture.id.startsWith('custom_')) {
         categories['カスタムジェスチャー'].push(gesture)
-      } else if (gesture.isNew) {
-        categories['新機能 (Phase 10)'].push(gesture)
       } else {
         categories['標準ジェスチャー'].push(gesture)
       }
     })
 
     return categories
+  }
+
+  // ========== パターン表示ヘルパーメソッド ==========
+
+  /**
+   * パターンを矢印表記に変換
+   */
+  formatPatternToArrows(pattern, maxLength = 8) {
+    let arrowPattern = ''
+    
+    if (typeof pattern === 'string') {
+      // 既に矢印文字列の場合はそのまま返す
+      if (/^[↑↓←→]+$/.test(pattern)) {
+        arrowPattern = pattern
+      } else if (pattern.includes(',')) {
+        // カンマ区切りの場合は分割して処理
+        arrowPattern = pattern
+          .split(',')
+          .map(dir => dir.trim())
+          .map(dir => this.directionToArrow(dir))
+          .join('')
+      } else {
+        // 英語方向文字列の場合は変換
+        arrowPattern = pattern
+          .replace(/UP/gi, '↑')
+          .replace(/DOWN/gi, '↓')
+          .replace(/LEFT/gi, '←')
+          .replace(/RIGHT/gi, '→')
+      }
+    } else if (Array.isArray(pattern)) {
+      // 配列パターンの処理
+      arrowPattern = pattern
+        .map(dir => this.directionToArrow(dir))
+        .join('')
+    } else if (pattern && typeof pattern === 'object' && pattern._directions && Array.isArray(pattern._directions)) {
+      // GesturePatternオブジェクトの処理
+      arrowPattern = pattern._directions
+        .map(dir => this.directionToArrow(dir))
+        .join('')
+    } else if (pattern && typeof pattern.toString === 'function') {
+      // その他のオブジェクトでtoStringメソッドがある場合
+      const stringPattern = pattern.toString()
+      if (/^[↑↓←→]+$/.test(stringPattern)) {
+        arrowPattern = stringPattern
+      } else {
+        arrowPattern = stringPattern
+          .replace(/UP/gi, '↑')
+          .replace(/DOWN/gi, '↓')
+          .replace(/LEFT/gi, '←')
+          .replace(/RIGHT/gi, '→')
+      }
+    } else {
+      arrowPattern = String(pattern || '')
+    }
+    
+    // 長すぎる場合は省略表示
+    if (maxLength > 1 && arrowPattern.length > maxLength) {
+      return arrowPattern.substring(0, maxLength - 1) + '…'
+    }
+    
+    return arrowPattern
+  }
+
+  /**
+   * 方向文字列を矢印に変換
+   */
+  directionToArrow(direction) {
+    // 既に矢印の場合はそのまま
+    if (/^[↑↓←→]$/.test(direction)) {
+      return direction
+    }
+    
+    // 英語方向文字列を矢印に変換
+    switch(direction.toLowerCase()) {
+    case 'up': return '↑'
+    case 'down': return '↓'
+    case 'left': return '←'
+    case 'right': return '→'
+    default: return direction // 不明な場合はそのまま
+    }
+  }
+
+  /**
+   * アクションの表示名を取得
+   */
+  getActionDisplayName(action) {
+    const actionNames = {
+      back: 'ブラウザの戻る',
+      forward: 'ブラウザの進む',
+      scroll_up: 'ページ最上部スクロール',
+      scroll_down: 'ページ最下部スクロール',
+      close_tab: 'タブを閉じる',
+      new_tab: '新しいタブを開く',
+      refresh: 'ページ更新',
+      duplicate_tab: 'タブ複製',
+      super_refresh: 'スーパーリロード（キャッシュクリア付き）',
+      prev_tab: '前のタブに切り替え',
+      next_tab: '次のタブに切り替え'
+    }
+    
+    return actionNames[action] || action
   }
 
   // ========== その他のUIロジック ==========
@@ -561,18 +674,9 @@ class ThinOptionsController {
       const header = category.querySelector('.category-header')?.textContent || ''
       let show = type === 'all'
       if (type === 'default' && header.includes('標準')) show = true
-      if (type === 'new' && header.includes('新機能')) show = true
       if (type === 'custom' && header.includes('カスタム')) show = true
       category.style.display = show ? 'block' : 'none'
     })
-  }
-
-  toggleGestureViewMode() {
-    // 簡易実装：後で詳細化
-    const toggleBtn = document.getElementById('toggleViewMode')
-    if (toggleBtn) {
-      toggleBtn.textContent = toggleBtn.textContent === '詳細表示' ? '簡易表示' : '詳細表示'
-    }
   }
 
   toggleDebugOptions(enabled) {
@@ -643,7 +747,8 @@ class ThinOptionsController {
       document.getElementById('gestureAction').selectedIndex = 0
       this.clearPattern()
       
-      this.renderCustomGestureList()
+      await this.renderCustomGestureList()
+      await this.renderGestureList() // ジェスチャー一覧も同期更新
       this.showStatus('新しいカスタムジェスチャーを追加しました', 'success')
       
     } catch (error) {
