@@ -357,7 +357,13 @@ git tag v1.9.0  # → GitHub Actions → ビルド → リリース
     - **11-2**: esbuildベースビルドシステム統合
     - **11-3**: オプション画面Clean Architecture移行
     - **11-4**: 旧構成依存の完全除去
-- **テスト**: ✅ **316テスト・314パス**（98.7%成功率・Clean Architecture統合後）
+  - **Phase 11.5**: ✅ **UseCase統合リファクタリング完了**（2025-07-28）
+    - **11.5-1**: 重複UseCaseクラス統合（1,341行コード削減）
+    - **11.5-2**: Clean Architecture設計原則違反解消
+    - **11.5-3**: SRP/DRY/OCP/DIP原則準拠実現
+    - **11.5-4**: SettingsUseCase→SettingsManagementUseCase統合
+    - **11.5-5**: CustomGestureUseCase→CustomGestureManagementUseCase統合
+- **テスト**: ✅ **368テスト・368パス**（100%成功率・UseCase統合リファクタリング後）
 - **セキュリティ**: ✅ 監査完了
 - **品質管理**: ✅ husky品質ゲート + CI/CD自動化完了
 - **CI/CD**: ✅ **GitHub Actions完全導入**（自動テスト・ビルド・リリース）

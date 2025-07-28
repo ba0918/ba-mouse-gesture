@@ -300,7 +300,7 @@ pnpm run test:e2e      # E2Eテスト（重要な変更後）
 ### Phase完了条件
 - [ ] Phase 1: Clean Architecture違反 0箇所
 - [ ] Phase 2: 最大ファイル行数 250行以下
-- [ ] Phase 3: デッドコード 0ファイル
+- [x] Phase 3: デッドコード 0ファイル
 - [ ] Phase 4: ESLint警告 10個以下
 - [ ] Phase 5: アーキテクチャ改善完了
 

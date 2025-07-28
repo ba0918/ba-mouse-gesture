@@ -168,13 +168,14 @@ class Settings {
   /**
    * サイトが除外対象かチェック
    * @param {string} url - チェック対象URL
+   * @param {URLParserAdapter} urlParser - URL解析アダプター（依存性注入）
    * @returns {boolean}
    */
-  isExcludedSite(url) {
+  isExcludedSite(url, urlParser) {
     if (!url) return false
     
-    // URLコンストラクタはブラウザ環境で利用可能
-    const currentHost = typeof window !== 'undefined' && window.URL ? new window.URL(url).hostname : ''
+    // Infrastructure層のURLParserAdapterを使用（Clean Architecture準拠）
+    const currentHost = urlParser ? urlParser.getHostname(url) : ''
     
     return this.excludeList.some(pattern => {
       // 完全URL マッチ

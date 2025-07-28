@@ -384,16 +384,16 @@ class SettingsManagementUseCase {
    * @param {Object} data - 変更データ
    * @returns {Promise<void>}
    */
-  notifySettingsChange(type, data) {
+  async notifySettingsChange(type, data) {
     try {
-      // Chrome runtime メッセージによる通知（必要に応じて）
-      if (typeof chrome !== 'undefined' && chrome.runtime) {
-        chrome.runtime.sendMessage({
+      // Infrastructure層のChromeMessagingを使用（Clean Architecture準拠）
+      if (this.messagingAdapter) {
+        await this.messagingAdapter.sendMessage({
           type: 'settings_changed',
           changeType: type,
           data: data,
           timestamp: new Date().toISOString()
-        }).catch(error => {
+        }, { expectResponse: false }).catch(error => {
           // エラーは無視（リスナーがない場合は正常）
           console.log('Settings change notification failed:', error)
         })
@@ -401,6 +401,161 @@ class SettingsManagementUseCase {
     } catch (error) {
       console.error('Failed to notify settings change:', error)
     }
+  }
+
+  // ========================================
+  // 旧SettingsUseCase互換メソッド（統合後）
+  // ========================================
+
+  /**
+   * 設定を取得（旧SettingsUseCaseインターフェース互換）
+   * @returns {Promise<Object>}
+   */
+  async getSettings() {
+    try {
+      const settings = await this.getCurrentSettings()
+      return settings.toJSON()
+    } catch (error) {
+      console.error('❌ SettingsManagementUseCase: Failed to load settings:', error)
+      return this.getDefaultSettings()
+    }
+  }
+
+  /**
+   * 設定を保存（旧SettingsUseCaseインターフェース互換）
+   * @param {Object} settings - 設定オブジェクト
+   * @returns {Promise<Object>}
+   */
+  async saveSettings(settings) {
+    try {
+      // 設定の各フィールドをそれぞれ更新
+      if (settings.enabled !== undefined) {
+        await this.toggleExtension(settings.enabled)
+      }
+      
+      if (settings.strokeColor !== undefined || settings.strokeWidth !== undefined) {
+        const currentSettings = await this.getCurrentSettings()
+        const color = settings.strokeColor || currentSettings.strokeColor
+        const width = settings.strokeWidth || currentSettings.strokeWidth
+        await this.updateStrokeSettings(color, width)
+      }
+      
+      if (settings.gestureThreshold !== undefined) {
+        await this.updateGestureThreshold(settings.gestureThreshold)
+      }
+      
+      if (settings.excludeList !== undefined) {
+        // 現在の除外リストをクリアして新しいものを設定
+        const currentSettings = await this.getCurrentSettings()
+        const currentList = currentSettings.getExcludeList()
+        
+        // 既存のアイテムを削除
+        for (const item of currentList) {
+          await this.removeExcludeSite(item)
+        }
+        
+        // 新しいアイテムを追加
+        for (const item of settings.excludeList) {
+          await this.addExcludeSite(item)
+        }
+      }
+      
+      if (settings.defaultGestureStates !== undefined) {
+        // 各ジェスチャーの状態を更新
+        for (const [gestureId, enabled] of Object.entries(settings.defaultGestureStates)) {
+          await this.toggleGesture(gestureId, enabled)
+        }
+      }
+      
+      console.log('✅ SettingsManagementUseCase: Settings saved successfully')
+      
+      // バックグラウンドスクリプトに設定変更を通知
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({
+          type: 'SETTINGS_UPDATED',
+          settings: settings
+        })
+      }
+      
+      // 更新後の設定を返す
+      const updatedSettings = await this.getCurrentSettings()
+      return updatedSettings.toJSON()
+      
+    } catch (error) {
+      console.error('❌ SettingsManagementUseCase: Failed to save settings:', error)
+      throw error
+    }
+  }
+
+  /**
+   * デフォルト設定を取得（旧SettingsUseCaseインターフェース互換）
+   * @returns {Object}
+   */
+  getDefaultSettings() {
+    return {
+      enabled: true,
+      strokeColor: '#2196F3',
+      strokeWidth: 3,
+      gestureThreshold: 15,
+      excludeList: [],
+      defaultGestureStates: {
+        left: true,
+        right: true,
+        up: true,
+        down: true,
+        downright: true,
+        upright: true,
+        rightdown: true,
+        updown: true,
+        super_refresh: true,
+        prev_tab: true,
+        next_tab: true
+      }
+    }
+  }
+
+  /**
+   * Chrome Storage APIの統一インターフェース（旧SettingsUseCaseインターフェース互換）
+   * @param {Array|string} keys
+   * @returns {Promise<Object>}
+   */
+  chromeStorageGet(keys) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        reject(new Error('Chrome storage API is not available'))
+        return
+      }
+      
+      chrome.storage.sync.get(keys, (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else {
+          resolve(result)
+        }
+      })
+    })
+  }
+
+  /**
+   * Chrome Storage APIの統一インターフェース（旧SettingsUseCaseインターフェース互換）
+   * @param {Object} data
+   * @returns {Promise<void>}
+   */
+  chromeStorageSet(data) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        reject(new Error('Chrome storage API is not available'))
+        return
+      }
+      
+      chrome.storage.sync.set(data, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 }
 
@@ -413,6 +568,12 @@ class SettingsManagementError extends Error {
     this.name = 'SettingsManagementError'
     this.originalError = originalError
   }
+}
+
+// モジュールとして使用可能にする（window登録）
+if (typeof window !== 'undefined') {
+  window.SettingsUseCase = window.SettingsUseCase || SettingsManagementUseCase
+  window.SettingsManagementUseCase = window.SettingsManagementUseCase || SettingsManagementUseCase
 }
 
 // ES6 Module export

@@ -137,22 +137,20 @@ class CleanGestureManager {
 
   /**
    * シンプルなデバッグUseCase実装（フォールバック用）
+   * Infrastructure層のChromeStorageAdapterを使用（Clean Architecture準拠）
    */
   createSimpleDebugUseCase() {
     return {
       async isDebugEnabled() {
         try {
-          const result = await new Promise((resolve) => {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-              chrome.storage.sync.get(['appSettings'], (data) => {
-                const debugEnabled = data.appSettings?.debugSettings?.enabled || false
-                resolve(debugEnabled)
-              })
-            } else {
-              resolve(false)
-            }
-          })
-          return result
+          // Infrastructure層のChromeStorageAdapterを使用
+          if (window.ChromeStorageAdapter) {
+            const storageAdapter = new window.ChromeStorageAdapter()
+            const data = await storageAdapter.get(['appSettings'])
+            const debugEnabled = data.appSettings?.debugSettings?.enabled || false
+            return debugEnabled
+          }
+          return false
         } catch (error) {
           console.error('Debug enabled check failed:', error)
           return false
@@ -161,34 +159,33 @@ class CleanGestureManager {
 
       async getDebugSettings() {
         try {
-          const result = await new Promise((resolve) => {
-            if (typeof chrome !== 'undefined' && chrome.storage) {
-              chrome.storage.sync.get(['appSettings'], (data) => {
-                const debugSettings = data.appSettings?.debugSettings || {
-                  enabled: false,
-                  logLevel: 2,
-                  showStatus: false,
-                  statusPosition: 'top-right'
-                }
-                
-                // shouldShowStatus メソッドを追加
-                debugSettings.shouldShowStatus = function () {
-                  return this.enabled && this.showStatus
-                }
-                
-                resolve(debugSettings)
-              })
-            } else {
-              resolve({
-                enabled: false,
-                logLevel: 2,
-                showStatus: false,
-                statusPosition: 'top-right',
-                shouldShowStatus: () => false
-              })
+          // Infrastructure層のChromeStorageAdapterを使用
+          if (window.ChromeStorageAdapter) {
+            const storageAdapter = new window.ChromeStorageAdapter()
+            const data = await storageAdapter.get(['appSettings'])
+            const debugSettings = data.appSettings?.debugSettings || {
+              enabled: false,
+              logLevel: 2,
+              showStatus: false,
+              statusPosition: 'top-right'
             }
-          })
-          return result
+            
+            // shouldShowStatus メソッドを追加
+            debugSettings.shouldShowStatus = function () {
+              return this.enabled && this.showStatus
+            }
+            
+            return debugSettings
+          }
+          
+          // フォールバック実装
+          return {
+            enabled: false,
+            logLevel: 2,
+            showStatus: false,
+            statusPosition: 'top-right',
+            shouldShowStatus: () => false
+          }
         } catch (error) {
           console.error('Get debug settings failed:', error)
           return {

@@ -26,9 +26,9 @@ class CustomGestureManagementUseCase {
 
   /**
    * UseCaseの初期化
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async initialize() {
+  initialize() {
     try {
       this.isInitialized = true
     } catch (error) {
@@ -86,12 +86,11 @@ class CustomGestureManagementUseCase {
    * @param {string} name - ジェスチャー名
    * @param {Array} rawPoints - マウス軌跡データ [{x, y, timestamp}, ...]
    * @param {string} action - 実行アクション
-   * @param {string} description - 説明（オプション）
    * @returns {Promise<CustomGesture>}
    */
-  async createCustomGesture(name, rawPoints, action, description = '') {
+  async createCustomGesture(name, rawPoints, action) {
     if (!this.isInitialized) {
-      await this.initialize()
+      this.initialize()
     }
 
     try {
@@ -142,7 +141,7 @@ class CustomGestureManagementUseCase {
    */
   async addCustomGesture({ name, pattern, action, description = '' }) {
     if (!this.isInitialized) {
-      await this.initialize()
+      this.initialize()
     }
 
     try {
@@ -300,7 +299,7 @@ class CustomGestureManagementUseCase {
    */
   async matchPattern(rawPoints) {
     if (!this.isInitialized) {
-      await this.initialize()
+      this.initialize()
     }
 
     try {
@@ -648,6 +647,128 @@ class CustomGestureManagementUseCase {
       throw new Error('Invalid backup data. Custom gestures must be array')
     }
   }
+
+  // ========================================
+  // 旧CustomGestureUseCase互換メソッド（統合後）
+  // ========================================
+
+  /**
+   * カスタムジェスチャーを取得（旧CustomGestureUseCaseインターフェース互換）
+   * @returns {Promise<Array>}
+   */
+  async getCustomGestures() {
+    try {
+      const customGestures = await this.getAllCustomGestures()
+      // Entity形式から単純なオブジェクト形式に変換
+      return customGestures.map(gesture => gesture.toJSON ? gesture.toJSON() : gesture)
+    } catch (error) {
+      console.error('❌ CustomGestureManagementUseCase: Failed to load custom gestures:', error)
+      return []
+    }
+  }
+
+  /**
+   * カスタムジェスチャーを保存（旧CustomGestureUseCaseインターフェース互換）
+   * @param {Array} customGestures - カスタムジェスチャー配列
+   * @returns {Promise<Array>}
+   */
+  async saveCustomGestures(customGestures) {
+    try {
+      // 既存の全カスタムジェスチャーを削除
+      const existingGestures = await this.getAllCustomGestures()
+      for (const gesture of existingGestures) {
+        await this.deleteCustomGesture(gesture.id)
+      }
+
+      // 新しいジェスチャーを追加
+      const savedGestures = []
+      for (const gestureData of customGestures) {
+        try {
+          const savedGesture = await this.addCustomGesture({
+            name: gestureData.name,
+            pattern: gestureData.pattern,
+            action: gestureData.action,
+            description: gestureData.description || ''
+          })
+          savedGestures.push(savedGesture.toJSON ? savedGesture.toJSON() : savedGesture)
+        } catch (gestureError) {
+          console.warn('Failed to save individual gesture:', gestureData.name, gestureError)
+        }
+      }
+
+      console.log('✅ CustomGestureManagementUseCase: Custom gestures saved successfully')
+      return savedGestures
+
+    } catch (error) {
+      console.error('❌ CustomGestureManagementUseCase: Failed to save custom gestures:', error)
+      throw error
+    }
+  }
+
+  /**
+   * カスタムジェスチャーを削除/リセット（旧CustomGestureUseCaseインターフェース互換）
+   * @returns {Promise<Array>}
+   */
+  async resetCustomGestures() {
+    try {
+      // 全カスタムジェスチャーを削除
+      const existingGestures = await this.getAllCustomGestures()
+      for (const gesture of existingGestures) {
+        await this.deleteCustomGesture(gesture.id)
+      }
+
+      console.log('✅ CustomGestureManagementUseCase: Custom gestures reset successfully')
+      return []
+
+    } catch (error) {
+      console.error('❌ CustomGestureManagementUseCase: Failed to reset custom gestures:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Chrome Storage APIの統一インターフェース（旧CustomGestureUseCaseインターフェース互換）
+   * @param {Array|string} keys
+   * @returns {Promise<Object>}
+   */
+  chromeStorageGet(keys) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        reject(new Error('Chrome storage API is not available'))
+        return
+      }
+      
+      chrome.storage.sync.get(keys, (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else {
+          resolve(result)
+        }
+      })
+    })
+  }
+
+  /**
+   * Chrome Storage APIの統一インターフェース（旧CustomGestureUseCaseインターフェース互換）
+   * @param {Object} data
+   * @returns {Promise<void>}
+   */
+  chromeStorageSet(data) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        reject(new Error('Chrome storage API is not available'))
+        return
+      }
+      
+      chrome.storage.sync.set(data, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError)
+        } else {
+          resolve()
+        }
+      })
+    })
+  }
 }
 
 /**
@@ -659,6 +780,12 @@ class CustomGestureManagementError extends Error {
     this.name = 'CustomGestureManagementError'
     this.originalError = originalError
   }
+}
+
+// モジュールとして使用可能にする（window登録）
+if (typeof window !== 'undefined') {
+  window.CustomGestureUseCase = window.CustomGestureUseCase || CustomGestureManagementUseCase
+  window.CustomGestureManagementUseCase = window.CustomGestureManagementUseCase || CustomGestureManagementUseCase
 }
 
 // ES6 Module export
