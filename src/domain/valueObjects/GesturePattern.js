@@ -358,7 +358,7 @@ class GesturePattern {
               } else if (char.trim()) {
                 // 英語の方向名の可能性をチェック
                 const remaining = directions.substring(i)
-                for (const [arrow, direction] of Object.entries(arrowMap)) {
+                for (const [, direction] of Object.entries(arrowMap)) {
                   if (remaining.toLowerCase().startsWith(direction)) {
                     parsed.push(direction)
                     i += direction.length - 1 // インデックスを調整

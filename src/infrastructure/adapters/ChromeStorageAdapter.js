@@ -3,12 +3,48 @@
  * Infrastructure層 - 外部システムとのインターフェース
  */
 
+// Chrome Storage API専用アダプター
+
 class ChromeStorageAdapter {
-  constructor() {
+  constructor(logger = null) {
     this.storage = chrome?.storage
+    this.logger = logger // DebugLoggerインスタンス
+    
     if (!this.storage) {
-      console.warn('⚠️ Chrome storage API not available')
+      if (this.logger) {
+        this.logger.warn('Chrome storage API not available')
+      } else {
+        console.warn('⚠️ Chrome storage API not available')
+      }
     }
+  }
+  
+  /**
+   * DebugLoggerを設定
+   */
+  setLogger(logger) {
+    this.logger = logger
+  }
+  
+  /**
+   * 静的ログ制御を使用してログを出力
+   * DebugLogger未初期化時でもlogLevel=0設定を尊重
+   */
+  logWithLevel(level, message, ...args) {
+    if (this.logger) {
+      // DebugLoggerが利用可能な場合はそれを使用
+      switch(level) {
+      case 0: this.logger.error(message, ...args); break
+      case 1: this.logger.warn(message, ...args); break
+      case 2: this.logger.info(message, ...args); break
+      case 3: this.logger.debug(message, ...args); break
+      }
+    } else if (level === 0) {
+      // DebugLogger未初期化時はERRORレベル（0）のみ出力
+      // より厳しい制御: logLevel設定がない限りINFO/DEBUGログは出力しない
+      console.error(`❌ ${message}`, ...args)
+    }
+    // レベルが許可されていない場合は何も出力しない
   }
 
   /**
@@ -20,7 +56,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Getting data from sync storage:', keys)
+      this.logWithLevel(2, 'ChromeStorageAdapter: Getting data from sync storage:', keys)
       
       const result = await new Promise((resolve, reject) => {
         this.storage.sync.get(keys, (result) => {
@@ -32,11 +68,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Data retrieved successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Data retrieved successfully')
       return result
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to get data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to get data:', error)
       throw new Error(`Failed to get data from storage: ${error.message}`)
     }
   }
@@ -50,7 +86,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Setting data to sync storage')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Setting data to sync storage')
       
       await new Promise((resolve, reject) => {
         this.storage.sync.set(data, () => {
@@ -62,11 +98,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Data saved successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Data saved successfully')
       return true
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to set data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to set data:', error)
       throw new Error(`Failed to set data to storage: ${error.message}`)
     }
   }
@@ -77,18 +113,18 @@ class ChromeStorageAdapter {
    */
   async syncSet(data) {
     try {
-      console.log('🔧 ChromeStorageAdapter: Syncing data for content script notification')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Syncing data for content script notification')
       
       // まずsync storageに保存
       await this.set(data)
       
       // storage.onChangedイベントが発火され、content_scriptが反応する
-      console.log('🔧 ChromeStorageAdapter: Sync data saved, content script will be notified')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Sync data saved, content script will be notified')
       
       return true
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to sync data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to sync data:', error)
       throw error
     }
   }
@@ -102,7 +138,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Removing data from sync storage:', keys)
+      this.logWithLevel(2, 'ChromeStorageAdapter: Removing data from sync storage:', keys)
       
       await new Promise((resolve, reject) => {
         this.storage.sync.remove(keys, () => {
@@ -114,11 +150,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Data removed successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Data removed successfully')
       return true
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to remove data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to remove data:', error)
       throw new Error(`Failed to remove data from storage: ${error.message}`)
     }
   }
@@ -132,7 +168,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Clearing all sync storage data')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Clearing all sync storage data')
       
       await new Promise((resolve, reject) => {
         this.storage.sync.clear(() => {
@@ -144,11 +180,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: All data cleared successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: All data cleared successfully')
       return true
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to clear data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to clear data:', error)
       throw new Error(`Failed to clear storage: ${error.message}`)
     }
   }
@@ -162,7 +198,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Getting data from local storage:', keys)
+      this.logWithLevel(2, 'ChromeStorageAdapter: Getting data from local storage:', keys)
       
       const result = await new Promise((resolve, reject) => {
         this.storage.local.get(keys, (result) => {
@@ -174,11 +210,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Local data retrieved successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Local data retrieved successfully')
       return result
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to get local data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to get local data:', error)
       throw new Error(`Failed to get data from local storage: ${error.message}`)
     }
   }
@@ -192,7 +228,7 @@ class ChromeStorageAdapter {
     }
 
     try {
-      console.log('🔧 ChromeStorageAdapter: Setting data to local storage')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Setting data to local storage')
       
       await new Promise((resolve, reject) => {
         this.storage.local.set(data, () => {
@@ -204,11 +240,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Local data saved successfully')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Local data saved successfully')
       return true
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to set local data:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to set local data:', error)
       throw new Error(`Failed to set data to local storage: ${error.message}`)
     }
   }
@@ -232,11 +268,11 @@ class ChromeStorageAdapter {
         })
       })
       
-      console.log('🔧 ChromeStorageAdapter: Storage usage:', bytesInUse, 'bytes')
+      this.logWithLevel(2, 'ChromeStorageAdapter: Storage usage:', bytesInUse, 'bytes')
       return bytesInUse
       
     } catch (error) {
-      console.error('🚨 ChromeStorageAdapter: Failed to get storage usage:', error)
+      this.logWithLevel(0, 'ChromeStorageAdapter: Failed to get storage usage:', error)
       throw error
     }
   }
@@ -255,12 +291,12 @@ class ChromeStorageAdapter {
    */
   addChangeListener(callback) {
     if (!this.storage?.onChanged) {
-      console.warn('⚠️ Chrome storage.onChanged not available')
+      this.logWithLevel(1, 'Chrome storage.onChanged not available')
       return () => {} // 空の削除関数を返す
     }
 
     this.storage.onChanged.addListener(callback)
-    console.log('🔧 ChromeStorageAdapter: Change listener added')
+    this.logWithLevel(2, 'ChromeStorageAdapter: Change listener added')
     
     // リスナー削除関数を返す
     return () => {
@@ -273,12 +309,12 @@ class ChromeStorageAdapter {
    */
   removeChangeListener(callback) {
     if (!this.storage?.onChanged) {
-      console.warn('⚠️ Chrome storage.onChanged not available')
+      this.logWithLevel(1, 'Chrome storage.onChanged not available')
       return
     }
 
     this.storage.onChanged.removeListener(callback)
-    console.log('🔧 ChromeStorageAdapter: Change listener removed')
+    this.logWithLevel(2, 'ChromeStorageAdapter: Change listener removed')
   }
 }
 

@@ -306,7 +306,7 @@ class CleanGestureManager {
         // カスタムジェスチャーも読み込み
         await this.customGestureUseCase.getAllCustomGestures()
         
-        console.log('Settings loaded via UseCase:', this.settings)
+        // Settings loaded via UseCase - DebugLoggerが初期化された後にログ出力
         
         // DebugLoggerを初期化
         const debugSettings = await this.debugUseCase.getDebugSettings()
@@ -315,6 +315,7 @@ class CleanGestureManager {
         // デバッグ情報の表示
         if (await this.debugUseCase.isDebugEnabled()) {
           this.logger.debug('Debug mode enabled')
+          this.logger.info('Settings loaded via UseCase:', this.settings)
           this.showDebugStatus('設定を読み込みました')
         }
         
@@ -341,11 +342,9 @@ class CleanGestureManager {
       // 新しい構成 (Clean Architecture) を優先
       if (result.appSettings) {
         settingsData = result.appSettings
-        console.log('Settings loaded from appSettings (Clean Architecture)')
       } else if (result.settings) {
         // 後方互換性のために古い構成もサポート
         settingsData = result.settings
-        console.log('Settings loaded from settings (legacy)')
       }
       
       if (settingsData) {
@@ -358,7 +357,6 @@ class CleanGestureManager {
           defaultGestureStates: settingsData.defaultGestureStates || {}
         }
       }
-      console.log('Settings loaded (fallback):', this.settings)
     } catch (error) {
       console.error('Fallback settings load failed:', error)
     }
@@ -405,7 +403,7 @@ class CleanGestureManager {
         this.canvas = this.canvasRenderer.getCanvas()
         this.ctx = this.canvasRenderer.getContext()
         
-        console.log('Canvas initialized via CanvasRendererAdapter')
+        // Canvas initialized via CanvasRendererAdapter - DebugLoggerに移行済み
         return
         
       } catch (error) {
@@ -597,11 +595,15 @@ class CleanGestureManager {
       // ジェスチャー認識
       const gestureResult = await this.recognizeGesture(trail)
       if (!gestureResult) {
-        console.log('Gesture not recognized')
+        if (this.logger) {
+          this.logger.debug('Gesture not recognized')
+        }
         return
       }
       
-      console.log('Recognized gesture:', gestureResult)
+      if (this.logger) {
+        this.logger.debug('Recognized gesture:', gestureResult)
+      }
       
       // ジェスチャーの種類に応じて処理
       const distance = this.calculateTrailDistance()
@@ -621,7 +623,9 @@ class CleanGestureManager {
    */
   async handleCustomGesture(gestureResult, distance) {
     try {
-      console.log(`Custom gesture: ${gestureResult.name} (${distance.toFixed(0)}px)`)
+      if (this.logger) {
+        this.logger.debug(`Custom gesture: ${gestureResult.name} (${distance.toFixed(0)}px)`)
+      }
       
       const response = await this.sendGestureMessage({
         type: 'customGesture',
@@ -632,7 +636,9 @@ class CleanGestureManager {
       })
       
       if (response.success) {
-        console.log('Custom gesture executed successfully:', response.action)
+        if (this.logger) {
+          this.logger.debug('Custom gesture executed successfully:', response.action)
+        }
         // カスタムジェスチャーのデバッグ表示
         await this.showDebugStatus(`🎯 Custom: ${response.action}`)
       } else {
@@ -654,16 +660,22 @@ class CleanGestureManager {
       const gestureType = typeof gestureResult === 'string' ? gestureResult : gestureResult.action || gestureResult.type
       
       if (!this.isGestureEnabled(gestureType)) {
-        console.log(`Gesture ${gestureType} is disabled`)
+        if (this.logger) {
+          this.logger.debug(`Gesture ${gestureType} is disabled`)
+        }
         return
       }
       
-      console.log(`Default gesture: ${gestureType} (${distance.toFixed(0)}px)`)
+      if (this.logger) {
+        this.logger.debug(`Default gesture: ${gestureType} (${distance.toFixed(0)}px)`)
+      }
       
       const response = await this.sendGestureMessage(gestureType)
       
       if (response.success) {
-        console.log('Default gesture executed successfully:', response.action)
+        if (this.logger) {
+          this.logger.debug('Default gesture executed successfully:', response.action)
+        }
         // デバッグ表示を追加
         await this.showDebugStatus(`✅ ${gestureType}: ${response.action}`)
       } else {
@@ -695,7 +707,9 @@ class CleanGestureManager {
       })
       
       if (recognitionResult) {
-        console.log('Gesture recognized via Domain Service:', recognitionResult)
+        if (this.logger) {
+          this.logger.debug('Gesture recognized via Domain Service:', recognitionResult)
+        }
         return recognitionResult
       }
       
@@ -783,7 +797,9 @@ class CleanGestureManager {
     const cleanDirections = this.cleanDirections(directions)
     const uniqueDirections = [...new Set(cleanDirections)]
     
-    console.log('Simple gesture check - unique directions:', uniqueDirections)
+    if (this.logger) {
+      this.logger.debug('Simple gesture check - unique directions:', uniqueDirections)
+    }
     
     // 単一方向のみの場合は単純ジェスチャー
     return uniqueDirections.length <= 1
@@ -840,11 +856,15 @@ class CleanGestureManager {
     // 連続する同じ方向を統合
     const cleanDirections = this.cleanDirections(directions)
     
-    console.log('Complex gesture - directions:', cleanDirections)
+    if (this.logger) {
+      this.logger.debug('Complex gesture - directions:', cleanDirections)
+    }
     
     if (cleanDirections.length >= 2) {
       const pattern = cleanDirections.join('')
-      console.log('Checking pattern:', pattern)
+      if (this.logger) {
+        this.logger.debug('Checking pattern:', pattern)
+      }
       
       // 複合ジェスチャーのパターンマッチング
       const complexPatterns = {
@@ -972,7 +992,9 @@ class CleanGestureManager {
           if (namespace === 'sync') {
             // Clean Architecture 対応: appSettings と settings 両方を監視
             if (changes.appSettings || changes.settings) {
-              console.log('Settings changed, reloading via UseCase...')
+              if (this.logger) {
+                this.logger.info('Settings changed, reloading via UseCase...')
+              }
               
               // UseCase経由で最新設定を取得
               await this.loadSettings()
@@ -992,18 +1014,26 @@ class CleanGestureManager {
             
             // デバッグ設定の変更を監視
             if (changes.debugSettings) {
-              console.log('🔧 Debug settings changed, updating debug state...')
+              if (this.logger) {
+                this.logger.info('Debug settings changed, updating debug state...')
+              }
               const newDebugSettings = changes.debugSettings.newValue
               
               if (newDebugSettings) {
-                console.log('🔧 New debug settings:', newDebugSettings)
+                if (this.logger) {
+                  this.logger.info('New debug settings:', newDebugSettings)
+                }
                 
                 // デバッグが無効になった場合、デバッグメッセージを非表示
                 if (!newDebugSettings.enabled) {
-                  console.log('🔧 Debug mode disabled, hiding debug status')
+                  if (this.logger) {
+                    this.logger.info('Debug mode disabled, hiding debug status')
+                  }
                   this.hideDebugStatus()
                 } else {
-                  console.log('🔧 Debug mode enabled')
+                  if (this.logger) {
+                    this.logger.info('Debug mode enabled')
+                  }
                   this.showDebugStatus('デバッグモードが有効になりました')
                 }
               }
@@ -1188,14 +1218,18 @@ class CleanGestureManager {
     try {
       const existingElement = document.getElementById('debug-status-element')
       if (existingElement) {
-        console.log('🔧 Hiding debug status element')
+        if (this.logger) {
+          this.logger.info('Hiding debug status element')
+        }
         existingElement.style.display = 'none'
         
         // 少し待ってから要素を削除
         setTimeout(() => {
           if (existingElement.parentNode) {
             existingElement.parentNode.removeChild(existingElement)
-            console.log('🔧 Debug status element removed')
+            if (this.logger) {
+              this.logger.info('Debug status element removed')
+            }
           }
         }, 500)
       }
@@ -1208,37 +1242,47 @@ class CleanGestureManager {
    * デバッグステータス表示要素の作成/更新
    */
   createOrUpdateDebugStatusElement(message, position = 'top-right') {
-    console.log('🔧 createOrUpdateDebugStatusElement called:', { message, position })
+    if (this.logger) {
+      this.logger.info('createOrUpdateDebugStatusElement called:', { message, position })
+    }
     
     const statusId = 'mouse-gesture-debug-status'
     let statusElement = document.getElementById(statusId)
     
     // 要素が存在しない場合は作成
     if (!statusElement) {
-      console.log('🔧 Creating new debug status element')
+      if (this.logger) {
+        this.logger.info('Creating new debug status element')
+      }
       statusElement = document.createElement('div')
       statusElement.id = statusId
       statusElement.style.cssText = this.getDebugStatusStyles(position)
       
       if (document.body) {
         document.body.appendChild(statusElement)
-        console.log('🔧 Debug status element appended to body')
+        if (this.logger) {
+          this.logger.info('Debug status element appended to body')
+        }
       } else {
         console.error('🚫 document.body is not available')
         return
       }
     } else {
-      console.log('🔧 Using existing debug status element')
+      if (this.logger) {
+        this.logger.info('Using existing debug status element')
+      }
     }
     
     // メッセージを更新
     statusElement.textContent = message
     statusElement.style.display = 'block'
-    console.log('🔧 Debug status element updated:', {
-      textContent: statusElement.textContent,
-      display: statusElement.style.display,
-      position: position
-    })
+    if (this.logger) {
+      this.logger.info('Debug status element updated:', {
+        textContent: statusElement.textContent,
+        display: statusElement.style.display,
+        position: position
+      })
+    }
     
     // 位置を更新（設定が変更された場合）
     this.updateDebugStatusPosition(statusElement, position)
@@ -1248,7 +1292,9 @@ class CleanGestureManager {
     this.debugStatusTimeout = setTimeout(() => {
       if (statusElement) {
         statusElement.style.display = 'none'
-        console.log('🔧 Debug status element hidden after 3 seconds')
+        if (this.logger) {
+          this.logger.info('Debug status element hidden after 3 seconds')
+        }
       }
     }, 3000)
   }
@@ -1358,7 +1404,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // デバッグ情報の表示
     if (await manager.debugUseCase.isDebugEnabled()) {
       const debugInfo = await manager.getDebugInfo()
-      console.log('🐛 Debug Info:', debugInfo)
+      if (manager.logger) {
+        manager.logger.debug('Debug Info:', debugInfo)
+      }
       manager.showDebugStatus('Clean Architecture Gesture Manager initialized successfully')
     }
     
@@ -1385,7 +1433,9 @@ if (document.readyState === 'loading') {
       // デバッグ情報の表示
       if (await manager.debugUseCase.isDebugEnabled()) {
         const debugInfo = await manager.getDebugInfo()
-        console.log('🐛 Debug Info:', debugInfo)
+        if (manager.logger) {
+          manager.logger.debug('Debug Info:', debugInfo)
+        }
         manager.showDebugStatus('Clean Architecture Gesture Manager initialized immediately')
       }
       

@@ -37,10 +37,10 @@ class SettingsManagementUseCase {
   async toggleExtension(enabled) {
     try {
       const result = await this.settingsRepository.updateSetting('enabled', enabled)
-      
+
       // 設定変更通知（必要に応じて）
       await this.notifySettingsChange('extension_toggled', { enabled })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to toggle extension', error)
@@ -57,12 +57,12 @@ class SettingsManagementUseCase {
     try {
       // 入力値の検証
       this.validateStrokeSettings(color, width)
-      
+
       const result = await this.settingsRepository.updateStrokeSettings(color, width)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('stroke_settings_updated', { color, width })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to update stroke settings', error)
@@ -78,12 +78,12 @@ class SettingsManagementUseCase {
     try {
       // 入力値の検証
       this.validateThreshold(threshold)
-      
+
       const result = await this.settingsRepository.updateThreshold(threshold)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('threshold_updated', { threshold })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to update gesture threshold', error)
@@ -100,12 +100,12 @@ class SettingsManagementUseCase {
     try {
       // ジェスチャーIDの検証
       this.validateGestureId(gestureId)
-      
+
       const result = await this.settingsRepository.updateGestureState(gestureId, enabled)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('gesture_toggled', { gestureId, enabled })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to toggle gesture', error)
@@ -121,12 +121,12 @@ class SettingsManagementUseCase {
     try {
       // パターンの検証
       this.validateUrlPattern(pattern)
-      
+
       const result = await this.settingsRepository.addExcludeSite(pattern)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('exclude_site_added', { pattern })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to add exclude site', error)
@@ -141,10 +141,10 @@ class SettingsManagementUseCase {
   async removeExcludeSite(pattern) {
     try {
       const result = await this.settingsRepository.removeExcludeSite(pattern)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('exclude_site_removed', { pattern })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to remove exclude site', error)
@@ -158,25 +158,15 @@ class SettingsManagementUseCase {
    */
   async updateDebugSettings(debugConfig) {
     try {
-      console.log('🔧 [Debug] SettingsManagementUseCase.updateDebugSettings called:', {
-        debugConfig: debugConfig,
-        logLevel: debugConfig.logLevel,
-        logLevelType: typeof debugConfig.logLevel
-      })
-      
+
       // デバッグ設定の検証
       this.validateDebugSettings(debugConfig)
-      
+
       const result = await this.settingsRepository.updateDebugSettings(debugConfig)
-      
-      console.log('🔧 [Debug] SettingsRepository.updateDebugSettings result:', {
-        resultDebugSettings: result.debugSettings,
-        logLevel: result.debugSettings?.logLevel
-      })
-      
+
       // 設定変更通知
       await this.notifySettingsChange('debug_settings_updated', debugConfig)
-      
+
       return result
     } catch (error) {
       console.error('❌ SettingsManagementUseCase.updateDebugSettings error:', error)
@@ -191,10 +181,10 @@ class SettingsManagementUseCase {
   async resetToDefaults() {
     try {
       const result = await this.settingsRepository.resetToDefaults()
-      
+
       // 設定変更通知
       await this.notifySettingsChange('settings_reset', {})
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to reset settings to defaults', error)
@@ -222,12 +212,12 @@ class SettingsManagementUseCase {
     try {
       // バックアップデータの検証
       this.validateBackupData(backup)
-      
+
       const result = await this.settingsRepository.restoreFromBackup(backup)
-      
+
       // 設定変更通知
       await this.notifySettingsChange('settings_restored', { timestamp: backup.timestamp })
-      
+
       return result
     } catch (error) {
       throw new SettingsManagementError('Failed to restore settings from backup', error)
@@ -254,7 +244,7 @@ class SettingsManagementUseCase {
     try {
       const settings = await this.settingsRepository.getSettings()
       const repoStatus = await this.settingsRepository.getRepositoryStatus()
-      
+
       return {
         enabled: settings.isEnabled(),
         enabledGestures: this.countEnabledGestures(settings),
@@ -288,7 +278,7 @@ class SettingsManagementUseCase {
       })
     } catch (error) {
       console.error('Failed to watch settings changes:', error)
-      return () => {} // 空の停止関数を返す
+      return () => { } // 空の停止関数を返す
     }
   }
 
@@ -326,7 +316,7 @@ class SettingsManagementUseCase {
       'downright', 'upright', 'rightdown', 'updown',
       'super_refresh', 'prev_tab', 'next_tab'
     ]
-    
+
     if (!validGestureIds.includes(gestureId)) {
       throw new Error(`Invalid gesture ID: ${gestureId}`)
     }
@@ -340,7 +330,7 @@ class SettingsManagementUseCase {
     if (!pattern || typeof pattern !== 'string' || pattern.trim().length === 0) {
       throw new Error('Invalid URL pattern. Pattern cannot be empty')
     }
-    
+
     // 基本的な形式チェック
     if (pattern.length > 200) {
       throw new Error('URL pattern too long. Maximum 200 characters')
@@ -355,12 +345,12 @@ class SettingsManagementUseCase {
     if (!debugConfig || typeof debugConfig !== 'object') {
       throw new Error('Invalid debug config. Expected object')
     }
-    
+
     const validLogLevels = [0, 1, 2, 3]
     if (debugConfig.logLevel !== undefined && !validLogLevels.includes(debugConfig.logLevel)) {
       throw new Error('Invalid log level. Expected 0-3')
     }
-    
+
     const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
     if (debugConfig.statusPosition && !validPositions.includes(debugConfig.statusPosition)) {
       throw new Error('Invalid status position')
@@ -375,7 +365,7 @@ class SettingsManagementUseCase {
     if (!backup || !backup.settings) {
       throw new Error('Invalid backup data. Missing settings')
     }
-    
+
     if (!backup.timestamp || !backup.version) {
       throw new Error('Invalid backup data. Missing metadata')
     }
@@ -427,15 +417,8 @@ class SettingsManagementUseCase {
     try {
       const settings = await this.getCurrentSettings()
       const settingsJSON = settings.toJSON()
-      
-      console.log('🔧 [Debug] SettingsManagementUseCase.getSettings result:', {
-        settingsEntity: settings,
-        settingsJSON: settingsJSON,
-        debugSettings: settingsJSON.debugSettings,
-        debugLogLevel: settingsJSON.debugSettings?.logLevel,
-        debugLogLevelType: typeof settingsJSON.debugSettings?.logLevel
-      })
-      
+
+
       return settingsJSON
     } catch (error) {
       console.error('❌ SettingsManagementUseCase: Failed to load settings:', error)
@@ -454,43 +437,43 @@ class SettingsManagementUseCase {
       if (settings.enabled !== undefined) {
         await this.toggleExtension(settings.enabled)
       }
-      
+
       if (settings.strokeColor !== undefined || settings.strokeWidth !== undefined) {
         const currentSettings = await this.getCurrentSettings()
         const color = settings.strokeColor || currentSettings.strokeColor
         const width = settings.strokeWidth || currentSettings.strokeWidth
         await this.updateStrokeSettings(color, width)
       }
-      
+
       if (settings.gestureThreshold !== undefined) {
         await this.updateGestureThreshold(settings.gestureThreshold)
       }
-      
+
       if (settings.excludeList !== undefined) {
         // 現在の除外リストをクリアして新しいものを設定
         const currentSettings = await this.getCurrentSettings()
         const currentList = currentSettings.getExcludeList()
-        
+
         // 既存のアイテムを削除
         for (const item of currentList) {
           await this.removeExcludeSite(item)
         }
-        
+
         // 新しいアイテムを追加
         for (const item of settings.excludeList) {
           await this.addExcludeSite(item)
         }
       }
-      
+
       if (settings.defaultGestureStates !== undefined) {
         // 各ジェスチャーの状態を更新
         for (const [gestureId, enabled] of Object.entries(settings.defaultGestureStates)) {
           await this.toggleGesture(gestureId, enabled)
         }
       }
-      
+
       console.log('✅ SettingsManagementUseCase: Settings saved successfully')
-      
+
       // バックグラウンドスクリプトに設定変更を通知（Infrastructure層経由）
       if (this.messagingAdapter) {
         try {
@@ -503,11 +486,11 @@ class SettingsManagementUseCase {
           console.log('Settings update notification failed:', error)
         }
       }
-      
+
       // 更新後の設定を返す
       const updatedSettings = await this.getCurrentSettings()
       return updatedSettings.toJSON()
-      
+
     } catch (error) {
       console.error('❌ SettingsManagementUseCase: Failed to save settings:', error)
       throw error

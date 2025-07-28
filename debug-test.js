@@ -2,6 +2,9 @@
  * デバッグ用のテスト
  */
 
+// JSDOM環境のEventを利用
+const { Event } = require('jsdom').JSDOM.constructor.prototype.window
+
 const { ThinOptionsController } = require('./src/presentation/popup/ThinOptionsController')
 
 // DOM環境をセットアップ

@@ -3,11 +3,7 @@
  * 現在動作しているジェスチャー認識ロジックのDomain層実装
  */
 
-// 依存関係のインポート
-let Point
-if (typeof require !== 'undefined') {
-  ({ Point } = require('../valueObjects/Point'))
-}
+// 依存関係のインポート（型注釈用）
 
 class SimpleGestureRecognizer {
   constructor(threshold = 15) {

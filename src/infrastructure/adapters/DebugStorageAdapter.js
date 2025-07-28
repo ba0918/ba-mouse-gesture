@@ -7,8 +7,11 @@
  * - local storageは完全に廃止
  * - 設定変更の即座同期を保証
  */
+
+// デバッグ設定専用ストレージアダプター
+
 class DebugStorageAdapter {
-  constructor() {
+  constructor(logger = null) {
     this.STORAGE_KEY = 'appSettings'
     this.defaultSettings = {
       enabled: false,
@@ -19,6 +22,34 @@ class DebugStorageAdapter {
     
     // storage変更リスナーの管理
     this.changeListeners = new Set()
+    this.logger = logger // DebugLoggerインスタンス
+  }
+  
+  /**
+   * DebugLoggerを設定
+   */
+  setLogger(logger) {
+    this.logger = logger
+  }
+  
+  /**
+   * 静的ログ制御を使用してログを出力
+   * DebugLogger未初期化時でもlogLevel=0設定を尊重
+   */
+  logWithLevel(level, message, ...args) {
+    if (this.logger) {
+      // DebugLoggerが利用可能な場合はそれを使用
+      switch(level) {
+      case 0: this.logger.error(message, ...args); break
+      case 1: this.logger.warn(message, ...args); break
+      case 2: this.logger.info(message, ...args); break
+      case 3: this.logger.debug(message, ...args); break
+      }
+    } else if (level === 0) {
+      // DebugLogger未初期化時はERRORレベル（0）のみ出力
+      console.error(`❌ ${message}`, ...args)
+    }
+    // レベルが許可されていない場合は何も出力しない
   }
 
   /**
@@ -41,7 +72,7 @@ class DebugStorageAdapter {
       return { ...this.defaultSettings }
       
     } catch (error) {
-      console.error('❌ DebugStorageAdapter: Failed to load settings:', error)
+      this.logWithLevel(0, 'DebugStorageAdapter: Failed to load settings:', error)
       return { ...this.defaultSettings }
     }
   }
@@ -57,7 +88,7 @@ class DebugStorageAdapter {
         ...settings
       }
       
-      console.log('🔧 DebugStorageAdapter: Saving settings to sync storage:', settingsToSave)
+      this.logWithLevel(2, 'DebugStorageAdapter: Saving settings to sync storage:', settingsToSave)
       
       // 🎯 修正：既存のappSettingsを取得してdebugSettings部分のみ更新
       const result = await this.chromeStorageGet(['appSettings'])
@@ -72,11 +103,11 @@ class DebugStorageAdapter {
         [this.STORAGE_KEY]: updatedAppSettings 
       })
       
-      console.log('✅ DebugStorageAdapter: Settings saved successfully')
+      this.logWithLevel(2, 'DebugStorageAdapter: Settings saved successfully')
       return settingsToSave
       
     } catch (error) {
-      console.error('❌ DebugStorageAdapter: Failed to save settings:', error)
+      this.logWithLevel(0, 'DebugStorageAdapter: Failed to save settings:', error)
       throw error
     }
   }
@@ -104,7 +135,8 @@ class DebugStorageAdapter {
           
           // debugSettings部分に変更があった場合のみコールバックを実行
           if (newSettings !== oldSettings) {
-            console.log('🔧 DebugStorageAdapter: Settings changed:', {
+            // ログは必要に応じてDebugLoggerで出力
+            this.logWithLevel(2, 'DebugStorageAdapter: Settings changed:', {
               old: oldSettings,
               new: newSettings
             })
@@ -114,7 +146,7 @@ class DebugStorageAdapter {
               try {
                 listener(newSettings, oldSettings)
               } catch (error) {
-                console.error('❌ DebugStorageAdapter: Listener callback failed:', error)
+                this.logWithLevel(0, 'DebugStorageAdapter: Listener callback failed:', error)
               }
             })
           }
@@ -122,7 +154,7 @@ class DebugStorageAdapter {
       })
     }
     
-    console.log('✅ DebugStorageAdapter: Change listener started')
+    this.logWithLevel(2, 'DebugStorageAdapter: Change listener started')
   }
 
   /**
@@ -150,8 +182,70 @@ class DebugStorageAdapter {
         timestamp: new Date().toISOString()
       }
     } catch (error) {
-      console.error('❌ DebugStorageAdapter: Failed to get current state:', error)
+      this.logWithLevel(0, 'DebugStorageAdapter: Failed to get current state:', error)
       return null
+    }
+  }
+
+  /**
+   * 旧形式のlocal storageデータの検出と移行
+   */
+  // eslint-disable-next-line require-await
+  async checkLegacyData() {
+    try {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        return { hasLegacyData: false, legacyData: null }
+      }
+
+      // local storageから旧形式のデータを確認
+      return new Promise((resolve) => {
+        chrome.storage.local.get(['debugSettings'], (result) => {
+          if (chrome.runtime.lastError) {
+            this.logWithLevel(0, 'DebugStorageAdapter: Failed to check legacy data:', chrome.runtime.lastError)
+            resolve({ hasLegacyData: false, legacyData: null })
+            return
+          }
+
+          const hasLegacyData = result.debugSettings && typeof result.debugSettings === 'object'
+          
+          this.logWithLevel(2, 'DebugStorageAdapter: Legacy data check result:', { hasLegacyData, legacyData: result.debugSettings })
+          
+          resolve({
+            hasLegacyData,
+            legacyData: hasLegacyData ? result.debugSettings : null
+          })
+        })
+      })
+    } catch (error) {
+      this.logWithLevel(0, 'DebugStorageAdapter: Failed to check legacy data:', error)
+      return { hasLegacyData: false, legacyData: null }
+    }
+  }
+
+  /**
+   * 旧形式のlocal storageデータを削除
+   */
+  // eslint-disable-next-line require-await
+  async cleanupLegacyData() {
+    try {
+      if (typeof chrome === 'undefined' || !chrome.storage) {
+        return
+      }
+
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.remove(['debugSettings'], () => {
+          if (chrome.runtime.lastError) {
+            this.logWithLevel(0, 'DebugStorageAdapter: Failed to cleanup legacy data:', chrome.runtime.lastError)
+            reject(chrome.runtime.lastError)
+          } else {
+            this.logWithLevel(2, 'DebugStorageAdapter: Legacy data cleaned up successfully')
+            resolve()
+          }
+        })
+      })
+    } catch (error) {
+      this.logWithLevel(0, 'DebugStorageAdapter: Failed to cleanup legacy data:', error)
+      throw error
     }
   }
 

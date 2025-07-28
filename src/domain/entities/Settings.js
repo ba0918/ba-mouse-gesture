@@ -41,11 +41,7 @@ class Settings {
     
     // デバッグ設定
     const incomingDebugSettings = config.debugSettings || {}
-    console.log('🔧 [Debug] Settings constructor - incoming debugSettings:', {
-      incomingDebugSettings: incomingDebugSettings,
-      incomingLogLevel: incomingDebugSettings.logLevel,
-      incomingLogLevelType: typeof incomingDebugSettings.logLevel
-    })
+    // デバッグログ出力は削除（DebugLoggerに統一）
     
     // logLevelの数値型保証処理
     const processedLogLevel = incomingDebugSettings.logLevel !== undefined 
@@ -66,11 +62,7 @@ class Settings {
       ...processedIncomingDebugSettings
     }
     
-    console.log('🔧 [Debug] Settings constructor - final debugSettings:', {
-      finalDebugSettings: this.debugSettings,
-      finalLogLevel: this.debugSettings.logLevel,
-      finalLogLevelType: typeof this.debugSettings.logLevel
-    })
+    // デバッグログ出力は削除（DebugLoggerに統一）
     
     // メタデータ
     this.version = '1.0.0'
@@ -229,20 +221,8 @@ class Settings {
    * @param {Object} debugConfig
    */
   setDebugSettings(debugConfig) {
-    console.log('🔧 [Debug] Settings.setDebugSettings called:', {
-      incoming: debugConfig,
-      incomingLogLevel: debugConfig.logLevel,
-      currentDebugSettings: this.debugSettings,
-      currentLogLevel: this.debugSettings.logLevel
-    })
-    
+    // デバッグログ出力は削除（DebugLoggerに統一）
     this.debugSettings = { ...this.debugSettings, ...debugConfig }
-    
-    console.log('🔧 [Debug] Settings.setDebugSettings after merge:', {
-      finalDebugSettings: this.debugSettings,
-      finalLogLevel: this.debugSettings.logLevel
-    })
-    
     this.updateModified()
   }
 

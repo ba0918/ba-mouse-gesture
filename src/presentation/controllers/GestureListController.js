@@ -4,6 +4,8 @@
  * Clean Architecture - Presentation層
  */
 
+const { GestureListView } = require('./GestureListView')
+
 class GestureListController {
   /**
    * @param {Object} gestureListUseCase - ジェスチャー一覧UseCase
@@ -75,9 +77,9 @@ class GestureListController {
 
   /**
    * ジェスチャーを描画（Viewに委譲）
-   * @returns {Promise<void>}
+   * @returns {void}
    */
-  async renderGestures() {
+  renderGestures() {
     try {
       const html = this.view.renderGestures(
         this.allGestures, 
@@ -383,15 +385,12 @@ class GestureListController {
   /**
    * 確認ダイアログの表示
    * @param {string} message - 確認メッセージ
-   * @returns {Promise<boolean>} 確認結果
+   * @returns {boolean} 確認結果
    */
-  async showConfirm(message) {
-    return new Promise((resolve) => {
-      // 簡易実装
-      // eslint-disable-next-line no-alert
-      const result = confirm(message)
-      resolve(result)
-    })
+  showConfirm(message) {
+    // 簡易実装
+    // eslint-disable-next-line no-alert
+    return confirm(message)
   }
 }
 

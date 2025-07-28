@@ -271,6 +271,36 @@ class DebugSettingsEntity {
       statusPosition: 'top-right'
     })
   }
+  
+  /**
+   * 静的なログ制御（初期化前でも使用可能）
+   * Chrome Storage API読み込み前の早期ログ制御のため
+   */
+  static getDefaultInstance() {
+    if (!this._defaultInstance) {
+      this._defaultInstance = this.getDefault()
+    }
+    return this._defaultInstance
+  }
+  
+  /**
+   * 静的なログレベルチェック（初期化前でも使用可能）
+   * @param {number} level - ログレベル (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG)
+   * @returns {boolean} - ログを出力すべきかどうか
+   */
+  static shouldLogStatic(level) {
+    // Chrome Storage から現在のlogLevel設定を取得して判定
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        // 同期的に設定を取得することはできないため、デフォルトはERRORレベル（0）のみ
+        // ユーザーがlogLevel変更した場合は、DebugLoggerが初期化されるのでこのメソッドは使われない
+        return level <= 0
+      }
+    } catch {
+      // エラー時はデフォルト動作
+    }
+    return level <= 0
+  }
 
   /**
    * 文字列表現（同期情報含む）
@@ -279,6 +309,9 @@ class DebugSettingsEntity {
     return `DebugSettingsEntity(enabled=${this.enabled}, logLevel=${this.logLevel}, showStatus=${this.showStatus}, position=${this.statusPosition}, updated=${this.updatedAt})`
   }
 }
+
+// 静的プロパティの初期化
+DebugSettingsEntity._defaultInstance = null
 
 // モジュールとして使用可能にする
 if (typeof window !== 'undefined') {

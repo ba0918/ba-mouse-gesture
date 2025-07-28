@@ -227,9 +227,10 @@ class OptionsRenderController {
    * @param {string} message - 確認メッセージ
    * @returns {Promise<boolean>} 確認結果
    */
+  // eslint-disable-next-line require-await
   async showConfirm(message) {
     if (this.showConfirmDialog) {
-      return await this.showConfirmDialog(message)
+      return this.showConfirmDialog(message)
     }
     // フォールバック
     // eslint-disable-next-line no-alert

@@ -158,9 +158,8 @@ class GestureManager {
 
   /**
    * コンテキストメニュー処理
-   * @param {MouseEvent} e
    */
-  onContextMenu(e) {
+  onContextMenu() {
     // 既にpreventDefaultは実行済み
     console.log('Context menu prevented')
   }

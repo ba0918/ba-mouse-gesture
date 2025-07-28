@@ -12,7 +12,7 @@ const mockStorage = new Map()
 global.chrome = {
   storage: {
     local: {
-      get: function(keys) {
+      get: function (keys) {
         const result = {}
         if (typeof keys === 'string') {
           keys = [keys]
@@ -24,7 +24,7 @@ global.chrome = {
         })
         return Promise.resolve(result)
       },
-      set: function(items) {
+      set: function (items) {
         Object.entries(items).forEach(([key, value]) => {
           mockStorage.set(key, value)
         })
@@ -32,7 +32,7 @@ global.chrome = {
       }
     },
     sync: {
-      get: function(keys) {
+      get: function (keys) {
         const result = {}
         if (typeof keys === 'string') {
           keys = [keys]
@@ -44,7 +44,7 @@ global.chrome = {
         })
         return Promise.resolve(result)
       },
-      set: function(items) {
+      set: function (items) {
         Object.entries(items).forEach(([key, value]) => {
           mockStorage.set(key, value)
         })

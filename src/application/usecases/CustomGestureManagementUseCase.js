@@ -89,35 +89,25 @@ class CustomGestureManagementUseCase {
    * @returns {Promise<CustomGesture>}
    */
   async createCustomGesture(name, rawPoints, action) {
-    console.log('🔧 [Debug] createCustomGesture called:', { name, rawPointsLength: rawPoints?.length, action })
     
     if (!this.isInitialized) {
-      console.log('🔧 [Debug] UseCase not initialized, initializing...')
       this.initialize()
     }
 
     try {
-      console.log('🔧 [Debug] Validating gesture creation input...')
       
       // 入力値の検証
       this.validateGestureCreation(name, rawPoints, action)
-      console.log('🔧 [Debug] Input validation passed')
 
       // 重複チェック
-      console.log('🔧 [Debug] Checking for duplicate names...')
       await this.checkDuplicateName(name)
-      console.log('🔧 [Debug] Duplicate check passed')
 
       // 軌跡をPointオブジェクトに変換
-      console.log('🔧 [Debug] Converting raw points to Point objects...')
       const points = this.convertToPoints(rawPoints)
-      console.log('🔧 [Debug] Points conversion completed:', { pointsLength: points.length })
 
       // パターンを生成
-      console.log('🔧 [Debug] Generating gesture pattern...')
       const threshold = await this.getThreshold()
       const pattern = GesturePattern.fromPoints(points, threshold)
-      console.log('🔧 [Debug] Pattern generated:', { isEmpty: pattern.isEmpty(), directions: pattern.getDirections() })
 
       if (pattern.isEmpty()) {
         const errorMessage = 'Invalid gesture pattern. Insufficient movement detected'
@@ -126,20 +116,14 @@ class CustomGestureManagementUseCase {
       }
 
       // 既存パターンとの類似度チェック
-      console.log('🔧 [Debug] Checking pattern similarity...')
       await this.checkPatternSimilarity(pattern, name)
-      console.log('🔧 [Debug] Pattern similarity check passed')
 
       // カスタムジェスチャーエンティティを作成
-      console.log('🔧 [Debug] Creating CustomGesture entity...')
       const gestureId = this.generateGestureId(name)
       const customGesture = new CustomGesture(gestureId, name, pattern, action, true, 1) // enabled=true, priority=1
-      console.log('🔧 [Debug] CustomGesture entity created:', { id: gestureId, name: customGesture.name })
 
       // 保存
-      console.log('🔧 [Debug] Saving custom gesture to repository...')
       await this.gestureRepository.addCustomGesture(customGesture)
-      console.log('🔧 [Debug] Custom gesture saved successfully')
 
       return customGesture
 
@@ -176,25 +160,11 @@ class CustomGestureManagementUseCase {
       // 重複チェック
       await this.checkDuplicateName(name)
 
-      // 方向配列をGesturePatternに変換（詳細なデバッグ付き）
-      console.log('🔍 Converting pattern array to GesturePattern:', {
-        inputPattern: pattern,
-        inputType: typeof pattern,
-        isArray: Array.isArray(pattern),
-        inputLength: pattern ? pattern.length : 'undefined'
-      })
+      // 方向配列をGesturePatternに変換
 
       let gesturePattern
       try {
         gesturePattern = GesturePattern.fromArray(pattern)
-        console.log('🔍 GesturePattern created:', {
-          pattern: gesturePattern,
-          patternDirections: gesturePattern ? gesturePattern.getDirections() : 'undefined',
-          patternLength: gesturePattern ? gesturePattern.getLength() : 'undefined',
-          patternIsEmpty: gesturePattern ? gesturePattern.isEmpty() : 'undefined',
-          patternIsValid: gesturePattern ? gesturePattern.isValid() : 'undefined',
-          patternToString: gesturePattern ? gesturePattern.toString() : 'undefined'
-        })
       } catch (patternError) {
         console.error('❌ Failed to create GesturePattern:', patternError)
         throw new Error(`Failed to create gesture pattern: ${patternError.message}`)
@@ -217,16 +187,7 @@ class CustomGestureManagementUseCase {
       
       // descriptionは使用しないか、別途設定する場合は後で追加
 
-      // デバッグ: 作成されたCustomGestureオブジェクトの詳細確認
-      console.log('🔍 CustomGesture created:', {
-        id: customGesture.id,
-        name: customGesture.name,
-        pattern: customGesture.pattern,
-        patternIsValid: customGesture.pattern ? customGesture.pattern.isValid() : 'no pattern',
-        action: customGesture.action,
-        customGestureIsValid: customGesture.isValid(),
-        hasIsValidMethod: typeof customGesture.isValid === 'function'
-      })
+      // カスタムジェスチャー作成完了
 
       // 保存
       await this.gestureRepository.addCustomGesture(customGesture)
@@ -275,19 +236,11 @@ class CustomGestureManagementUseCase {
    * @returns {Promise<CustomGesture[]>}
    */
   async deleteCustomGesture(gestureId) {
-    console.log('🔧 [Debug] deleteCustomGesture called:', { gestureId })
     
     try {
-      // 削除前の状態確認
-      const beforeGestures = await this.gestureRepository.getCustomGestures()
-      console.log('🔧 [Debug] Gestures before delete:', beforeGestures.map(g => ({ id: g.id, name: g.name })))
-      
       // 削除実行
-      console.log('🔧 [Debug] Calling repository deleteCustomGesture...')
       const remainingGestures = await this.gestureRepository.deleteCustomGesture(gestureId)
-      console.log('🔧 [Debug] Delete completed, remaining gestures:', remainingGestures.map(g => ({ id: g.id, name: g.name })))
 
-      console.log('🔧 [Debug] deleteCustomGesture completed successfully')
       return remainingGestures
 
     } catch (error) {
@@ -525,21 +478,12 @@ class CustomGestureManagementUseCase {
    * @param {string} excludeId - 除外するジェスチャーID
    */
   async checkDuplicateName(name, excludeId = null) {
-    console.log('🔧 [Debug] checkDuplicateName called:', { name, excludeId })
     
     const existingGestures = await this.gestureRepository.getCustomGestures()
-    console.log('🔧 [Debug] Existing gestures:', existingGestures.map(g => ({ id: g.id, name: g.name })))
     
     const duplicate = existingGestures.find(g => 
       g.name.toLowerCase() === name.toLowerCase() && g.id !== excludeId
     )
-    
-    console.log('🔧 [Debug] Duplicate check result:', {
-      searchName: name.toLowerCase(),
-      foundDuplicate: Boolean(duplicate),
-      duplicateId: duplicate?.id,
-      duplicateName: duplicate?.name
-    })
     
     if (duplicate) {
       const errorMessage = `Gesture name "${name}" already exists`
@@ -547,7 +491,6 @@ class CustomGestureManagementUseCase {
       throw new Error(errorMessage)
     }
     
-    console.log('🔧 [Debug] No duplicate found, proceeding')
   }
 
   /**
@@ -668,7 +611,6 @@ class CustomGestureManagementUseCase {
         }
       }
 
-      console.log('✅ CustomGestureManagementUseCase: Custom gestures saved successfully')
       return savedGestures
 
     } catch (error) {
@@ -689,7 +631,6 @@ class CustomGestureManagementUseCase {
         await this.deleteCustomGesture(gesture.id)
       }
 
-      console.log('✅ CustomGestureManagementUseCase: Custom gestures reset successfully')
       return []
 
     } catch (error) {

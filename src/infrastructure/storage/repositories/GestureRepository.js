@@ -57,16 +57,7 @@ class GestureRepository {
       }
 
       for (const gesture of gestures) {
-        // 詳細なデバッグログを追加
-        console.log('🔍 Validating gesture:', {
-          gestureId: gesture?.id,
-          hasGestureObject: Boolean(gesture),
-          hasIsValidMethod: typeof gesture?.isValid === 'function',
-          gestureKeys: gesture ? Object.keys(gesture) : [],
-          pattern: gesture?.pattern,
-          patternType: typeof gesture?.pattern,
-          patternIsValid: gesture?.pattern && typeof gesture.pattern.isValid === 'function' ? gesture.pattern.isValid() : 'no pattern isValid'
-        })
+        // バリデーション実行
         
         if (!gesture) {
           console.error('❌ Gesture is null/undefined')
@@ -79,7 +70,6 @@ class GestureRepository {
         }
         
         const isValidResult = gesture.isValid()
-        console.log('🔍 gesture.isValid() result:', isValidResult)
         
         if (!isValidResult) {
           console.error('❌ Gesture.isValid() returned false for:', gesture?.id)
@@ -108,20 +98,11 @@ class GestureRepository {
    * @returns {Promise<CustomGesture[]>}
    */
   async addCustomGesture(gesture) {
-    console.log('🔧 [Debug] GestureRepository.addCustomGesture called:', { gestureId: gesture.id, gestureName: gesture.name })
     
     const gestures = await this.getCustomGestures()
-    console.log('🔧 [Debug] Current gestures in repository:', gestures.map(g => ({ id: g.id, name: g.name })))
 
     // 重複チェック
     const existingGesture = gestures.find(g => g.id === gesture.id || g.name === gesture.name)
-    console.log('🔧 [Debug] Duplicate check result:', {
-      newGestureId: gesture.id,
-      newGestureName: gesture.name,
-      foundExisting: Boolean(existingGesture),
-      existingId: existingGesture?.id,
-      existingName: existingGesture?.name
-    })
     
     if (existingGesture) {
       const errorMessage = `Gesture with id '${gesture.id}' or name '${gesture.name}' already exists`
@@ -129,12 +110,9 @@ class GestureRepository {
       throw new Error(errorMessage)
     }
 
-    console.log('🔧 [Debug] Adding gesture to list, current count:', gestures.length)
     gestures.push(gesture)
-    console.log('🔧 [Debug] Saving gestures, new count:', gestures.length)
     
     await this.saveCustomGestures(gestures)
-    console.log('🔧 [Debug] Gestures saved successfully')
     
     return gestures
   }
@@ -172,13 +150,10 @@ class GestureRepository {
    * @returns {Promise<CustomGesture[]>}
    */
   async deleteCustomGesture(gestureId) {
-    console.log('🔧 [Debug] GestureRepository.deleteCustomGesture called:', { gestureId })
     
     const gestures = await this.getCustomGestures()
-    console.log('🔧 [Debug] Current gestures before delete:', gestures.map(g => ({ id: g.id, name: g.name })))
     
     const filteredGestures = gestures.filter(g => g.id !== gestureId)
-    console.log('🔧 [Debug] Filtered gestures after delete:', filteredGestures.map(g => ({ id: g.id, name: g.name })))
 
     if (filteredGestures.length === gestures.length) {
       const errorMessage = `Gesture with id '${gestureId}' not found`
@@ -186,9 +161,7 @@ class GestureRepository {
       throw new Error(errorMessage)
     }
 
-    console.log('🔧 [Debug] Saving filtered gestures, count changed from', gestures.length, 'to', filteredGestures.length)
     await this.saveCustomGestures(filteredGestures)
-    console.log('🔧 [Debug] Delete completed successfully')
     
     return filteredGestures
   }

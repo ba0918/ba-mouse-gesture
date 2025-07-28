@@ -7,7 +7,7 @@ describe('双方向同期テスト', () => {
   let controller
   let mockCustomGestureUseCase, mockSettingsUseCase, mockGestureListUseCase
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // DOM環境をセットアップ
     document.body.innerHTML = `
       <div id="allGesturesList"></div>
@@ -37,6 +37,9 @@ describe('双方向同期テスト', () => {
       settingsUseCase: mockSettingsUseCase,
       gestureListUseCase: mockGestureListUseCase
     })
+    
+    // Clean Architecture移行後のイベントリスナー設定のため必要
+    await controller.initialize()
   })
 
   describe('ジェスチャー一覧からカスタムジェスチャーセクションへの同期', () => {
@@ -75,7 +78,7 @@ describe('双方向同期テスト', () => {
       await controller.renderGestureList()
 
       // カスタムジェスチャーリストもレンダリング
-      const renderCustomSpy = jest.spyOn(controller, 'renderCustomGestureList')
+      const renderCustomSpy = jest.spyOn(controller.renderController, 'renderCustomGestureList')
 
       // チェックボックスを取得してクリック
       const checkbox = document.querySelector('input[data-gesture-id="custom_test_123"]')
@@ -86,8 +89,8 @@ describe('双方向同期テスト', () => {
       const changeEvent = new window.Event('change', { bubbles: true })
       checkbox.dispatchEvent(changeEvent)
 
-      // 非同期処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 0))
+      // 非同期処理を待つ（イベントデリゲーション処理待機）
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // 期待する動作の検証
       expect(mockCustomGestureUseCase.toggleCustomGesture).toHaveBeenCalledWith('custom_test_123', false)
@@ -125,8 +128,8 @@ describe('双方向同期テスト', () => {
       const changeEvent = new window.Event('change', { bubbles: true })
       checkbox.dispatchEvent(changeEvent)
 
-      // 非同期処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 0))
+      // 非同期処理を待つ（イベントデリゲーション処理待機）
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // デフォルトジェスチャーの場合はsettingsUseCaseが呼ばれる
       expect(mockSettingsUseCase.toggleGesture).toHaveBeenCalledWith('left', false)
@@ -155,7 +158,7 @@ describe('双方向同期テスト', () => {
       // カスタムジェスチャーリストをレンダリング
       await controller.renderCustomGestureList()
 
-      const renderGestureListSpy = jest.spyOn(controller, 'renderGestureList')
+      const renderGestureListSpy = jest.spyOn(controller.renderController, 'renderGestureList')
 
       // カスタムジェスチャーのチェックボックスをクリック
       const checkbox = document.querySelector('input[data-gesture-id="custom_test_456"]')
@@ -165,8 +168,8 @@ describe('双方向同期テスト', () => {
       const changeEvent = new window.Event('change', { bubbles: true })
       checkbox.dispatchEvent(changeEvent)
 
-      // 非同期処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 0))
+      // 非同期処理を待つ（イベントデリゲーション処理待機）
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // カスタムジェスチャーのトグルとジェスチャー一覧の更新が呼ばれる
       expect(mockCustomGestureUseCase.toggleCustomGesture).toHaveBeenCalledWith('custom_test_456', false)
