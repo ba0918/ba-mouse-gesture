@@ -164,7 +164,9 @@
                   const newEnabled = !currentEnabled;
                                                 
                   console.log('🔘 Gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
-                  await onToggleGesture(gesture.id, newEnabled);
+                  // gestureIdが文字列であることを確認
+                  const gestureId = String(gesture.id);
+                  await onToggleGesture(gestureId, newEnabled);
                 }}
               ></button>
             </div>
