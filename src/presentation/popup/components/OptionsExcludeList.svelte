@@ -118,12 +118,11 @@
   }
   
   .exclude-input {
-    width: 70%;
-    padding: 8px 12px;
+    width: 100%;
+    padding: 8px;
     border: 1px solid #dadce0;
     border-radius: 4px;
-    margin-right: 8px;
-    font-size: 14px;
+    margin-bottom: 8px;
   }
   
   .exclude-input:disabled {
@@ -131,22 +130,18 @@
     cursor: not-allowed;
   }
   
-  .add-btn, .remove-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  
   .add-btn {
-    background: #1a73e8;
+    background: #34a853;
     color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
   }
   
   .add-btn:hover:not(:disabled) {
-    background: #1557b0;
+    background: #2d8f47;
   }
   
   .add-btn:disabled {
@@ -157,28 +152,35 @@
   .exclude-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    margin-top: 8px;
-    background: #f8f9fa;
+    padding: 8px;
+    background: white;
+    border: 1px solid #e8eaed;
     border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  
+  .exclude-item:last-child {
+    margin-bottom: 0;
   }
   
   .exclude-url {
-    font-size: 14px;
-    color: #202124;
+    flex: 1;
     font-family: monospace;
+    color: #5f6368;
   }
   
   .remove-btn {
     background: #ea4335;
     color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
     font-size: 12px;
-    padding: 4px 12px;
   }
   
   .remove-btn:hover:not(:disabled) {
-    background: #d23725;
+    background: #d33b2c;
   }
   
   .remove-btn:disabled {

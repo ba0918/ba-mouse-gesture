@@ -1,10 +1,10 @@
 # OptionsApp.svelte リファクタリング計画
 
 ## 現状の問題点
-- **OptionsApp.svelte**: 1772行の巨大なファイル（ファットモデル）
-- すべてのUI要素と状態管理が1つのファイルに集中
-- コンポーネント化されていない
-- 保守性・再利用性が低い
+- **OptionsApp.svelte**: 1772行の巨大なファイル（ファットモデル） → **進捗: 1580行まで削減（-192行、11%削減）**
+- すべてのUI要素と状態管理が1つのファイルに集中 → **進捗: 4/6コンポーネント分離完了**
+- コンポーネント化されていない → **進捗: Clean Architecture準拠のコンポーネント化実施中**
+- 保守性・再利用性が低い → **進捗: TypeScript型定義による堅牢性向上済み**
 
 ## ⚠️ 重要な注意事項
 - **components/ディレクトリの既存コンポーネントは使用しない**
@@ -55,15 +55,25 @@ OptionsApp.svelteの既存UIを維持したまま、新規コンポーネント�
 
 ## 実装手順
 
-### Phase 1: 準備作業
+### Phase 1: 準備作業 ✅ **完了**
 1. ✅ feature/refactor-options-componentsブランチ作成
 2. ❌ ~~BasicSettings.svelteをSvelte 5対応に改修~~ （既存コンポーネントは使用しない）
 3. ✅ OptionsApp.svelteにコンポーネント用ハンドラー関数追加
 
-### Phase 2: 新規コンポーネント作成（現在作業中）
-1. OptionsApp.svelteから各セクションのHTMLとスタイルを抽出
-2. 新規コンポーネントファイルを作成（Options〜.svelte）
-3. 既存のUIとスタイルを完全に維持したまま移植
+### Phase 2: 新規コンポーネント作成 🔄 **4/6完了・進行中**
+1. ✅ OptionsBasicSettings.svelte作成完了（基本設定）
+2. ✅ OptionsTrackSettings.svelte作成完了（軌跡設定・プレビューキャンバス含む）
+3. ✅ OptionsDebugSettings.svelte作成完了（デバッグ設定）
+4. ✅ OptionsExcludeList.svelte作成完了（除外サイトリスト・UI修正済み）
+5. 🔄 OptionsCustomGestures.svelte作成中（カスタムジェスチャー管理）
+6. ⏳ OptionsGestureList.svelte作成予定（ジェスチャー一覧）
+
+**現在の成果**:
+- ファイルサイズ削減: 1772行 → 1580行（-192行、11%削減）
+- 4つのコンポーネント分離完了
+- TypeScript型安全性の向上
+- Svelte 5の$bindable()による双方向バインディング実装
+- 各コンポーネントでのUI整合性確保（除外サイトUI修正含む）
 
 ### Phase 3: 状態管理の整理
 1. 各コンポーネントで必要な状態のみを保持
