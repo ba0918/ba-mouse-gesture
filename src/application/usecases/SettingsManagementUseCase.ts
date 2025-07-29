@@ -191,9 +191,19 @@ export class SettingsManagementUseCase {
         const debugSettingsUseCase = new DebugSettingsUseCase();
         
         // SettingsからDebugSettingsEntityへの変換
+        let logLevel = typeof debugConfig.debugLogLevel === 'string' 
+          ? parseInt(debugConfig.debugLogLevel, 10) 
+          : (debugConfig.debugLogLevel ?? 2);
+        
+        // logLevelの範囲チェック（0-3）
+        if (isNaN(logLevel) || logLevel < 0 || logLevel > 3) {
+          console.warn('⚠️ Invalid logLevel value:', debugConfig.debugLogLevel, 'defaulting to 2');
+          logLevel = 2;
+        }
+        
         const debugSettingsEntity = {
           enabled: debugConfig.debugEnabled ?? false,
-          logLevel: debugConfig.debugLogLevel ?? 2,
+          logLevel: logLevel,
           showStatus: debugConfig.debugShowStatus ?? false,
           statusPosition: debugConfig.debugStatusPosition ?? 'top-right'
         };
