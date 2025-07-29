@@ -180,24 +180,6 @@
                   e.preventDefault();
                   e.stopPropagation();
                                                 
-                  // 現在のジェスチャー状態を最新のリストから取得
-                  const currentGesture = gestures.find(g => g.id === gesture.id);
-                  const currentEnabled = currentGesture?.enabled ?? false;
-                  const newEnabled = !currentEnabled;
-                                                
-                  console.log('🔘 Gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
-                  console.log('🔍 Debug - Gesture object:', {
-                    id: gesture.id,
-                    action: gesture.action,
-                    name: gesture.name,
-                    type: gesture.type,
-                    enabled: gesture.enabled
-                  });
-                  console.log('🔍 Debug - Full gesture object:', gesture);
-                  // gestureIdが文字列であることを確認
-                  // UI側でidとactionが逆になっている場合の修正
-                  let gestureId = String(gesture.id);
-                  
                   // アクション名とジェスチャーIDのマッピングテーブル（UI側での修正）
                   const actionToIdMap: Record<string, string> = {
                     'back': 'left',
@@ -210,13 +192,30 @@
                     'refresh': 'updown'
                   };
                   
-                  // アクション名が渡されている場合は正しいIDに変換
-                  if (actionToIdMap[gestureId]) {
-                    console.log('🔄 UI側でアクション名をIDに変換:', { action: gestureId, id: actionToIdMap[gestureId] });
-                    gestureId = actionToIdMap[gestureId];
+                  // 正しいジェスチャーIDを特定
+                  let actualGestureId = String(gesture.id);
+                  if (actionToIdMap[actualGestureId]) {
+                    actualGestureId = actionToIdMap[actualGestureId];
                   }
                   
-                  await onToggleGesture(gestureId, newEnabled);
+                  // 正しいIDで現在のジェスチャー状態を最新のリストから取得
+                  const currentGesture = gestures.find(g => g.id === actualGestureId);
+                  const currentEnabled = currentGesture?.enabled ?? false;
+                  const newEnabled = !currentEnabled;
+                                                
+                  console.log('🔘 Gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
+                  console.log('🔍 Debug - Gesture object:', {
+                    id: gesture.id,
+                    action: gesture.action,
+                    name: gesture.name,
+                    type: gesture.type,
+                    enabled: gesture.enabled
+                  });
+                  console.log('🔍 Debug - Full gesture object:', gesture);
+                  console.log('🔍 Debug - Using actualGestureId for toggle:', actualGestureId);
+                  
+                  // 正しいIDでトグル実行
+                  await onToggleGesture(actualGestureId, newEnabled);
                 }}
               ></button>
             </div>
