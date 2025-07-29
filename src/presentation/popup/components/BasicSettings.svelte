@@ -13,10 +13,19 @@
   
   async function loadSettings() {
     try {
-      // Clean ArchitectureのSettingsManagementUseCaseを使用して設定を読み込み
-      // 実装はindex.tsから既存ロジックを移行
-      const settings = await chrome.storage.sync.get(['enabled']);
+      // ServiceFactoryが初期化されるまで待機
+      const serviceFactory = (window as any).ServiceFactory;
+      if (!serviceFactory) {
+        console.warn('ServiceFactory not available, waiting...');
+        setTimeout(loadSettings, 100);
+        return;
+      }
+
+      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const settings = await settingsManagementUseCase.getCurrentSettings();
       enabled = settings.enabled !== false; // デフォルトtrue
+      
+      console.log('🔧 BasicSettings: Loaded settings', { enabled });
     } catch (error) {
       console.error('基本設定読み込みエラー:', error);
       dispatch('save-status', {
@@ -28,27 +37,20 @@
   
   async function handleEnabledChange() {
     try {
-      // Clean ArchitectureのSettingsManagementUseCaseを使用して設定を保存
-      await chrome.storage.sync.set({ enabled });
+      const serviceFactory = (window as any).ServiceFactory;
+      if (!serviceFactory) {
+        throw new Error('ServiceFactory not available');
+      }
+
+      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      await settingsManagementUseCase.updateBasicSettings({ enabled });
       
       dispatch('save-status', {
         message: `マウスジェスチャーを${enabled ? '有効' : '無効'}にしました`,
         type: 'success'
       });
       
-      // コンテンツスクリプトに設定変更を通知
-      chrome.tabs.query({}, (tabs) => {
-        tabs.forEach(tab => {
-          if (tab.id) {
-            chrome.tabs.sendMessage(tab.id, {
-              type: 'SETTINGS_UPDATED',
-              settings: { enabled }
-            }).catch(() => {
-            // タブでコンテンツスクリプトが実行されていない場合のエラーを無視
-            });
-          }
-        });
-      });
+      console.log('🔧 BasicSettings: Updated enabled setting', { enabled });
     } catch (error) {
       console.error('基本設定保存エラー:', error);
       dispatch('save-status', {

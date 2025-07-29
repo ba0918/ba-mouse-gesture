@@ -49,11 +49,35 @@ function initializeSvelteApp() {
 }
 
 // DOMContentLoaded時に初期化
-document.addEventListener('DOMContentLoaded', () => {
-  // ServiceFactoryをグローバルに公開
-  (window as unknown as Record<string, unknown>).ServiceFactory = new ServiceFactory();
-  
-  initializeSvelteApp();
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // ServiceFactoryを初期化
+    const serviceFactory = new ServiceFactory();
+    await serviceFactory.initialize({
+      enableDebug: true,
+      skipHealthChecks: false
+    });
+    
+    // ServiceFactoryをグローバルに公開
+    (window as unknown as Record<string, unknown>).ServiceFactory = serviceFactory;
+    
+    console.log('✅ ServiceFactory initialized successfully');
+    
+    // Svelteアプリを初期化
+    initializeSvelteApp();
+  } catch (error) {
+    console.error('❌ ServiceFactory initialization failed:', error);
+    
+    // フォールバックエラー表示
+    const errorContainer = document.getElementById('app') || document.body;
+    errorContainer.innerHTML = `
+      <div style="padding: 20px; color: red; text-align: center;">
+        <h2>サービスの初期化に失敗しました</h2>
+        <p>エラー: ${(error as Error).message}</p>
+        <p>ページを再読み込みしてください。</p>
+      </div>
+    `;
+  }
 });
 
 // ES6 Module export（テスト用）
