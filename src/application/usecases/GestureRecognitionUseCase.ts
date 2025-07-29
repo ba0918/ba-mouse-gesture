@@ -403,11 +403,3 @@ export class GestureRecognitionError extends Error {
   }
 }
 
-// CommonJS exports for Jest compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    GestureRecognitionUseCase,
-    GestureRecognitionResult,
-    GestureRecognitionError
-  }
-}

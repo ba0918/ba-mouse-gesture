@@ -7,6 +7,7 @@
   import ExcludeList from './components/ExcludeList.svelte';
   import DebugPanel from './components/DebugPanel.svelte';
   
+  // リアクティブ状態
   let isLoading = true;
   let saveStatus = '';
   let saveStatusVisible = false;

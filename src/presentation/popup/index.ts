@@ -5,19 +5,21 @@
 
 // Svelteアプリのインポート
 import OptionsApp from './OptionsApp.svelte';
+import { ServiceFactory } from '../../application/services/ServiceFactory';
 
 /**
  * Svelteアプリケーションの初期化
  */
 function initializeSvelteApp() {
   try {
-    // body要素を取得してSvelteアプリをマウント
-    const target = document.body;
+    // アプリケーションコンテナを取得
+    const target = document.getElementById('app');
     
-    // 既存のHTMLコンテンツをクリア
-    target.innerHTML = '';
+    if (!target) {
+      throw new Error('App container not found');
+    }
     
-    // Svelteアプリを初期化
+    // Svelteアプリを初期化（互換性のある方法）
     const app = new OptionsApp({
       target: target
     });
@@ -32,7 +34,8 @@ function initializeSvelteApp() {
     console.error('❌ Svelte Options App initialization failed:', error);
     
     // フォールバックエラー表示
-    document.body.innerHTML = `
+    const errorContainer = document.getElementById('app') || document.body;
+    errorContainer.innerHTML = `
       <div style="padding: 20px; color: red; text-align: center;">
         <h2>設定画面の初期化に失敗しました</h2>
         <p>エラー: ${(error as Error).message}</p>
@@ -46,6 +49,9 @@ function initializeSvelteApp() {
 
 // DOMContentLoaded時に初期化
 document.addEventListener('DOMContentLoaded', () => {
+  // ServiceFactoryをグローバルに公開
+  (window as any).ServiceFactory = new ServiceFactory();
+  
   initializeSvelteApp();
 });
 
