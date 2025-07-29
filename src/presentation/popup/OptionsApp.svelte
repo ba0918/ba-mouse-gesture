@@ -925,7 +925,6 @@
                 {/each}
                 {#if customGestures.length === 0}
                   <div class="empty-state">
-                    <div class="empty-state-icon">🎯</div>
                     <p>カスタムジェスチャーが登録されていません</p>
                   </div>
                 {/if}
@@ -994,8 +993,8 @@
                   </div>
                 {/each}
                 {#if excludeList.length === 0}
-                  <div class="empty-state" style="padding: 16px;">
-                    <p style="margin: 0; color: #5f6368; font-size: 14px;">除外サイトが登録されていません</p>
+                  <div class="empty-state">
+                    <p>除外サイトが登録されていません</p>
                   </div>
                 {/if}
               </div>
@@ -1726,5 +1725,19 @@
         40% {
             opacity: 1;
         }
+    }
+
+    /* 空状態表示 */
+    .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+    }
+
+    .empty-state p {
+        margin: 0;
+        color: #9aa0a6;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.4;
     }
 </style>
