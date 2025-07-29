@@ -43,7 +43,7 @@
       }
 
       const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
-      await settingsManagementUseCase.updateBasicSettings({ enabled });
+      await settingsManagementUseCase.toggleExtension(enabled);
       
       dispatch('save-status', {
         message: `マウスジェスチャーを${enabled ? '有効' : '無効'}にしました`,

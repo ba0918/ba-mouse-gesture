@@ -55,7 +55,7 @@ async function generateOptionsHtml(outputPath) {
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f8f9fa;
