@@ -41,7 +41,7 @@
   // リアクティブ変数
   $: patternDisplay = currentPattern.length > 0 ? 
     currentPattern.map(dir => ({ 'up': '↑', 'down': '↓', 'left': '←', 'right': '→' }[dir] || dir)).join('') : 
-    'パターンなし';
+      'パターンなし';
   $: canSubmit = gestureName.trim() && gestureAction && currentPattern.length > 0;
   $: isEditMode = editingGestureId !== null;
 

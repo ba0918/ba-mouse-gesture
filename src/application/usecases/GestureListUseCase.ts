@@ -6,6 +6,7 @@
 import { Gesture } from '../../domain/entities/Gesture.js';
 import { CustomGesture } from '../../domain/entities/CustomGesture.js';
 import { Settings } from '../../domain/entities/Settings.js';
+import { GesturePatternFormatter } from '../../presentation/controllers/GesturePatternFormatter.js';
 
 interface GestureRepository {
   getCustomGestures(): Promise<CustomGesture[]>;
@@ -27,10 +28,14 @@ interface GestureListItem {
 }
 
 export class GestureListUseCase {
+  private patternFormatter: GesturePatternFormatter;
+
   constructor(
     private gestureRepository: GestureRepository,
     private settingsRepository: SettingsRepository
-  ) {}
+  ) {
+    this.patternFormatter = new GesturePatternFormatter();
+  }
 
   /**
    * 全ジェスチャー（デフォルト + カスタム）を取得
@@ -43,19 +48,108 @@ export class GestureListUseCase {
       // カスタムジェスチャーを取得
       const customGestures = await this.gestureRepository.getCustomGestures();
       
+      console.log('🔍 Debug - Custom gestures raw data:', customGestures.map(g => ({
+        id: g.id,
+        name: g.name,
+        pattern: g.pattern,
+        patternType: typeof g.pattern,
+        patternString: g.pattern?.toString ? g.pattern.toString() : String(g.pattern)
+      })));
+      
       // 統一形式に変換
       const allGestures: GestureListItem[] = [
         ...defaultGestures,
-        ...customGestures.map(g => ({
-          id: g.id,
-          name: g.name,
-          pattern: g.pattern.toString(),
-          action: g.action,
-          type: 'custom' as const,
-          category: 'custom',
-          description: (g as any).description || '',
-          enabled: g.enabled
-        }))
+        ...customGestures.map(g => {
+          let cleanPattern = '';
+          try {
+            // パターンの正しい変換を行う
+            if (g.pattern && typeof g.pattern === 'object' && g.pattern.getDirections) {
+              // GesturePatternオブジェクトの場合
+              const directions = g.pattern.getDirections();
+              cleanPattern = directions.map(dir => {
+                switch (dir.toLowerCase()) {
+                  case 'up': return '↑';
+                  case 'down': return '↓';
+                  case 'left': return '←';
+                  case 'right': return '→';
+                  default: return dir;
+                }
+              }).join('');
+            } else if (g.pattern && typeof g.pattern === 'object' && g.pattern._directions) {
+              // _directionsプロパティがある場合
+              cleanPattern = g.pattern._directions.map(dir => {
+                switch (String(dir).toLowerCase()) {
+                  case 'up': return '↑';
+                  case 'down': return '↓';
+                  case 'left': return '←';
+                  case 'right': return '→';
+                  default: return String(dir);
+                }
+              }).join('');
+            } else if (Array.isArray(g.pattern)) {
+              // 配列の場合
+              cleanPattern = g.pattern.map(dir => {
+                switch (String(dir).toLowerCase()) {
+                  case 'up': return '↑';
+                  case 'down': return '↓';
+                  case 'left': return '←';
+                  case 'right': return '→';
+                  default: return String(dir);
+                }
+              }).join('');
+            } else if (typeof g.pattern === 'string') {
+              // 文字列の場合（区切り文字をクリーンアップ）
+              if (g.pattern.includes('→')) {
+                // up→down→left→right のような形式
+                cleanPattern = g.pattern
+                  .split('→')
+                  .map(dir => {
+                    switch (dir.trim().toLowerCase()) {
+                      case 'up': return '↑';
+                      case 'down': return '↓';
+                      case 'left': return '←';
+                      case 'right': return '→';
+                      default: return dir.trim();
+                    }
+                  })
+                  .join('');
+              } else {
+                // 既に矢印形式かもしれない
+                cleanPattern = g.pattern
+                  .replace(/up/gi, '↑')
+                  .replace(/down/gi, '↓')
+                  .replace(/left/gi, '←')
+                  .replace(/right/gi, '→');
+              }
+            } else {
+              // その他の場合
+              cleanPattern = this.patternFormatter.formatPatternToArrows(g.pattern);
+            }
+          } catch (error) {
+            console.error('🚨 Pattern conversion error for gesture:', g.id, error);
+            cleanPattern = '?';
+          }
+          
+          console.log('🔍 Debug - Pattern conversion:', {
+            gestureId: g.id,
+            originalPattern: g.pattern,
+            convertedPattern: cleanPattern
+          });
+          
+          // アクション名を日本語で取得
+          const actionDescription = this.patternFormatter.getActionDisplayName(g.action);
+          
+          return {
+            id: g.id,
+            name: g.name,
+            pattern: cleanPattern,
+            action: g.action,
+            type: 'custom' as const,
+            category: 'custom',
+            description: actionDescription,
+            enabled: g.enabled
+          };
+        })
       ];
       
       return allGestures;

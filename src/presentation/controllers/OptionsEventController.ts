@@ -782,7 +782,7 @@ export class OptionsEventController {
     this.editCustomGesture = editCustomGestureCallback;
     this.showConfirm = showConfirmCallback || ((message: string) => {
       // フォールバック: 標準confirm
-      // eslint-disable-next-line no-alert
+       
       return Promise.resolve(confirm(message));
     });
     this.getEditingGestureId = getEditingGestureIdCallback;

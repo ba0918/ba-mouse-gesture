@@ -72,6 +72,35 @@ export class DebugStorageAdapter {
   }
 
   /**
+   * logLevelを安全に数値に変換
+   */
+  private parseLogLevel(value: any): number {
+    // 既に有効な整数の場合はそのまま返す
+    if (Number.isInteger(value) && value >= 0 && value <= 3) {
+      return value;
+    }
+    
+    // 文字列の場合は数値に変換を試行
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 3) {
+        return parsed;
+      }
+    }
+    
+    // 数値の場合は範囲チェック
+    if (typeof value === 'number') {
+      const rounded = Math.round(value);
+      if (rounded >= 0 && rounded <= 3) {
+        return rounded;
+      }
+    }
+    
+    // すべて失敗した場合はデフォルト値を返す
+    return this.defaultSettings.logLevel;
+  }
+
+  /**
    * デバッグ設定を読み込み（統一されたアクセス）
    * popup/content script両方で同じメソッドを使用
    */
@@ -81,9 +110,17 @@ export class DebugStorageAdapter {
       const result = await this.chromeStorageGet(['appSettings']);
       
       if (result.appSettings && result.appSettings.debugSettings) {
+        const loadedSettings = result.appSettings.debugSettings;
+        
+        // 🔧 型変換を確実に実行してvalidation errorを防ぐ
         return {
           ...this.defaultSettings,
-          ...result.appSettings.debugSettings
+          enabled: Boolean(loadedSettings.enabled),
+          logLevel: this.parseLogLevel(loadedSettings.logLevel),
+          showStatus: Boolean(loadedSettings.showStatus),
+          statusPosition: typeof loadedSettings.statusPosition === 'string' ? loadedSettings.statusPosition : this.defaultSettings.statusPosition,
+          createdAt: loadedSettings.createdAt || null,
+          updatedAt: loadedSettings.updatedAt || null
         };
       }
       

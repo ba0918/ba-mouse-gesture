@@ -4,22 +4,22 @@
  */
 
 // Clean Architecture - Infrastructure層のアダプターをインポート
-// eslint-disable-next-line no-unused-vars
-import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter.js';
+ 
+import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
 
 // Clean Architecture - 必要なクラスをインポート（ビルドに含めるため）
-import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase.js';
-import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase.js';
-import { DebugSettingsUseCase } from '../../application/usecases/DebugSettingsUseCase.js';
-import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
-import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter.js';
-import { SimpleMessagingAdapter } from '../../infrastructure/adapters/SimpleMessagingAdapter.js';
-import { GestureManager } from '../../presentation/controllers/GestureManager.js';
-import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js';
-import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js';
-import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter.js';
-import { DebugLogger } from '../../infrastructure/adapters/DebugLogger.js';
-import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity.js';
+import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
+import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase';
+import { DebugSettingsUseCase } from '../../application/usecases/DebugSettingsUseCase';
+import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer';
+import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter';
+import { SimpleMessagingAdapter } from '../../infrastructure/adapters/SimpleMessagingAdapter';
+import { GestureManager } from '../../presentation/controllers/GestureManager';
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
+import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
+import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter';
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity';
 
 // 型定義
 interface Point {
@@ -124,6 +124,37 @@ if (typeof window !== 'undefined') {
   // Debug関連のAdapterも公開
   (window as any).DebugStorageAdapter = DebugStorageAdapter;
   (window as any).DebugSettingsEntity = DebugSettingsEntity;
+  
+  // 🔧 ストレージ管理ヘルパー関数
+  (window as any).clearExtensionStorage = async () => {
+    console.log('🗑️ Clearing extension storage...');
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'clearStorage' });
+      if (response.success) {
+        console.log('✅ Storage cleared successfully');
+        location.reload(); // ページリロードして初期状態に戻す
+      } else {
+        console.error('❌ Failed to clear storage:', response.error);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+  };
+  
+  (window as any).getStorageInfo = async () => {
+    console.log('🔍 Getting storage info...');
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'getStorageInfo' });
+      if (response.success) {
+        console.log('📦 Storage info:', response.data);
+        return response.data;
+      } else {
+        console.error('❌ Failed to get storage info:', response.error);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+  };
 }
 
 /**
@@ -219,51 +250,57 @@ class CleanGestureManager {
       // 簡易実装でデバッグ機能を確保
       this.debugUseCase = this.createSimpleDebugUseCase();
       
-      // グローバルに存在するクラスを使用（ビルド時に統合される前提）
-      if (typeof window !== 'undefined') {
-        // Infrastructure層の初期化（依存関係注入のため）
-        const storageAdapter = (window as any).ChromeStorageAdapter ? new (window as any).ChromeStorageAdapter() : null;
+      // インポートされたクラスを直接使用
+      const storageAdapter = new ChromeStorageAdapter();
+      
+      if (storageAdapter) {
+        // Repository層の初期化
+        const settingsRepository = new SettingsRepository(storageAdapter);
+        const gestureRepository = new GestureRepository(storageAdapter);
         
-        if (storageAdapter) {
-          // Repository層の初期化
-          const settingsRepository = (window as any).SettingsRepository ? new (window as any).SettingsRepository(storageAdapter) : null;
-          const gestureRepository = (window as any).GestureRepository ? new (window as any).GestureRepository(storageAdapter) : null;
-          
-          // Application層の初期化（依存関係注入）
-          if (settingsRepository) {
-            this.settingsUseCase = (window as any).SettingsUseCase ? new (window as any).SettingsUseCase(settingsRepository) : null;
-          }
-          
-          if (gestureRepository && settingsRepository) {
-            this.customGestureUseCase = (window as any).CustomGestureUseCase ? new (window as any).CustomGestureUseCase(gestureRepository, settingsRepository) : null;
-          }
-          
-          // Debug設定は独自のDebugStorageAdapterを使用
-          if ((window as any).DebugSettingsUseCase) {
-            try {
-              this.debugUseCase = new (window as any).DebugSettingsUseCase();
-            } catch (error) {
-              console.warn('Failed to initialize DebugSettingsUseCase, using fallback:', error);
-            }
-          }
+        // Application層の初期化（依存関係注入）
+        if (settingsRepository) {
+          this.settingsUseCase = new SettingsManagementUseCase(settingsRepository);
         }
         
-        this.learningUseCase = (window as any).GestureLearningUseCase ? new (window as any).GestureLearningUseCase() : null;
-        this.gestureRecognizer = (window as any).SimpleGestureRecognizer ? new (window as any).SimpleGestureRecognizer() : null;
-        this.canvasRenderer = (window as any).CanvasRendererAdapter ? new (window as any).CanvasRendererAdapter() : null;
-        this.messagingAdapter = (window as any).SimpleMessagingAdapter ? new (window as any).SimpleMessagingAdapter() : null;
+        if (gestureRepository && settingsRepository) {
+          this.customGestureUseCase = new CustomGestureManagementUseCase(gestureRepository, settingsRepository);
+        }
         
-        if ((window as any).GestureManager && this.settingsUseCase && this.customGestureUseCase) {
-          this.gestureController = new (window as any).GestureManager({
-            settingsUseCase: this.settingsUseCase,
-            customGestureUseCase: this.customGestureUseCase,
-            learningUseCase: this.learningUseCase
-          });
+        // Debug設定の初期化
+        try {
+          this.debugUseCase = new DebugSettingsUseCase();
+        } catch (error) {
+          console.warn('Failed to initialize DebugSettingsUseCase, using fallback:', error);
         }
       }
       
+      // Domain Services と Adapters の初期化
+      this.gestureRecognizer = new SimpleGestureRecognizer();
+      this.canvasRenderer = new CanvasRendererAdapter();
+      this.messagingAdapter = new SimpleMessagingAdapter();
+      
+      // Controller の初期化
+      if (this.settingsUseCase && this.customGestureUseCase) {
+        this.gestureController = new GestureManager({
+          settingsUseCase: this.settingsUseCase,
+          customGestureUseCase: this.customGestureUseCase,
+          learningUseCase: this.learningUseCase
+        });
+      }
+      
+      console.log('✅ Clean Architecture components initialized:', {
+        hasSettingsUseCase: Boolean(this.settingsUseCase),
+        hasCustomGestureUseCase: Boolean(this.customGestureUseCase),
+        hasGestureRecognizer: Boolean(this.gestureRecognizer),
+        hasCanvasRenderer: Boolean(this.canvasRenderer),
+        hasMessagingAdapter: Boolean(this.messagingAdapter),
+        hasGestureController: Boolean(this.gestureController)
+      });
+      
     } catch (error) {
-      console.warn('Clean Architecture initialization failed, using fallback:', error);
+      console.error('Clean Architecture initialization failed:', error);
+      console.warn('Using fallback implementation');
     }
   }
 
@@ -670,10 +707,15 @@ class CleanGestureManager {
    * ジェスチャー実行
    */
   private async executeGesture(trail: Point[]): Promise<void> {
+    console.log('🎯 executeGesture called with trail length:', trail.length);
+    
     try {
       // ジェスチャー認識
       const gestureResult = await this.recognizeGesture(trail);
+      console.log('🔍 Recognition result:', gestureResult);
+      
       if (!gestureResult) {
+        console.log('❌ Gesture not recognized');
         if (this.logger) {
           this.logger.debug('Gesture not recognized');
         }
@@ -686,9 +728,16 @@ class CleanGestureManager {
       
       // ジェスチャーの種類に応じて処理
       const distance = this.calculateTrailDistance();
+      console.log('📏 Trail distance:', distance);
+      
       if (typeof gestureResult === 'object' && gestureResult.type === 'custom') {
+        console.log('🎯 Processing custom gesture');
         await this.handleCustomGesture(gestureResult, distance);
       } else if (typeof gestureResult === 'object') {
+        console.log('🔧 Processing object-based gesture');
+        await this.handleDefaultGesture(gestureResult, distance);
+      } else {
+        console.log('🔧 Processing string-based gesture');
         await this.handleDefaultGesture(gestureResult, distance);
       }
       
@@ -982,6 +1031,8 @@ class CleanGestureManager {
    * backgroundスクリプトにジェスチャーメッセージを送信 - Clean Architecture対応
    */
   private async sendGestureMessage(gestureType: string | GestureMessage): Promise<MessageResponse> {
+    console.log('🚀 sendGestureMessage called with:', gestureType);
+    
     // Clean Architecture Adapter が利用可能な場合のみ使用
     if (this.messagingAdapter) {
       try {
@@ -991,7 +1042,9 @@ class CleanGestureManager {
             : { type: 'complexGesture' as const, gestureType: gestureType }) :
           gestureType;
         
+        console.log('📤 Sending message via messagingAdapter:', message);
         const response = await this.messagingAdapter.sendMessage(message);
+        console.log('📥 Response received:', response);
         
         // デバッグ情報の表示
         if (await this.debugUseCase.isDebugEnabled()) {
@@ -1005,6 +1058,7 @@ class CleanGestureManager {
         return this.sendGestureMessageFallback(gestureType);
       }
     } else {
+      console.log('❌ messagingAdapter not available, using fallback');
       // Clean Architecture 初期化未完了の場合は直接フォールバック使用
       return this.sendGestureMessageFallback(gestureType);
     }
@@ -1014,6 +1068,8 @@ class CleanGestureManager {
    * メッセージ送信のフォールバック
    */
   private sendGestureMessageFallback(gestureType: string | GestureMessage): Promise<MessageResponse> {
+    console.log('🔄 Using fallback message sending for:', gestureType);
+    
     return new Promise((resolve) => {
       const message = typeof gestureType === 'string' ?
         (this.isSimpleGesture(gestureType) 
@@ -1021,8 +1077,13 @@ class CleanGestureManager {
           : { type: 'complexGesture' as const, gestureType: gestureType }) :
         gestureType;
       
+      console.log('📤 Fallback sending message:', message);
+      
       chrome.runtime.sendMessage(message, (response: MessageResponse) => {
+        console.log('📥 Fallback response received:', response);
+        
         if (chrome.runtime.lastError) {
+          console.error('❌ Chrome runtime error:', chrome.runtime.lastError.message);
           resolve({ success: false, error: chrome.runtime.lastError.message });
         } else {
           resolve(response || { success: false, error: 'No response' });
@@ -1458,9 +1519,15 @@ class CleanGestureManager {
 }
 
 // ページ読み込み完了時に初期化 - Clean Architecture対応
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', initializeGestureManager);
+
+// 初期化実行関数
+async function initializeGestureManager() {
   try {
-    console.log('🏗️ Clean Architecture Gesture Manager: Initializing...');
+    console.log('🏗️ Clean Architecture Gesture Manager: Starting initialization...');
+    console.log('📍 Current URL:', window.location.href);
+    console.log('📦 Chrome available:', typeof chrome !== 'undefined');
+    console.log('📄 Document state:', document.readyState);
     
     const manager = new CleanGestureManager();
     await manager.initialize();
@@ -1468,36 +1535,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // グローバルアクセス用
     (window as any).cleanGestureManager = manager;
     
-    // デバッグ情報の表示は内部メソッドで実行
-    
     console.log('✅ Clean Architecture Gesture Manager: Initialization complete');
+    console.log('🔍 Manager debug info:', await manager.getDebugInfo());
     
   } catch (error) {
     console.error('❌ Clean Gesture Manager initialization failed:', error);
+    console.error('Stack trace:', (error as Error).stack);
   }
-});
+}
 
 // document.readyStateが'complete'の場合は即座に初期化
 if (document.readyState === 'loading') {
-  // DOMContentLoadedで初期化（上記）
+  // DOMContentLoadedで初期化（上記のイベントリスナーで処理）
+  console.log('⏳ Waiting for DOMContentLoaded...');
 } else {
   // 既に読み込み完了している場合は即座に初期化
-  (async () => {
-    try {
-      console.log('🏗️ Clean Architecture Gesture Manager: Immediate initialization...');
-      
-      const manager = new CleanGestureManager();
-      await manager.initialize();
-      (window as any).cleanGestureManager = manager;
-      
-      // デバッグ情報の表示は内部メソッドで実行
-      
-      console.log('✅ Clean Architecture Gesture Manager: Immediate initialization complete');
-      
-    } catch (error) {
-      console.error('❌ Clean Gesture Manager immediate initialization failed:', error);
-    }
-  })();
+  console.log('🚀 Document already loaded, initializing immediately...');
+  initializeGestureManager();
 }
 
 // CommonJS export（テスト用）- Clean Architecture対応

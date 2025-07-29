@@ -338,7 +338,3 @@ export class ChromeStorageAdapter {
   }
 }
 
-// CommonJS export for Jest compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ChromeStorageAdapter }
-}

@@ -314,7 +314,7 @@ export class DebugSettingsController {
     try {
       console.log('🔧 DebugSettingsController: Resetting debug settings');
       
-      // eslint-disable-next-line no-alert
+       
       if (!confirm('デバッグ設定をデフォルトに戻しますか？')) {
         return;
       }

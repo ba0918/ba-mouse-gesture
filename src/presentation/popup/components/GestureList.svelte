@@ -280,7 +280,7 @@
     <div class="control-group">
       <button
         class="control-btn"
-        onclick={() => viewMode = viewMode === 'list' ? 'card' : 'list'}
+        on:click={() => viewMode = viewMode === 'list' ? 'card' : 'list'}
       >
         {viewMode === 'list' ? 'カード表示' : 'リスト表示'}
       </button>
@@ -290,7 +290,7 @@
     <div class="control-group">
       <button
         class="control-btn"
-        onclick={toggleAllGestures}
+        on:click={toggleAllGestures}
         disabled={filteredGestures.length === 0}
       >
         {filteredGestures.every(g => g.enabled) ? '全て無効' : '全て有効'}
@@ -299,7 +299,7 @@
 
     <!-- リフレッシュ -->
     <div class="control-group">
-      <button class="control-btn" onclick={loadGestures} disabled={loading}>
+      <button class="control-btn" on:click={loadGestures} disabled={loading}>
         {loading ? '読込中...' : 'リフレッシュ'}
       </button>
     </div>
@@ -316,14 +316,14 @@
       <div class="error-state">
         <div class="error-icon">⚠️</div>
         <div>{error}</div>
-        <button class="retry-btn" onclick={loadGestures}>再試行</button>
+        <button class="retry-btn" on:click={loadGestures}>再試行</button>
       </div>
     {:else if filteredGestures.length === 0}
       <div class="empty-state">
         <div class="empty-icon">🔍</div>
         <div class="empty-message">
           {searchQuery ? 
-              `「${searchQuery}」に一致するジェスチャーが見つかりませんでした` : 
+            `「${searchQuery}」に一致するジェスチャーが見つかりませんでした` : 
               'ジェスチャーが見つかりませんでした'}
         </div>
         <div class="empty-suggestion">
@@ -354,14 +354,14 @@
                       <input
                         type="checkbox"
                         checked={gesture.enabled}
-                        onchange={(e) => toggleGesture(gesture.id, e.currentTarget.checked)}
+                        on:change={(e) => toggleGesture(gesture.id, e.currentTarget.checked)}
                       />
                       <span class="slider"></span>
                     </label>
                     {#if gesture.type === 'custom'}
                       <button
                         class="delete-gesture-btn"
-                        onclick={() => deleteCustomGesture(gesture.id)}
+                        on:click={() => deleteCustomGesture(gesture.id)}
                         title="削除"
                       >
                         ✕
@@ -374,7 +374,7 @@
                     {#if gesture.type === 'custom'}
                       <button
                         class="delete-gesture-btn card-delete"
-                        onclick={() => deleteCustomGesture(gesture.id)}
+                        on:click={() => deleteCustomGesture(gesture.id)}
                         title="削除"
                       >
                         ✕
@@ -390,7 +390,7 @@
                         <input
                           type="checkbox"
                           checked={gesture.enabled}
-                          onchange={(e) => toggleGesture(gesture.id, e.currentTarget.checked)}
+                          on:change={(e) => toggleGesture(gesture.id, e.currentTarget.checked)}
                         />
                         <span class="slider"></span>
                       </label>

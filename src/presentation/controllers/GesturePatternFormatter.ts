@@ -135,6 +135,8 @@ class GesturePatternFormatter {
       forward: 'ブラウザの進む',
       scroll_top: 'ページ最上部スクロール',
       scroll_bottom: 'ページ最下部スクロール',
+      scroll_up: 'ページ最上部スクロール',
+      scroll_down: 'ページ最下部スクロール',
       close_tab: 'タブを閉じる',
       new_tab: '新しいタブを開く',
       duplicate_tab: 'タブ複製',

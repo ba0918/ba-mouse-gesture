@@ -5,14 +5,14 @@
  */
 
 // Infrastructure layer imports
-import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js';
-import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js';
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
+import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
 
 // Application layer imports
-import { GestureRecognitionUseCase } from '../usecases/GestureRecognitionUseCase.js';
-import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase.js';
-import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagementUseCase.js';
-import { GestureApplicationService } from './GestureApplicationService.js';
+import { GestureRecognitionUseCase } from '../usecases/GestureRecognitionUseCase';
+import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase';
+import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagementUseCase';
+import { GestureApplicationService } from './GestureApplicationService';
 
 // Infrastructure services interfaces
 interface InfrastructureServices {
@@ -362,16 +362,37 @@ export class ServiceFactory {
           
           // カスタムジェスチャーの取得
           const customGestures = await customGestureUseCase.getAllCustomGestures();
-          const customGestureItems = customGestures.map((gesture: any) => ({
-            id: gesture.id,
-            name: gesture.name,
-            pattern: gesture.pattern?.toString() || '',
-            action: gesture.action,
-            type: 'custom' as const,
-            category: 'custom',
-            description: `カスタムジェスチャー: ${gesture.action}`,
-            enabled: gesture.enabled
-          }));
+          const customGestureItems = customGestures.map((gesture: any) => {
+            // アクション名を日本語に変換
+            const actionNames: { [key: string]: string } = {
+              back: 'ブラウザの戻る',
+              forward: 'ブラウザの進む',
+              scroll_top: 'ページ最上部スクロール',
+              scroll_bottom: 'ページ最下部スクロール',
+              scroll_up: 'ページ最上部スクロール',
+              scroll_down: 'ページ最下部スクロール',
+              close_tab: 'タブを閉じる',
+              new_tab: '新しいタブを開く',
+              duplicate_tab: 'タブ複製',
+              refresh: 'ページ更新',
+              super_refresh: 'スーパーリロード（キャッシュクリア付き）',
+              prev_tab: '前のタブに切り替え',
+              next_tab: '次のタブに切り替え'
+            };
+            
+            const actionDescription = actionNames[gesture.action] || gesture.action;
+            
+            return {
+              id: gesture.id,
+              name: gesture.name,
+              pattern: gesture.pattern?.toString() || '',
+              action: gesture.action,
+              type: 'custom' as const,
+              category: 'custom',
+              description: actionDescription,
+              enabled: gesture.enabled
+            };
+          });
           
           return [...defaultGestures, ...customGestureItems];
         } catch (error) {

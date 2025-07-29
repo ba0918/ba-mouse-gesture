@@ -75,12 +75,17 @@
       "^@presentation/(.*)$": "<rootDir>/src/presentation/$1"
     },
     "transform": {
-      "^.+\\.ts$": "ts-jest"
+      "^.+\\.ts$": "ts-jest",
+      "^.+\\.svelte$": "<rootDir>/tests/__mocks__/svelteMock.js"
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(svelte|@sveltejs)/)"
+    ],
     "moduleFileExtensions": [
       "ts",
       "js",
-      "json"
+      "json",
+      "svelte"
     ]
   },
   "lint-staged": {

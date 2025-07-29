@@ -52,6 +52,7 @@ async function generateOptionsHtml(outputPath) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マウスジェスチャーツール - 設定</title>
+    <link rel="stylesheet" href="options.css">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -84,9 +85,7 @@ async function generateOptionsHtml(outputPath) {
     </style>
 </head>
 <body>
-    <div id="app">
-        <div class="loading">設定画面を読み込み中</div>
-    </div>
+    <div id="app"></div>
     <script src="options.js"></script>
 </body>
 </html>`
@@ -99,11 +98,11 @@ async function generateOptionsHtml(outputPath) {
 async function copyDir(src, dest) {
   await ensureDir(dest)
   const entries = await fs.readdir(src, { withFileTypes: true })
-  
+
   for (const entry of entries) {
     const srcPath = path.join(src, entry.name)
     const destPath = path.join(dest, entry.name)
-    
+
     if (entry.isDirectory()) {
       await copyDir(srcPath, destPath)
     } else {
@@ -116,26 +115,26 @@ async function copyDir(src, dest) {
 // ビルド実行
 async function build() {
   console.log('🏗️  ビルド開始...')
-  
+
   try {
     // dist ディレクトリをクリーンアップ
     await fs.rm(distDir, { recursive: true, force: true })
     await ensureDir(distDir)
-    
+
     // 静的ファイルをコピー
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
     await copyDir('assets', path.join(distDir, 'assets'))
-    
+
     // Svelteアプリ用のHTMLファイルを動的生成
     await generateOptionsHtml(path.join(distDir, 'popup/options.html'))
-    
+
     // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー
     console.log('📁 新アーキテクチャファイル準備完了')
 
     // TypeScript/JavaScriptファイルをビルド
     console.log('🔨 TypeScript/JavaScriptファイルをビルド中...')
-    
+
     // TypeScript + Svelte対応ビルドオプション
     const buildOptions = {
       bundle: true, // モジュール依存関係解決
@@ -160,27 +159,27 @@ async function build() {
       // tsconfig.json自動読み込み
       tsconfig: './tsconfig.json'
     }
-    
+
     // 各ファイルをビルド
     for (const file of buildFiles) {
       await ensureDir(path.dirname(file.outfile))
-      
+
       await esbuild.build({
         ...buildOptions,
         entryPoints: [file.entryPoint],
         outfile: file.outfile
       })
-      
+
       console.log(`  ✓ ${file.entryPoint} → ${file.outfile} (TypeScript対応)`)
     }
-    
+
     console.log('✅ ビルド完了!')
-    
+
     // distディレクトリのサイズを計算
     const getDirSize = async (dir) => {
       let size = 0
       const files = await fs.readdir(dir, { withFileTypes: true })
-      
+
       for (const file of files) {
         const filePath = path.join(dir, file.name)
         if (file.isDirectory()) {
@@ -192,15 +191,15 @@ async function build() {
       }
       return size
     }
-    
+
     const totalSize = await getDirSize(distDir)
     console.log(`📦 ビルドサイズ: ${(totalSize / 1024 / 1024).toFixed(2)} MB`)
-    
+
     if (isWatch) {
       console.log('👀 ファイル監視中...')
       // watchモードの実装は省略（必要に応じて追加）
     }
-    
+
   } catch (error) {
     console.error('❌ ビルドエラー:', error)
     process.exit(1)

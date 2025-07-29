@@ -411,7 +411,7 @@ export class GestureListController {
    */
   private showConfirm(message: string): Promise<boolean> {
     // 簡易実装
-    // eslint-disable-next-line no-alert
+     
     return Promise.resolve(confirm(message));
   }
 }

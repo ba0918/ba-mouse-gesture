@@ -230,7 +230,7 @@ class ChromeBrowser {
         throw new ChromeBrowserError('No other tabs available', 'NO_TABS_ERROR')
       }
       
-      const currentIndex = tabs.findIndex(tab => tab.id === currentTab.id!!)
+      const currentIndex = tabs.findIndex(tab => tab.id === currentTab.id!)
       const previousIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1
       const previousTab = tabs[previousIndex]
       
@@ -252,7 +252,7 @@ class ChromeBrowser {
         throw new ChromeBrowserError('No other tabs available', 'NO_TABS_ERROR')
       }
       
-      const currentIndex = tabs.findIndex(tab => tab.id === currentTab.id!!)
+      const currentIndex = tabs.findIndex(tab => tab.id === currentTab.id!)
       const nextIndex = (currentIndex + 1) % tabs.length
       const nextTab = tabs[nextIndex]
       

@@ -28,12 +28,17 @@ interface ComplexGestureMessage {
   gestureType: string;
 }
 
-type MessageRequest = SimpleGestureMessage | ComplexGestureMessage;
+interface DebugMessage {
+  type: 'clearStorage' | 'getStorageInfo';
+}
+
+type MessageRequest = SimpleGestureMessage | ComplexGestureMessage | DebugMessage;
 
 interface MessageResponse {
   success: boolean;
   action?: string;
-  error?: string;
+  error?: string;    
+  data?: any;
 }
 
 interface ScrollMessage {
@@ -126,6 +131,48 @@ chrome.runtime.onMessage.addListener(function (
         sendResponse({ success: false, error: (error as Error).message });
       });
         
+    return true; // 非同期レスポンス
+  } else if (request.type === 'clearStorage') {
+    // ストレージクリア
+    debugLog(LOG_LEVELS.INFO, 'Clearing extension storage...');
+    
+    Promise.all([
+      chrome.storage.sync.clear(),
+      chrome.storage.local.clear()
+    ])
+      .then(() => {
+        debugLog(LOG_LEVELS.INFO, 'Storage cleared successfully');
+        sendResponse({ success: true, action: 'Storage cleared' });
+      })
+      .catch(error => {
+        debugLog(LOG_LEVELS.ERROR, 'Failed to clear storage:', error);
+        sendResponse({ success: false, error: (error as Error).message });
+      });
+    
+    return true; // 非同期レスポンス
+  } else if (request.type === 'getStorageInfo') {
+    // ストレージ情報取得
+    debugLog(LOG_LEVELS.INFO, 'Getting storage info...');
+    
+    Promise.all([
+      chrome.storage.sync.get(null),
+      chrome.storage.local.get(null)
+    ])
+      .then(([syncData, localStorage]) => {
+        const info = {
+          sync: syncData,
+          local: localStorage,
+          syncKeys: Object.keys(syncData),
+          localKeys: Object.keys(localStorage)
+        };
+        debugLog(LOG_LEVELS.INFO, 'Storage info:', info);
+        sendResponse({ success: true, action: 'Storage info retrieved', data: info });
+      })
+      .catch(error => {
+        debugLog(LOG_LEVELS.ERROR, 'Failed to get storage info:', error);
+        sendResponse({ success: false, error: (error as Error).message });
+      });
+    
     return true; // 非同期レスポンス
   }
     
