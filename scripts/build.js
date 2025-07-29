@@ -11,19 +11,19 @@ const isWatch = process.argv.includes('--watch')
 // 出力ディレクトリ
 const distDir = path.join(__dirname, '..', 'dist')
 
-// ビルド対象のJavaScriptファイル
-// 新アーキテクチャのみ（Clean Architecture統一）
-const jsFiles = [
+// ビルド対象のTypeScript/JavaScriptファイル
+// TypeScript移行対応（段階的に .js → .ts）
+const buildFiles = [
   {
-    entryPoint: 'src/presentation/background/index.js',
+    entryPoint: 'src/presentation/background/index.js', // 将来的に .ts
     outfile: 'dist/background/background.js'
   },
   {
-    entryPoint: 'src/presentation/contentScripts/index.js',
+    entryPoint: 'src/presentation/contentScripts/index.js', // 将来的に .ts
     outfile: 'dist/content_scripts/gesture.js'
   },
   {
-    entryPoint: 'src/presentation/popup/index.js',
+    entryPoint: 'src/presentation/popup/index.js', // 将来的に .ts
     outfile: 'dist/popup/options.js'
   }
 ]
@@ -80,21 +80,28 @@ async function build() {
     // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー
     console.log('📁 新アーキテクチャファイル準備完了')
 
-    // JavaScriptファイルをビルド
-    console.log('🔨 JavaScriptファイルをビルド中...')
+    // TypeScript/JavaScriptファイルをビルド
+    console.log('🔨 TypeScript/JavaScriptファイルをビルド中...')
     
-    // 新アーキテクチャ統一ビルドオプション
+    // TypeScript対応ビルドオプション
     const buildOptions = {
       bundle: true, // モジュール依存関係解決
       minify: isProduction,
       sourcemap: !isProduction,
       target: 'es2020',
       format: 'iife',
-      external: ['chrome'] // Chrome API除外
+      external: ['chrome'], // Chrome API除外
+      // TypeScript設定
+      loader: {
+        '.ts': 'ts',
+        '.js': 'js'
+      },
+      // tsconfig.json自動読み込み
+      tsconfig: './tsconfig.json'
     }
     
     // 各ファイルをビルド
-    for (const file of jsFiles) {
+    for (const file of buildFiles) {
       await ensureDir(path.dirname(file.outfile))
       
       await esbuild.build({
@@ -103,7 +110,7 @@ async function build() {
         outfile: file.outfile
       })
       
-      console.log(`  ✓ ${file.entryPoint} → ${file.outfile} (新アーキテクチャ)`)
+      console.log(`  ✓ ${file.entryPoint} → ${file.outfile} (TypeScript対応)`)
     }
     
     console.log('✅ ビルド完了!')

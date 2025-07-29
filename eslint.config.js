@@ -1,11 +1,14 @@
 // ESLint v9 フラット設定ファイル
 const js = require('@eslint/js')
+const tsPlugin = require('@typescript-eslint/eslint-plugin')
+const tsParser = require('@typescript-eslint/parser')
 
 module.exports = [
   {
     ignores: ['**/*.html', 'node_modules/**', 'dist/**', 'build/**', 'coverage/**', 'playwright-report/**', 'test-results/**']
   },
   js.configs.recommended,
+  // JavaScript設定
   {
     files: ['**/*.js'],
     languageOptions: {
@@ -102,6 +105,45 @@ module.exports = [
     files: ['*.config.js', '.eslintrc.js'],
     languageOptions: {
       sourceType: 'commonjs'
+    }
+  },
+  // TypeScript設定
+  {
+    files: ['**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: 'module',
+        project: './tsconfig.json'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+    rules: {
+      // TypeScript推奨ルール
+      ...tsPlugin.configs.recommended.rules,
+      
+      // 型チェック関連
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-inferrable-types': 'off',
+      
+      // スタイル関連（JSと共通）
+      'indent': 'off',
+      '@typescript-eslint/indent': ['error', 2],
+      'quotes': 'off',
+      '@typescript-eslint/quotes': ['error', 'single', { avoidEscape: true }],
+      'semi': 'off',
+      '@typescript-eslint/semi': ['error', 'never'],
+      
+      // その他のTypeScript固有ルール
+      '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+      '@typescript-eslint/prefer-optional-chain': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn'
     }
   }
 ]

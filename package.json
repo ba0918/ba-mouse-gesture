@@ -8,8 +8,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "lint": "eslint . --ext .js,.html",
-    "lint:fix": "eslint . --ext .js,.html --fix",
+    "lint": "eslint . --ext .js,.ts,.html",
+    "lint:fix": "eslint . --ext .js,.ts,.html --fix",
+    "typecheck": "tsc --noEmit",
     "build": "node scripts/build.js --prod",
     "build:dev": "node scripts/build.js",
     "build:watch": "node scripts/build.js --watch",
@@ -27,6 +28,8 @@
     "@playwright/test": "^1.54.1",
     "@types/chrome": "^0.0.254",
     "@types/jest": "^29.5.14",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
     "husky": "^9.1.7",
@@ -34,7 +37,9 @@
     "jest-chrome": "^0.8.0",
     "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "^16.1.2",
-    "playwright": "^1.54.1"
+    "playwright": "^1.54.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "jest": {
     "testEnvironment": "jsdom",
