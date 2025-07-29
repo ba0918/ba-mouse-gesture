@@ -37,6 +37,7 @@
   let gesturePatternDisplay = $state('');
   let gestureAction = $state('back');
   let currentPattern = $state<string[]>([]);
+  let customGestureError = $state('');
   
   // 確認ダイアログ
   let confirmDialog = $state(false);
@@ -524,6 +525,8 @@
     currentPattern.push(direction);
     // 矢印表記で表示
     gesturePatternDisplay = convertPatternToArrows(currentPattern.join(''));
+    // エラーをクリア
+    clearCustomGestureError();
   }
 
   function clearPattern() {
@@ -531,9 +534,16 @@
     gesturePatternDisplay = '';
   }
 
+  function clearCustomGestureError() {
+    customGestureError = '';
+  }
+
   async function addCustomGesture() {
+    // 前回のエラーをクリア
+    clearCustomGestureError();
+    
     if (!gestureName.trim() || !gesturePatternDisplay) {
-      showSaveStatus('ジェスチャー名とパターンを入力してください', 'error');
+      customGestureError = 'ジェスチャー名とパターンを入力してください';
       return;
     }
 
@@ -574,6 +584,7 @@
       gesturePatternDisplay = '';
       currentPattern = [];
       gestureAction = 'back';
+      clearCustomGestureError();
       
       // リスト更新（統一されたデータを取得）
       await loadCustomGestures();
@@ -604,7 +615,7 @@
         }
       }
       
-      showSaveStatus(errorMessage, 'error');
+      customGestureError = errorMessage;
     }
   }
 
@@ -936,7 +947,7 @@
               <h3 style="font-size: 14px; margin: 0 0 12px 0; color: #202124;">新しいジェスチャーを追加</h3>
               <div class="form-group">
                 <label for="gestureName">ジェスチャー名:</label>
-                <input type="text" bind:value={gestureName} class="form-input" placeholder="例: カスタム戻る">
+                <input type="text" bind:value={gestureName} class="form-input" placeholder="例: カスタム戻る" oninput={clearCustomGestureError}>
               </div>
               <div class="form-group">
                 <label for="gesturePattern">パターン:</label>
@@ -967,6 +978,14 @@
                   <option value="next_tab">次のタブ (NEW)</option>
                 </select>
               </div>
+              
+              <!-- カスタムジェスチャー追加エラー表示 -->
+              {#if customGestureError}
+                <div class="custom-gesture-error">
+                  {customGestureError}
+                </div>
+              {/if}
+              
               <button class="add-btn" onclick={addCustomGesture}>カスタムジェスチャーを追加</button>
             </div>
           </div>
@@ -1739,5 +1758,16 @@
         font-size: 14px;
         font-weight: 400;
         line-height: 1.4;
+    }
+
+    /* カスタムジェスチャーエラー表示 */
+    .custom-gesture-error {
+        background: #fce8e6;
+        color: #d33b2c;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 8px 0;
+        font-size: 13px;
+        border-left: 3px solid #ea4335;
     }
 </style>
