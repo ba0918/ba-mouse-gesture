@@ -167,6 +167,8 @@ export class GestureListUseCase {
   async getDefaultGestures(): Promise<GestureListItem[]> {
     const settings = await this.settingsRepository.getSettings();
     const gestureStates = settings.defaultGestureStates;
+    
+    console.log('🔍 Debug - Default gesture states loaded:', gestureStates);
 
     return [
       // 基本ジェスチャー

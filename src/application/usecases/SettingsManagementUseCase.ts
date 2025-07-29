@@ -131,17 +131,19 @@ export class SettingsManagementUseCase {
         throw new Error(`This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`)
       }
       
+      console.log('🔍 Debug - Original gestureId received:', gestureId, 'enabled:', enabled);
+      
       // ジェスチャーIDの検証（標準ジェスチャーのみ）
       this.validateGestureId(gestureId)
 
       // Action名からジェスチャーIDへのマッピング（実際のリポジトリ操作用）
       const actualGestureId = this.mapActionToGestureId(gestureId);
 
-      console.log('🔘 Gesture toggle:', gestureId, 'current enabled:', !enabled, 'new enabled:', enabled);
-      console.log('🔍 Toggle gesture debug info:', {
+      console.log('🔍 Debug - Mapped gestureId:', {
         originalId: gestureId,
         mappedId: actualGestureId,
-        enabled: enabled
+        enabled: enabled,
+        isActionName: gestureId !== actualGestureId
       });
 
       const result = await this.settingsRepository.updateGestureState(actualGestureId, enabled)
@@ -151,6 +153,7 @@ export class SettingsManagementUseCase {
 
       return result
     } catch (error) {
+      console.error('❌ SettingsManagementUseCase.toggleGesture failed:', error);
       throw new SettingsManagementError('Failed to toggle gesture', error as Error)
     }
   }
@@ -510,8 +513,9 @@ export class SettingsManagementUseCase {
   }
 
   private validateGestureId(gestureId: string): void {
-    // Action名からジェスチャーIDへのマッピング
+    // Action名・ジェスチャーIDからジェスチャーIDへのマッピング
     const actionToGestureIdMap: Record<string, string> = {
+      // アクション名 → ジェスチャーID
       'back': 'left',
       'forward': 'right', 
       'scroll_top': 'up',
@@ -522,7 +526,16 @@ export class SettingsManagementUseCase {
       'refresh': 'updown',
       'super_refresh': 'super_refresh',
       'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab'
+      'next_tab': 'next_tab',
+      // ジェスチャーID → ジェスチャーID（UI側から直接IDが渡される場合）
+      'left': 'left',
+      'right': 'right',
+      'up': 'up',
+      'down': 'down',
+      'downright': 'downright',
+      'upright': 'upright',
+      'rightdown': 'rightdown',
+      'updown': 'updown'
     };
 
     const validGestureIds = [
@@ -531,11 +544,13 @@ export class SettingsManagementUseCase {
       'super_refresh', 'prev_tab', 'next_tab'
     ];
 
-    // アクション名が渡された場合は対応するジェスチャーIDに変換
+    // アクション名またはジェスチャーIDが渡された場合は対応するジェスチャーIDに変換
     let actualGestureId = gestureId;
     if (actionToGestureIdMap[gestureId]) {
       actualGestureId = actionToGestureIdMap[gestureId];
-      console.log('🔄 Action name mapped to gesture ID:', { action: gestureId, gestureId: actualGestureId });
+      if (gestureId !== actualGestureId) {
+        console.log('🔄 Action name mapped to gesture ID:', { action: gestureId, gestureId: actualGestureId });
+      }
     }
 
     if (!validGestureIds.includes(actualGestureId)) {
@@ -551,8 +566,9 @@ export class SettingsManagementUseCase {
   }
 
   private mapActionToGestureId(gestureId: string): string {
-    // Action名からジェスチャーIDへのマッピング
+    // Action名からジェスチャーIDへのマッピング + ジェスチャーIDからジェスチャーIDへのマッピング
     const actionToGestureIdMap: Record<string, string> = {
+      // アクション名 → ジェスチャーID
       'back': 'left',
       'forward': 'right', 
       'scroll_top': 'up',
@@ -563,10 +579,19 @@ export class SettingsManagementUseCase {
       'refresh': 'updown',
       'super_refresh': 'super_refresh',
       'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab'
+      'next_tab': 'next_tab',
+      // ジェスチャーID → ジェスチャーID（UI側から直接IDが渡される場合）
+      'left': 'left',
+      'right': 'right',
+      'up': 'up',
+      'down': 'down',
+      'downright': 'downright',
+      'upright': 'upright',
+      'rightdown': 'rightdown',
+      'updown': 'updown'
     };
 
-    // アクション名が渡された場合は対応するジェスチャーIDに変換
+    // マッピングが存在する場合は対応するジェスチャーIDに変換
     if (actionToGestureIdMap[gestureId]) {
       return actionToGestureIdMap[gestureId];
     }

@@ -141,7 +141,22 @@ export class SettingsRepository {
    */
   async updateGestureState(gestureId: string, enabled: boolean): Promise<Settings> {
     const settings = await this.getSettings();
+    console.log('🔍 Debug - Before gesture state update:', {
+      gestureId,
+      enabled,
+      currentState: settings.defaultGestureStates[gestureId as keyof DefaultGestureStates],
+      allStates: settings.defaultGestureStates
+    });
+    
     settings.setGestureEnabled(gestureId as keyof DefaultGestureStates, enabled);
+    
+    console.log('🔍 Debug - After gesture state update:', {
+      gestureId,
+      enabled,
+      newState: settings.defaultGestureStates[gestureId as keyof DefaultGestureStates],
+      allStates: settings.defaultGestureStates
+    });
+    
     await this.saveSettings(settings);
     return settings;
   }
