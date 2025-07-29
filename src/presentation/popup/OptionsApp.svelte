@@ -176,9 +176,11 @@
       
       const gestureListUseCase = serviceFactory.createGestureListUseCase();
       const loadedGestures = await gestureListUseCase.getAllGestures();
-      gestures = loadedGestures || [];
+      // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
+      gestures = [...(loadedGestures || [])];
       console.log('✅ Gestures loaded:', gestures.length);
       console.log('📊 Gesture data structure:', gestures.slice(0, 2)); // 最初の2つをデバッグ
+      console.log('🔍 Debug - First gesture details:', gestures[0]);
     } catch (error) {
       console.error('❌ ジェスチャー読み込みエラー:', error);
       gestures = [];
@@ -207,7 +209,8 @@
         enabled: g.enabled
       }));
       
-      customGestures = customGestureData;
+      // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
+      customGestures = [...customGestureData];
       console.log('✅ Custom gestures loaded:', customGestures.length);
       console.log('📊 Custom gesture data structure:', customGestures.slice(0, 2));
       console.log('🔍 Custom gesture full data:', customGestures.map(g => ({

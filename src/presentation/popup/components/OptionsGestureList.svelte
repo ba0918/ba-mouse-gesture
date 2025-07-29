@@ -186,8 +186,36 @@
                   const newEnabled = !currentEnabled;
                                                 
                   console.log('🔘 Gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
+                  console.log('🔍 Debug - Gesture object:', {
+                    id: gesture.id,
+                    action: gesture.action,
+                    name: gesture.name,
+                    type: gesture.type,
+                    enabled: gesture.enabled
+                  });
+                  console.log('🔍 Debug - Full gesture object:', gesture);
                   // gestureIdが文字列であることを確認
-                  const gestureId = String(gesture.id);
+                  // UI側でidとactionが逆になっている場合の修正
+                  let gestureId = String(gesture.id);
+                  
+                  // アクション名とジェスチャーIDのマッピングテーブル（UI側での修正）
+                  const actionToIdMap: Record<string, string> = {
+                    'back': 'left',
+                    'forward': 'right',
+                    'scroll_top': 'up', 
+                    'scroll_bottom': 'down',
+                    'close_tab': 'downright',
+                    'new_tab': 'upright',
+                    'duplicate_tab': 'rightdown',
+                    'refresh': 'updown'
+                  };
+                  
+                  // アクション名が渡されている場合は正しいIDに変換
+                  if (actionToIdMap[gestureId]) {
+                    console.log('🔄 UI側でアクション名をIDに変換:', { action: gestureId, id: actionToIdMap[gestureId] });
+                    gestureId = actionToIdMap[gestureId];
+                  }
+                  
                   await onToggleGesture(gestureId, newEnabled);
                 }}
               ></button>

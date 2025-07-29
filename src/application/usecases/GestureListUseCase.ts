@@ -140,7 +140,7 @@ export class GestureListUseCase {
           // アクション名を日本語で取得
           const actionDescription = this.patternFormatter.getActionDisplayName(g.action);
 
-          return {
+          const gestureItem = {
             id: g.id,
             name: g.name,
             pattern: cleanPattern,
@@ -150,9 +150,19 @@ export class GestureListUseCase {
             description: actionDescription,
             enabled: g.enabled
           };
+          
+          console.log('🔍 Debug - Custom gesture item created:', gestureItem);
+          return gestureItem;
         })
       ];
 
+      console.log('🔍 Debug - All gestures created:');
+      allGestures.forEach((gesture, index) => {
+        if (index < 5) { // 最初の5つのみ表示
+          console.log(`  ${index}: id="${gesture.id}", action="${gesture.action}", name="${gesture.name}", enabled=${gesture.enabled}`);
+        }
+      });
+      
       return allGestures;
 
     } catch (error) {
@@ -170,7 +180,7 @@ export class GestureListUseCase {
     
     console.log('🔍 Debug - Default gesture states loaded:', gestureStates);
 
-    return [
+    const defaultGestures = [
       // 基本ジェスチャー
       {
         id: 'left',
@@ -285,6 +295,15 @@ export class GestureListUseCase {
         enabled: gestureStates.next_tab
       }
     ];
+    
+    console.log('🔍 Debug - Default gestures created:');
+    defaultGestures.forEach((gesture, index) => {
+      if (index < 5) { // 最初の5つのみ表示
+        console.log(`  ${index}: id="${gesture.id}", action="${gesture.action}", name="${gesture.name}", enabled=${gesture.enabled}`);
+      }
+    });
+    
+    return defaultGestures;
   }
 
   /**
