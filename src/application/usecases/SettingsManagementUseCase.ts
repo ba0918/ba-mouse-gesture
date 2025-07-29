@@ -185,6 +185,25 @@ export class SettingsManagementUseCase {
 
       const result = await this.settingsRepository.updateDebugSettings(debugConfig)
 
+      // DebugSettingsUseCaseへの同期（2つのシステム統合）
+      try {
+        const { DebugSettingsUseCase } = await import('./DebugSettingsUseCase.js');
+        const debugSettingsUseCase = new DebugSettingsUseCase();
+        
+        // SettingsからDebugSettingsEntityへの変換
+        const debugSettingsEntity = {
+          enabled: debugConfig.debugEnabled ?? false,
+          logLevel: debugConfig.debugLogLevel ?? 2,
+          showStatus: debugConfig.debugShowStatus ?? false,
+          statusPosition: debugConfig.debugStatusPosition ?? 'top-right'
+        };
+        
+        await debugSettingsUseCase.saveDebugSettings(debugSettingsEntity);
+        console.log('✅ Debug settings synchronized to DebugSettingsUseCase');
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync debug settings to DebugSettingsUseCase:', syncError);
+      }
+
       // 設定変更通知
       await this.notifySettingsChange('debug_settings_updated', debugConfig)
 
