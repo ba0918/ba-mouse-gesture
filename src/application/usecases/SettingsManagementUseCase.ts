@@ -198,8 +198,13 @@ export class SettingsManagementUseCase {
           statusPosition: debugConfig.debugStatusPosition ?? 'top-right'
         };
         
-        await debugSettingsUseCase.saveDebugSettings(debugSettingsEntity);
-        console.log('✅ Debug settings synchronized to DebugSettingsUseCase');
+        console.log('🔄 Syncing debug settings:', {
+          original: debugConfig,
+          converted: debugSettingsEntity
+        });
+        
+        const savedEntity = await debugSettingsUseCase.saveDebugSettings(debugSettingsEntity);
+        console.log('✅ Debug settings synchronized to DebugSettingsUseCase:', savedEntity.getSyncInfo());
       } catch (syncError) {
         console.warn('⚠️ Failed to sync debug settings to DebugSettingsUseCase:', syncError);
       }

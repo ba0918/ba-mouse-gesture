@@ -1313,6 +1313,7 @@ class CleanGestureManager {
           this.logger.debug(message);
           this.logger.info('Debug Settings:', {
             enabled: debugSettings.enabled,
+            logLevel: debugSettings.logLevel,
             showStatus: debugSettings.showStatus,
             shouldShowStatus: debugSettings.shouldShowStatus(),
             statusPosition: debugSettings.statusPosition
