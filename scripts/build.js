@@ -44,6 +44,57 @@ async function copyFile(src, dest) {
   await fs.copyFile(src, dest)
 }
 
+// Options HTML を動的生成
+async function generateOptionsHtml(outputPath) {
+  const htmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マウスジェスチャーツール - 設定</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        #app {
+            min-height: 400px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: loading 1.4s infinite ease-in-out;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="loading">設定画面を読み込み中</div>
+    </div>
+    <script src="options.js"></script>
+</body>
+</html>`
+
+  await ensureDir(path.dirname(outputPath))
+  await fs.writeFile(outputPath, htmlContent, 'utf8')
+}
+
 // ディレクトリを再帰的にコピー
 async function copyDir(src, dest) {
   await ensureDir(dest)
@@ -74,8 +125,10 @@ async function build() {
     // 静的ファイルをコピー
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
-    await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
     await copyDir('assets', path.join(distDir, 'assets'))
+    
+    // Svelteアプリ用のHTMLファイルを動的生成
+    await generateOptionsHtml(path.join(distDir, 'popup/options.html'))
     
     // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー
     console.log('📁 新アーキテクチャファイル準備完了')
