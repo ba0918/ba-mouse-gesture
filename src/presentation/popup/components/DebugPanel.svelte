@@ -1,5 +1,28 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  // Props
+  interface DebugPanelProps {
+    debugEnabled: boolean;
+    debugLogLevel: string;
+    debugShowStatus: boolean;
+    debugStatusPosition: string;
+    isLoading: boolean;
+    onDebugEnabledChange: (enabled: boolean) => Promise<void>;
+    onDebugLogLevelChange: (level: string) => Promise<void>;
+    onDebugShowStatusChange: (show: boolean) => Promise<void>;
+    onDebugStatusPositionChange: (position: string) => Promise<void>;
+  }
+
+  let {
+    debugEnabled = $bindable(),
+    debugLogLevel = $bindable(),
+    debugShowStatus = $bindable(),
+    debugStatusPosition = $bindable(),
+    isLoading,
+    onDebugEnabledChange,
+    onDebugLogLevelChange,
+    onDebugShowStatusChange,
+    onDebugStatusPositionChange
+  }: DebugPanelProps = $props();
   
   interface DebugSettings {
     enabled: boolean;

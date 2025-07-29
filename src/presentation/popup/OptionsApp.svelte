@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+  
+  // コンポーネントのインポート
+  import BasicSettings from './components/BasicSettings.svelte';
+  import DebugPanel from './components/DebugPanel.svelte';
+  import CustomGesturePanel from './components/CustomGesturePanel.svelte';
 
   // 状態管理
   let isLoading = $state(true);
@@ -232,6 +237,48 @@
     setTimeout(() => {
       saveStatusVisible = false;
     }, 3000);
+  }
+
+  // BasicSettings用のハンドラー関数
+  async function handleBasicEnabledChange(newEnabled: boolean) {
+    enabled = newEnabled;
+    await handleEnabledChange();
+  }
+
+  async function handleStrokeColorChange(color: string) {
+    strokeColor = color;
+    await handleTrackSettingsChange();
+  }
+
+  async function handleStrokeWidthChange(width: number) {
+    strokeWidth = width;
+    await handleTrackSettingsChange();
+  }
+
+  async function handleGestureThresholdChange(threshold: number) {
+    gestureThreshold = threshold;
+    await handleTrackSettingsChange();
+  }
+
+  // DebugPanel用のハンドラー関数
+  async function handleDebugEnabledChange(newEnabled: boolean) {
+    debugEnabled = newEnabled;
+    await handleDebugSettingsChange();
+  }
+
+  async function handleDebugLogLevelChange(level: string) {
+    debugLogLevel = level;
+    await handleDebugSettingsChange();
+  }
+
+  async function handleDebugShowStatusChange(show: boolean) {
+    debugShowStatus = show;
+    await handleDebugSettingsChange();
+  }
+
+  async function handleDebugStatusPositionChange(position: string) {
+    debugStatusPosition = position;
+    await handleDebugSettingsChange();
   }
 
   async function handleEnabledChange() {
