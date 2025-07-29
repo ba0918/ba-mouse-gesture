@@ -7,42 +7,62 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f8f9fa;
         }
         
-        .container {
+        /* ローディング状態 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: loading 1.4s infinite ease-in-out;
+        }
+        
+        @keyframes loading {
+            0%, 80%, 100% {
+                opacity: 0;
+            }
+            40% {
+                opacity: 1;
+            }
+        }
+        
+        /* エラー状態 */
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        /* Svelteアプリのコンテナ */
+        #app {
+            min-height: 400px;
+        }
+        
+        /* セクション共通スタイル */
+        .section {
             background: white;
             border-radius: 12px;
             padding: 24px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        h1 {
-            font-size: 24px;
-            margin: 0 0 24px 0;
-            color: #1a73e8;
-            text-align: center;
-            border-bottom: 2px solid #e8f0fe;
-            padding-bottom: 16px;
-        }
-        
-        .section {
-            margin-bottom: 24px;
-            padding: 16px;
-            border: 1px solid #e8eaed;
-            border-radius: 8px;
-            background-color: #fafbfc;
-        }
-        
         .section h2 {
-            font-size: 16px;
-            margin: 0 0 16px 0;
-            color: #202124;
-            border-left: 4px solid #1a73e8;
-            padding-left: 12px;
+            font-size: 18px;
+            margin: 0 0 20px 0;
+            color: #1a73e8;
+            border-bottom: 2px solid #e8f0fe;
+            padding-bottom: 12px;
         }
         
         .setting-item {
@@ -69,6 +89,7 @@
             margin-top: 4px;
         }
         
+        /* スイッチコンポーネント */
         .switch {
             position: relative;
             display: inline-block;
@@ -114,11 +135,11 @@
             transform: translateX(20px);
         }
         
+        /* フォーム要素 */
         .color-input, .range-input {
             padding: 8px;
             border: 1px solid #dadce0;
             border-radius: 4px;
-            width: 80px;
         }
         
         .range-input {
@@ -132,70 +153,36 @@
             min-width: 30px;
         }
         
-        .exclude-list {
-            margin-top: 12px;
-        }
-        
-        .exclude-input {
-            width: 100%;
-            padding: 8px;
+        /* ボタン */
+        .btn {
+            padding: 8px 16px;
             border: 1px solid #dadce0;
             border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        
-        .exclude-item {
-            display: flex;
-            align-items: center;
-            padding: 8px;
             background: white;
-            border: 1px solid #e8eaed;
-            border-radius: 4px;
-            margin-bottom: 4px;
-        }
-        
-        .exclude-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .exclude-url {
-            flex: 1;
-            font-family: monospace;
-            color: #5f6368;
-        }
-        
-        .remove-btn {
-            background: #ea4335;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .remove-btn:hover {
-            background: #d33b2c;
-        }
-        
-        .add-btn {
-            background: #34a853;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            width: 100%;
+            transition: all 0.2s;
         }
         
-        .add-btn:hover {
-            background: #2d8f3f;
+        .btn:hover {
+            background: #f8f9fa;
+            border-color: #adb5bd;
         }
         
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+        
+        /* ステータス表示 */
         .save-status {
             text-align: center;
-            padding: 8px;
+            padding: 12px;
             border-radius: 4px;
             margin-top: 16px;
             font-weight: 500;
@@ -210,731 +197,14 @@
             background: #fce8e6;
             color: #d33b2c;
         }
-        
-        .preview-canvas {
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            margin-top: 8px;
-            background: white;
-        }
-
-        /* カスタムジェスチャー用スタイル */
-        .gesture-list-container {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e8eaed;
-            border-radius: 4px;
-            background: white;
-        }
-
-        .gesture-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px;
-            border-bottom: 1px solid #f1f3f4;
-        }
-
-        .gesture-item:last-child {
-            border-bottom: none;
-        }
-
-        .gesture-item.disabled {
-            opacity: 0.6;
-            background-color: #f8f9fa;
-        }
-
-        .gesture-info {
-            flex: 1;
-        }
-
-        .gesture-name {
-            font-weight: 500;
-            color: #202124;
-            margin-bottom: 4px;
-        }
-
-        .gesture-pattern {
-            font-family: monospace;
-            font-size: 14px;
-            color: #5f6368;
-            background: #f1f3f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            display: inline-block;
-            margin-right: 8px;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            word-break: break-all;
-        }
-
-        .gesture-action {
-            font-size: 12px;
-            color: #1a73e8;
-        }
-
-        .gesture-controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .gesture-toggle {
-            background: none;
-            border: 1px solid #dadce0;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .gesture-toggle.enabled {
-            background: #e8f5e8;
-            border-color: #34a853;
-            color: #137333;
-        }
-
-        .gesture-toggle.disabled {
-            background: #fce8e6;
-            border-color: #ea4335;
-            color: #d33b2c;
-        }
-
-        .edit-btn, .delete-btn {
-            background: none;
-            border: 1px solid #dadce0;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .edit-btn {
-            color: #1a73e8;
-            border-color: #1a73e8;
-        }
-
-        .edit-btn:hover {
-            background: #e8f0fe;
-        }
-
-        .delete-btn {
-            color: #ea4335;
-            border-color: #ea4335;
-        }
-
-        .delete-btn:hover {
-            background: #fce8e6;
-        }
-
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: #202124;
-            margin-bottom: 4px;
-        }
-
-        .form-input, .form-select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #dadce0;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .pattern-input-container {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .pattern-input-container .form-input {
-            flex: 1;
-        }
-
-        .clear-btn {
-            background: #5f6368;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .clear-btn:hover {
-            background: #4a4a4a;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .pattern-buttons {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-
-        .direction-btn {
-            background: #f8f9fa;
-            border: 1px solid #dadce0;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            min-width: 40px;
-        }
-
-        .direction-btn:hover {
-            background: #e8f0fe;
-            border-color: #1a73e8;
-        }
-
-        .direction-btn:active {
-            background: #1a73e8;
-            color: white;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 32px;
-            color: #5f6368;
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        /* ジェスチャー一覧画面用スタイル */
-        .all-gestures-container {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .gesture-category {
-            border-bottom: 1px solid #f1f3f4;
-        }
-
-        .gesture-category:last-child {
-            border-bottom: none;
-        }
-
-        .category-header {
-            background: #f8f9fa;
-            padding: 12px 16px;
-            font-weight: 600;
-            color: #202124;
-            border-bottom: 1px solid #e8eaed;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .all-gesture-item {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s;
-        }
-
-        .all-gesture-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .all-gesture-item:last-child {
-            border-bottom: none;
-        }
-
-        .all-gesture-item.disabled {
-            opacity: 0.6;
-            background-color: #fafbfc;
-        }
-
-        .gesture-visual {
-            width: 80px;
-            text-align: center;
-            margin-right: 16px;
-            flex-shrink: 0;
-        }
-
-        .gesture-pattern-large {
-            font-size: 20px;
-            line-height: 1.2;
-            margin-bottom: 4px;
-            word-break: break-all;
-            overflow-wrap: break-word;
-            max-width: 100%;
-        }
-
-        .gesture-pattern-text {
-            font-family: monospace;
-            font-size: 9px;
-            color: #5f6368;
-            background: #f1f3f4;
-            padding: 2px 4px;
-            border-radius: 3px;
-            word-break: break-all;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 76px;
-        }
-
-        .gesture-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .gesture-title {
-            font-weight: 600;
-            color: #202124;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .gesture-description {
-            color: #5f6368;
-            font-size: 13px;
-            line-height: 1.3;
-        }
-
-        .new-badge {
-            background: linear-gradient(45deg, #ff6b6b, #ffa500);
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            animation: glow 2s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            from { box-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
-            to { box-shadow: 0 0 15px rgba(255, 165, 0, 0.8); }
-        }
-
-        .custom-badge {
-            background: #34a853;
-            color: white;
-            font-size: 10px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .gesture-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .gesture-status-toggle {
-            width: 40px;
-            height: 20px;
-            background: #dadce0;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            position: relative;
-            transition: background-color 0.3s;
-        }
-
-        .gesture-status-toggle.enabled {
-            background: #34a853;
-        }
-
-        .gesture-status-toggle::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s;
-        }
-
-        .gesture-status-toggle.enabled::after {
-            transform: translateX(20px);
-        }
-
-        /* カスタム確認ダイアログ */
-        .confirm-dialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .confirm-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(2px);
-        }
-
-        .confirm-content {
-            position: relative;
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 90%;
-            animation: confirmAppear 0.2s ease-out;
-        }
-
-        @keyframes confirmAppear {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .confirm-title {
-            margin: 0 0 16px 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #202124;
-        }
-
-        .confirm-message {
-            margin: 0 0 24px 0;
-            color: #5f6368;
-            line-height: 1.5;
-        }
-
-        .confirm-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .confirm-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .confirm-btn-cancel {
-            background: #f8f9fa;
-            color: #5f6368;
-            border: 1px solid #dadce0;
-        }
-
-        .confirm-btn-cancel:hover {
-            background: #e8eaed;
-        }
-
-        .confirm-btn-ok {
-            background: #ea4335;
-            color: white;
-        }
-
-        .confirm-btn-ok:hover {
-            background: #d33b2c;
-        }
-
-        /* ローディング状態 */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #5f6368;
-        }
-
-        .loading::after {
-            content: '...';
-            animation: loading 1.4s infinite ease-in-out;
-        }
-
-        @keyframes loading {
-            0%, 80%, 100% {
-                opacity: 0;
-            }
-            40% {
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🖱️ マウスジェスチャーツール - 設定</h1>
-        
-        <!-- ローディング状態 -->
-        <div id="loadingState" class="loading">設定を読み込み中</div>
-        
-        <!-- メインコンテンツ（初期状態では非表示） -->
-        <div id="mainContent" style="display: none;">
-            <!-- 基本設定 -->
-            <div class="section">
-                <h2>基本設定</h2>
-                <div class="setting-item">
-                    <div>
-                        <div class="setting-label">マウスジェスチャーを有効にする</div>
-                        <div class="setting-description">チェックを外すと全ての機能が無効になります</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="enabled" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- 軌跡カスタマイズ -->
-            <div class="section">
-                <h2>軌跡の表示設定</h2>
-                <div class="setting-item">
-                    <div class="setting-label">軌跡の色</div>
-                    <input type="color" id="strokeColor" class="color-input" value="#2196F3">
-                </div>
-                <div class="setting-item">
-                    <div class="setting-label">軌跡の太さ</div>
-                    <div style="display: flex; align-items: center;">
-                        <input type="range" id="strokeWidth" class="range-input" min="1" max="10" value="3">
-                        <span class="range-value" id="strokeWidthValue">3px</span>
-                    </div>
-                </div>
-                <div class="setting-item">
-                    <div>
-                        <div class="setting-label">ジェスチャー感度</div>
-                        <div class="setting-description">ジェスチャーとして認識される最小移動距離（低いほど敏感）</div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <input type="range" id="gestureThreshold" class="range-input" min="5" max="50" value="15">
-                        <span class="range-value" id="gestureThresholdValue">15px</span>
-                    </div>
-                </div>
-                <div class="setting-item">
-                    <div>
-                        <div class="setting-label">軌跡のプレビュー</div>
-                        <canvas id="previewCanvas" class="preview-canvas" width="200" height="100"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ジェスチャー一覧 -->
-            <div class="section">
-                <h2>📋 ジェスチャー一覧</h2>
-                <div class="setting-item">
-                    <div style="width: 100%;">
-                        <div class="setting-label">利用可能なすべてのジェスチャー</div>
-                        <div class="setting-description">
-                            標準ジェスチャーとカスタムジェスチャーを一括管理・確認できます
-                        </div>
-                        
-                        <!-- 検索・フィルター -->
-                        <div class="gesture-controls-bar" style="display: flex; gap: 8px; margin: 16px 0; align-items: center;">
-                            <input type="text" id="gestureSearch" placeholder="ジェスチャーを検索..." 
-                                   style="flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;">
-                            <select id="gestureFilter" style="padding: 8px; border: 1px solid #dadce0; border-radius: 4px;">
-                                <option value="all">すべて</option>
-                                <option value="default">標準ジェスチャー</option>
-                                <option value="custom">カスタムジェスチャー</option>
-                            </select>
-                        </div>
-                        
-                        <!-- ジェスチャー一覧表示 -->
-                        <div id="allGesturesList" class="all-gestures-container" style="border: 1px solid #e8eaed; border-radius: 8px; background: white; min-height: 200px;">
-                            <!-- 動的に生成される -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- カスタムジェスチャー -->
-            <div class="section">
-                <h2>カスタムジェスチャー</h2>
-                <div class="setting-item">
-                    <div style="width: 100%;">
-                        <div class="setting-label">独自のジェスチャーを作成・管理</div>
-                        <div class="setting-description">
-                            デフォルトジェスチャーをカスタマイズしたり、新しいパターンを追加できます
-                        </div>
-                        
-                        <!-- カスタムジェスチャー一覧 -->
-                        <div class="custom-gesture-list">
-                            <div id="customGestureList" class="gesture-list-container"></div>
-                        </div>
-                        
-                        <!-- 新規ジェスチャー追加フォーム -->
-                        <div class="add-gesture-form" style="margin-top: 16px;">
-                            <h3 style="font-size: 14px; margin: 0 0 12px 0; color: #202124;">新しいジェスチャーを追加</h3>
-                            <div class="form-group">
-                                <label for="gestureName">ジェスチャー名:</label>
-                                <input type="text" id="gestureName" class="form-input" placeholder="例: カスタム戻る">
-                            </div>
-                            <div class="form-group">
-                                <label for="gesturePattern">パターン:</label>
-                                <div class="pattern-input-container">
-                                    <input type="text" id="gesturePatternDisplay" class="form-input" placeholder="下のボタンでパターンを入力" readonly>
-                                    <button id="clearPatternBtn" class="clear-btn">クリア</button>
-                                </div>
-                                <div class="pattern-buttons">
-                                    <button class="direction-btn" data-direction="UP">↑</button>
-                                    <button class="direction-btn" data-direction="DOWN">↓</button>
-                                    <button class="direction-btn" data-direction="LEFT">←</button>
-                                    <button class="direction-btn" data-direction="RIGHT">→</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="gestureAction">アクション:</label>
-                                <select id="gestureAction" class="form-select">
-                                    <option value="back">戻る</option>
-                                    <option value="forward">進む</option>
-                                    <option value="scroll_up">上スクロール</option>
-                                    <option value="scroll_down">下スクロール</option>
-                                    <option value="close_tab">タブを閉じる</option>
-                                    <option value="new_tab">新しいタブ</option>
-                                    <option value="refresh">更新</option>
-                                    <option value="duplicate_tab">タブを複製</option>
-                                    <option value="super_refresh">スーパーリロード (NEW)</option>
-                                    <option value="prev_tab">前のタブ (NEW)</option>
-                                    <option value="next_tab">次のタブ (NEW)</option>
-                                </select>
-                            </div>
-                            <button id="addGestureBtn" class="add-btn">カスタムジェスチャーを追加</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- 除外サイト -->
-            <div class="section">
-                <h2>除外サイトリスト</h2>
-                <div class="setting-item">
-                    <div>
-                        <div class="setting-label">特定のサイトで機能を無効にする</div>
-                        <div class="setting-description">
-                            例: google.com, *.example.com, https://specific-site.com/*
-                        </div>
-                        <div class="exclude-list">
-                            <input type="text" id="newExcludeUrl" class="exclude-input" placeholder="除外するサイトのURLを入力">
-                            <button id="addExcludeBtn" class="add-btn">追加</button>
-                            <div id="excludeList"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- デバッグ設定 -->
-            <div class="section">
-                <h2>🔧 デバッグ設定</h2>
-                <div class="setting-item">
-                    <div>
-                        <div class="setting-label">デバッグモードを有効にする</div>
-                        <div class="setting-description">
-                            開発者向け：コンソールログと画面デバッグ表示を制御します
-                        </div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="debugEnabled">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div id="debugOptions" style="display: none;">
-                    <div class="setting-item">
-                        <div>
-                            <div class="setting-label">ログレベル</div>
-                            <div class="setting-description">
-                                出力するログの詳細度を選択
-                            </div>
-                        </div>
-                        <select id="debugLogLevel" class="form-select">
-                            <option value="0">エラーのみ</option>
-                            <option value="1">警告以上</option>
-                            <option value="2">情報以上</option>
-                            <option value="3">全て（デバッグ含む）</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div>
-                            <div class="setting-label">画面表示を有効にする</div>
-                            <div class="setting-description">
-                                ジェスチャー操作時の画面上ステータス表示
-                            </div>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="debugShowStatus">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div>
-                            <div class="setting-label">表示位置</div>
-                            <div class="setting-description">
-                                ステータス表示の画面上の位置
-                            </div>
-                        </div>
-                        <select id="debugStatusPosition" class="form-select">
-                            <option value="top-right">右上</option>
-                            <option value="top-left">左上</option>
-                            <option value="bottom-right">右下</option>
-                            <option value="bottom-left">左下</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="saveStatus" class="save-status" style="display: none;"></div>
-        </div>
-    </div>
-
-    <!-- カスタム確認ダイアログ -->
-    <div id="confirmDialog" class="confirm-dialog" style="display: none;">
-        <div class="confirm-overlay"></div>
-        <div class="confirm-content">
-            <h3 class="confirm-title">確認</h3>
-            <p id="confirmMessage" class="confirm-message"></p>
-            <div class="confirm-buttons">
-                <button id="confirmCancel" class="confirm-btn confirm-btn-cancel">キャンセル</button>
-                <button id="confirmOk" class="confirm-btn confirm-btn-ok">OK</button>
-            </div>
-        </div>
+    <div id="app">
+        <div class="loading">設定画面を読み込み中</div>
     </div>
     
-    <!-- Clean Architecture - ビルドされたスクリプトを読み込み -->
+    <!-- Svelteアプリケーション -->
     <script src="options.js"></script>
-    <script src="options-init.js"></script>
 </body>
 </html>

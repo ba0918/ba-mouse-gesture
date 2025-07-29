@@ -4,7 +4,7 @@
  */
 
 // Svelteアプリのインポート
-import OptionsApp from '../../../popup/OptionsApp.svelte';
+import OptionsApp from './OptionsApp.svelte';
 
 /**
  * Svelteアプリケーションの初期化

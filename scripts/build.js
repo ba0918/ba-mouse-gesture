@@ -75,7 +75,6 @@ async function build() {
     console.log('📁 静的ファイルをコピー中...')
     await copyFile('manifest.json', path.join(distDir, 'manifest.json'))
     await copyFile('popup/options.html', path.join(distDir, 'popup/options.html'))
-    await copyFile('popup/options-init.js', path.join(distDir, 'popup/options-init.js'))
     await copyDir('assets', path.join(distDir, 'assets'))
     
     // 新アーキテクチャ用の静的ファイルのみ必要に応じてコピー
