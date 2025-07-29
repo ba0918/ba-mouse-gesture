@@ -89,7 +89,7 @@
 <style>
   :global(body) {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 500px;
+    max-width: 600px;
     margin: 0 auto;
     padding: 20px;
     background-color: #f8f9fa;
@@ -134,12 +134,12 @@
   .main-content {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
   }
   
   .save-status {
     text-align: center;
-    padding: 8px;
+    padding: 12px;
     border-radius: 4px;
     margin-top: 16px;
     font-weight: 500;
@@ -157,19 +157,19 @@
   
   /* グローバルスタイル（共通コンポーネント用） */
   :global(.section) {
-    margin-bottom: 24px;
-    padding: 16px;
-    border: 1px solid #e8eaed;
-    border-radius: 8px;
-    background-color: #fafbfc;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
   
   :global(.section h2) {
-    font-size: 16px;
-    margin: 0 0 16px 0;
-    color: #202124;
-    border-left: 4px solid #1a73e8;
-    padding-left: 12px;
+    font-size: 18px;
+    margin: 0 0 20px 0;
+    color: #1a73e8;
+    border-bottom: 2px solid #e8f0fe;
+    padding-bottom: 12px;
   }
   
   :global(.setting-item) {
