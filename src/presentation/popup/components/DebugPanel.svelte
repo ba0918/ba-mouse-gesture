@@ -218,7 +218,7 @@
     <div class="error-state">
       <div class="error-icon">⚠️</div>
       <div>{error}</div>
-      <button class="retry-btn" on:click={loadDebugSettings}>再試行</button>
+      <button class="retry-btn" onclick={loadDebugSettings}>再試行</button>
     </div>
   {:else}
     <!-- デバッグモード -->
@@ -236,7 +236,7 @@
             <input
               type="checkbox"
               bind:checked={debugSettings.enabled}
-              on:change={toggleDebugMode}
+              onchange={toggleDebugMode}
             />
             <span class="slider"></span>
           </label>
@@ -260,7 +260,7 @@
             <div class="setting-control">
               <select 
                 bind:value={debugSettings.logLevel}
-                on:change={handleLogLevelChange}
+                onchange={handleLogLevelChange}
                 class="log-level-select"
               >
                 {#each logLevels as level}
@@ -291,7 +291,7 @@
                 <input
                   type="checkbox"
                   bind:checked={debugSettings.showStatus}
-                  on:change={toggleStatusDisplay}
+                  onchange={toggleStatusDisplay}
                 />
                 <span class="slider"></span>
               </label>
@@ -310,7 +310,7 @@
               <div class="setting-control">
                 <select 
                   bind:value={debugSettings.statusPosition}
-                  on:change={handleStatusPositionChange}
+                  onchange={handleStatusPositionChange}
                   class="position-select"
                 >
                   {#each statusPositions as position}
@@ -328,19 +328,19 @@
           <div class="debug-actions">
             <button 
               class="action-btn primary-btn"
-              on:click={exportDebugInfo}
+              onclick={exportDebugInfo}
             >
               📄 デバッグ情報をエクスポート
             </button>
             <button 
               class="action-btn secondary-btn"
-              on:click={clearConsole}
+              onclick={clearConsole}
             >
               🧹 コンソールをクリア
             </button>
             <button 
               class="action-btn secondary-btn"
-              on:click={loadDebugSettings}
+              onclick={loadDebugSettings}
             >
               🔄 設定を再読み込み
             </button>

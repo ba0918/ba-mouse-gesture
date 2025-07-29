@@ -183,14 +183,14 @@
           id="newExcludeUrl"
           type="text"
           bind:value={newExcludeUrl}
-          on:keypress={handleKeyPress}
+          onkeypress={handleKeyPress}
           placeholder="例: google.com, *.example.com"
           class="url-input"
         />
         <button
           type="button"
           class="add-btn"
-          on:click={addExcludeSite}
+          onclick={addExcludeSite}
           disabled={!newExcludeUrl.trim()}
         >
           追加
@@ -235,7 +235,7 @@
       <div class="error-state">
         <div class="error-icon">⚠️</div>
         <div>{error}</div>
-        <button class="retry-btn" on:click={loadExcludeList}>再試行</button>
+        <button class="retry-btn" onclick={loadExcludeList}>再試行</button>
       </div>
     {:else if excludeList.length === 0}
       <div class="empty-state">
@@ -258,7 +258,7 @@
             <div class="item-controls">
               <button
                 class="remove-btn"
-                on:click={() => removeExcludeSite(pattern)}
+                onclick={() => removeExcludeSite(pattern)}
                 title="削除"
               >
                 🗑️
@@ -273,7 +273,7 @@
     <div class="list-actions">
       <button 
         class="control-btn"
-        on:click={loadExcludeList}
+        onclick={loadExcludeList}
         disabled={loading}
       >
         {loading ? '読込中...' : 'リフレッシュ'}
@@ -282,7 +282,7 @@
       {#if excludeList.length > 0}
         <button 
           class="control-btn danger-btn"
-          on:click={() => {
+          onclick={() => {
             if (confirm(`すべての除外サイト（${excludeList.length}件）を削除しますか？`)) {
               Promise.all(excludeList.map(pattern => removeExcludeSite(pattern)));
             }

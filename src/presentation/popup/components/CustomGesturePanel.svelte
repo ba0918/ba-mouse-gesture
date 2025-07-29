@@ -388,7 +388,7 @@
             <button
               type="button"
               class="direction-btn"
-              on:click={() => addDirection('up')}
+              onclick={() => addDirection('up')}
               disabled={currentPattern.length >= 10}
               title="上"
             >
@@ -399,7 +399,7 @@
             <button
               type="button"
               class="direction-btn"
-              on:click={() => addDirection('left')}
+              onclick={() => addDirection('left')}
               disabled={currentPattern.length >= 10}
               title="左"
             >
@@ -408,7 +408,7 @@
             <button
               type="button"
               class="direction-btn"
-              on:click={() => addDirection('down')}
+              onclick={() => addDirection('down')}
               disabled={currentPattern.length >= 10}
               title="下"
             >
@@ -417,7 +417,7 @@
             <button
               type="button"
               class="direction-btn"
-              on:click={() => addDirection('right')}
+              onclick={() => addDirection('right')}
               disabled={currentPattern.length >= 10}
               title="右"
             >
@@ -431,7 +431,7 @@
           <button
             type="button"
             class="control-btn remove-btn"
-            on:click={removeLastDirection}
+            onclick={removeLastDirection}
             disabled={currentPattern.length === 0}
           >
             一つ戻す
@@ -439,7 +439,7 @@
           <button
             type="button"
             class="control-btn clear-btn"
-            on:click={clearPattern}
+            onclick={clearPattern}
             disabled={currentPattern.length === 0}
           >
             クリア
@@ -469,7 +469,7 @@
         <button
           type="button"
           class="submit-btn cancel-btn"
-          on:click={exitEditMode}
+          onclick={exitEditMode}
         >
           キャンセル
         </button>
@@ -477,7 +477,7 @@
       <button
         type="button"
         class="submit-btn primary-btn"
-        on:click={handleSubmit}
+        onclick={handleSubmit}
         disabled={!canSubmit}
       >
         {isEditMode ? '更新' : '追加'}
@@ -498,7 +498,7 @@
       <div class="error-state">
         <div class="error-icon">⚠️</div>
         <div>{error}</div>
-        <button class="retry-btn" on:click={loadCustomGestures}>再試行</button>
+        <button class="retry-btn" onclick={loadCustomGestures}>再試行</button>
       </div>
     {:else if customGestures.length === 0}
       <div class="empty-state">
@@ -528,20 +528,20 @@
                 <input
                   type="checkbox"
                   checked={gesture.enabled}
-                  on:change={(e) => toggleCustomGesture(gesture.id, e.currentTarget.checked)}
+                  onchange={(e) => toggleCustomGesture(gesture.id, e.currentTarget.checked)}
                 />
                 <span class="slider"></span>
               </label>
               <button
                 class="control-btn edit-btn"
-                on:click={() => enterEditMode(gesture)}
+                onclick={() => enterEditMode(gesture)}
                 title="編集"
               >
                 ✏️
               </button>
               <button
                 class="control-btn delete-btn"
-                on:click={() => deleteCustomGesture(gesture.id)}
+                onclick={() => deleteCustomGesture(gesture.id)}
                 title="削除"
               >
                 🗑️
@@ -556,7 +556,7 @@
     <div class="list-actions">
       <button 
         class="control-btn"
-        on:click={loadCustomGestures}
+        onclick={loadCustomGestures}
         disabled={loading}
       >
         {loading ? '読込中...' : 'リフレッシュ'}

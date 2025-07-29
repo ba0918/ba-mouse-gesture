@@ -67,7 +67,7 @@
       <div class="setting-description">チェックを外すと全ての機能が無効になります</div>
     </div>
     <label class="switch">
-      <input type="checkbox" bind:checked={enabled} on:change={handleEnabledChange}>
+      <input type="checkbox" bind:checked={enabled} onchange={handleEnabledChange}>
       <span class="slider"></span>
     </label>
   </div>

@@ -59,22 +59,22 @@
   {:else}
     <div class="main-content">
       <!-- 基本設定 -->
-      <BasicSettings on:save-status={handleSaveStatus} />
+      <BasicSettings onsave-status={handleSaveStatus} />
       
       <!-- 軌跡設定 -->
       <TrackSettings onSaveStatus={showSaveStatus} />
       
       <!-- ジェスチャー一覧 -->
-      <GestureList on:save-status={handleSaveStatus} />
+      <GestureList onsave-status={handleSaveStatus} />
       
       <!-- カスタムジェスチャー -->
-      <CustomGesturePanel on:save-status={handleSaveStatus} />
+      <CustomGesturePanel onsave-status={handleSaveStatus} />
       
       <!-- 除外サイト -->
-      <ExcludeList on:save-status={handleSaveStatus} />
+      <ExcludeList onsave-status={handleSaveStatus} />
       
       <!-- デバッグ設定 -->
-      <DebugPanel on:save-status={handleSaveStatus} />
+      <DebugPanel onsave-status={handleSaveStatus} />
       
       <!-- 保存ステータス -->
       {#if saveStatusVisible}
