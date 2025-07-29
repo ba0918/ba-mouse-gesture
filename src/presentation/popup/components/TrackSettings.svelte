@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   
-  const dispatch = createEventDispatcher<{
-    'save-status': {message: string, type: 'success' | 'error'}
-  }>();
+  // Svelte 5 callback props
+  interface Props {
+    onSaveStatus?: (data: {message: string, type: 'success' | 'error'}) => void;
+  }
   
-  let strokeColor = '#2196F3';
-  let strokeWidth = 3;
-  let gestureThreshold = 15;
-  let previewCanvas: HTMLCanvasElement;
+  let { onSaveStatus }: Props = $props();
+  
+  let strokeColor = $state('#2196F3');
+  let strokeWidth = $state(3);
+  let gestureThreshold = $state(15);
+  let previewCanvas = $state<HTMLCanvasElement>();
   
   onMount(async () => {
     await loadSettings();
@@ -28,7 +31,7 @@
       gestureThreshold = settings.gestureThreshold || 15;
     } catch (error) {
       console.error('軌跡設定読み込みエラー:', error);
-      dispatch('save-status', {
+      onSaveStatus?.({
         message: '軌跡設定の読み込みに失敗しました',
         type: 'error'
       });
@@ -80,7 +83,7 @@
         gestureThreshold
       });
       
-      dispatch('save-status', {
+      onSaveStatus?.({
         message: '軌跡設定を保存しました',
         type: 'success'
       });
@@ -100,7 +103,7 @@
       });
     } catch (error) {
       console.error('軌跡設定保存エラー:', error);
-      dispatch('save-status', {
+      onSaveStatus?.({
         message: '軌跡設定の保存に失敗しました',
         type: 'error'
       });
@@ -115,7 +118,7 @@
     <input 
       type="color" 
       bind:value={strokeColor} 
-      on:change={handleStrokeColorChange}
+      onchange={handleStrokeColorChange}
       class="color-input"
     >
   </div>
@@ -125,7 +128,7 @@
       <input 
         type="range" 
         bind:value={strokeWidth} 
-        on:input={handleStrokeWidthChange}
+        oninput={handleStrokeWidthChange}
         min="1" 
         max="10" 
         class="range-input"
@@ -142,7 +145,7 @@
       <input 
         type="range" 
         bind:value={gestureThreshold} 
-        on:input={handleThresholdChange}
+        oninput={handleThresholdChange}
         min="5" 
         max="50" 
         class="range-input"

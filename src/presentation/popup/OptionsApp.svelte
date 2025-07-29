@@ -31,18 +31,23 @@
     }
   }
   
-  function showSaveStatus(message: string, statusType: 'success' | 'error' = 'success') {
-    saveStatus = message;
-    saveStatusType = statusType;
+  function showSaveStatus(data: {message: string, type: 'success' | 'error'}) {
+    saveStatus = data.message;
+    saveStatusType = data.type;
     saveStatusVisible = true;
     setTimeout(() => {
       saveStatusVisible = false;
     }, 3000);
   }
   
+  // 従来のshowSaveStatus互換性のため（まだ変更していないコンポーネント用）
+  function showSaveStatusLegacy(message: string, statusType: 'success' | 'error' = 'success') {
+    showSaveStatus({message, type: statusType});
+  }
+  
   // 子コンポーネントから呼び出される保存ステータス表示
   function handleSaveStatus(event: CustomEvent<{message: string, type: 'success' | 'error'}>) {
-    showSaveStatus(event.detail.message, event.detail.type);
+    showSaveStatus(event.detail);
   }
 </script>
 
@@ -57,7 +62,7 @@
       <BasicSettings on:save-status={handleSaveStatus} />
       
       <!-- 軌跡設定 -->
-      <TrackSettings on:save-status={handleSaveStatus} />
+      <TrackSettings onSaveStatus={showSaveStatus} />
       
       <!-- ジェスチャー一覧 -->
       <GestureList on:save-status={handleSaveStatus} />
