@@ -87,10 +87,32 @@
     // 文字列形式の場合
     if (typeof pattern === 'string') {
       try {
-        result = pattern.replace(/UP/gi, '↑')
-                       .replace(/DOWN/gi, '↓')
-                       .replace(/LEFT/gi, '←')
-                       .replace(/RIGHT/gi, '→');
+        // 区切り文字が含まれているかチェック
+        if (pattern.includes('→') && !pattern.match(/^[↑↓←→]+$/)) {
+          // up→down→left→right のような形式（既に矢印形式でない場合のみ）
+          result = pattern
+            .split('→')
+            .map(dir => {
+              switch (dir.trim().toLowerCase()) {
+                case 'up': return '↑';
+                case 'down': return '↓';
+                case 'left': return '←';
+                case 'right': return '→';
+                default: return dir.trim();
+              }
+            })
+            .join('');
+        } else if (pattern.match(/^[↑↓←→]+$/)) {
+          // 既に矢印形式の場合はそのまま使用
+          result = pattern;
+        } else {
+          // その他の文字列形式を矢印に変換
+          result = pattern
+            .replace(/UP/gi, '↑')
+            .replace(/DOWN/gi, '↓')
+            .replace(/LEFT/gi, '←')
+            .replace(/RIGHT/gi, '→');
+        }
         patternCache.set(cacheKey, result);
         return result;
       } catch (error) {

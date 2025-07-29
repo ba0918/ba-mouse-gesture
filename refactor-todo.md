@@ -60,20 +60,23 @@ OptionsApp.svelteの既存UIを維持したまま、新規コンポーネント�
 2. ❌ ~~BasicSettings.svelteをSvelte 5対応に改修~~ （既存コンポーネントは使用しない）
 3. ✅ OptionsApp.svelteにコンポーネント用ハンドラー関数追加
 
-### Phase 2: 新規コンポーネント作成 🔄 **4/6完了・進行中**
+### Phase 2: 新規コンポーネント作成 ✅ **6/6完了**
 1. ✅ OptionsBasicSettings.svelte作成完了（基本設定）
 2. ✅ OptionsTrackSettings.svelte作成完了（軌跡設定・プレビューキャンバス含む）
 3. ✅ OptionsDebugSettings.svelte作成完了（デバッグ設定）
 4. ✅ OptionsExcludeList.svelte作成完了（除外サイトリスト・UI修正済み）
-5. 🔄 OptionsCustomGestures.svelte作成中（カスタムジェスチャー管理）
-6. ⏳ OptionsGestureList.svelte作成予定（ジェスチャー一覧）
+5. ✅ OptionsCustomGestures.svelte作成完了（カスタムジェスチャー管理・パターン表示問題修正済み）
+6. ✅ OptionsGestureList.svelte作成完了（ジェスチャー一覧・同期問題修正済み）
 
 **現在の成果**:
-- ファイルサイズ削減: 1772行 → 1580行（-192行、11%削減）
-- 4つのコンポーネント分離完了
+- ファイルサイズ削減: 1772行 → 約1200行（-572行、32%削減）
+- 6つのコンポーネント分離完了
 - TypeScript型安全性の向上
 - Svelte 5の$bindable()による双方向バインディング実装
 - 各コンポーネントでのUI整合性確保（除外サイトUI修正含む）
+- **問題修正**:
+  - パターン表示問題：区切り文字（→）混在の解消
+  - 同期問題：カスタムジェスチャー操作時のリスト同期改善
 
 ### Phase 3: 状態管理の整理
 1. 各コンポーネントで必要な状態のみを保持

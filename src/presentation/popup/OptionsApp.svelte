@@ -450,8 +450,10 @@
       clearCustomGestureError();
       
       // リスト更新（統一されたデータを取得）
-      await loadCustomGestures();
-      await loadGestures(); // 全体のジェスチャーリストも更新
+      await Promise.all([
+        loadCustomGestures(),
+        loadGestures()
+      ]);
       
       logger?.info('Custom gesture added successfully');
       showSaveStatus('カスタムジェスチャーを追加しました');
@@ -536,28 +538,17 @@
         const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
         await customGestureUseCase.toggleCustomGesture(gestureId, enabled);
         console.log('✅ Custom gesture saved');
-        
-        // カスタムジェスチャーのUI更新
-        customGestures = customGestures.map(g => 
-          g.id === gestureId ? { ...g, enabled } : g
-        );
-        
-        // gestures配列も同期更新（filteredGesturesのreactivity用）
-        const gestureIndex = gestures.findIndex(g => g.id === gestureId);
-        if (gestureIndex !== -1) {
-          gestures[gestureIndex] = { ...gestures[gestureIndex], enabled };
-          gestures = [...gestures]; // Svelteに変更を通知
-        }
       } else {
         const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
         await settingsManagementUseCase.toggleGesture(gestureId, enabled);
         console.log('✅ Default gesture saved');
-        
-        // デフォルトジェスチャーのUI更新
-        gestures = gestures.map(g => 
-          g.id === gestureId ? { ...g, enabled } : g
-        );
       }
+      
+      // 両方のリストを同期更新
+      await Promise.all([
+        loadCustomGestures(),
+        loadGestures()
+      ]);
       
       showSaveStatus(`ジェスチャー「${gestureId}」を${enabled ? '有効' : '無効'}にしました`);
       
@@ -596,8 +587,10 @@
         await customGestureUseCase.deleteCustomGesture(gestureId);
         
         // リスト更新
-        await loadCustomGestures();
-        await loadGestures(); // 全体のジェスチャーリストも更新
+        await Promise.all([
+          loadCustomGestures(),
+          loadGestures()
+        ]);
         
         logger?.info('Custom gesture deleted successfully');
         showSaveStatus(`カスタムジェスチャー「${gestureName}」を削除しました`);

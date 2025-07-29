@@ -99,8 +99,8 @@ export class GestureListUseCase {
               }).join('');
             } else if (typeof g.pattern === 'string') {
               // 文字列の場合（区切り文字をクリーンアップ）
-              if (g.pattern.includes('→')) {
-                // up→down→left→right のような形式
+              if (g.pattern.includes('→') && !g.pattern.match(/^[↑↓←→]+$/)) {
+                // up→down→left→right のような形式（既に矢印形式でない場合のみ）
                 cleanPattern = g.pattern
                   .split('→')
                   .map(dir => {
@@ -113,8 +113,11 @@ export class GestureListUseCase {
                     }
                   })
                   .join('');
+              } else if (g.pattern.match(/^[↑↓←→]+$/)) {
+                // 既に矢印形式の場合はそのまま使用
+                cleanPattern = g.pattern;
               } else {
-                // 既に矢印形式かもしれない
+                // その他の文字列形式を矢印に変換
                 cleanPattern = g.pattern
                   .replace(/up/gi, '↑')
                   .replace(/down/gi, '↓')
