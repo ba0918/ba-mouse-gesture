@@ -3,7 +3,6 @@
  * Application層 - ビジネスロジックの調整
  */
 
-import { Gesture } from '../../domain/entities/Gesture.js';
 import { CustomGesture } from '../../domain/entities/CustomGesture.js';
 import { Settings } from '../../domain/entities/Settings.js';
 import { GesturePatternFormatter } from '../../presentation/controllers/GesturePatternFormatter.js';
@@ -44,10 +43,10 @@ export class GestureListUseCase {
     try {
       // デフォルトジェスチャーを取得
       const defaultGestures = await this.getDefaultGestures();
-      
+
       // カスタムジェスチャーを取得
       const customGestures = await this.gestureRepository.getCustomGestures();
-      
+
       console.log('🔍 Debug - Custom gestures raw data:', customGestures.map(g => ({
         id: g.id,
         name: g.name,
@@ -55,7 +54,7 @@ export class GestureListUseCase {
         patternType: typeof g.pattern,
         patternString: g.pattern?.toString ? g.pattern.toString() : String(g.pattern)
       })));
-      
+
       // 統一形式に変換
       const allGestures: GestureListItem[] = [
         ...defaultGestures,
@@ -75,17 +74,14 @@ export class GestureListUseCase {
                   default: return dir;
                 }
               }).join('');
-            } else if (g.pattern && typeof g.pattern === 'object' && g.pattern._directions) {
-              // _directionsプロパティがある場合
-              cleanPattern = g.pattern._directions.map(dir => {
-                switch (String(dir).toLowerCase()) {
-                  case 'up': return '↑';
-                  case 'down': return '↓';
-                  case 'left': return '←';
-                  case 'right': return '→';
-                  default: return String(dir);
-                }
-              }).join('');
+            } else if (g.pattern && typeof g.pattern === 'object' && g.pattern.toString) {
+              // オブジェクトの場合はtoString()を使用
+              const patternStr = g.pattern.toString();
+              cleanPattern = patternStr
+                .replace(/up/gi, '↑')
+                .replace(/down/gi, '↓')
+                .replace(/left/gi, '←')
+                .replace(/right/gi, '→');
             } else if (Array.isArray(g.pattern)) {
               // 配列の場合
               cleanPattern = g.pattern.map(dir => {
@@ -99,11 +95,15 @@ export class GestureListUseCase {
               }).join('');
             } else if (typeof g.pattern === 'string') {
               // 文字列の場合（区切り文字をクリーンアップ）
-              if (g.pattern.includes('→') && !g.pattern.match(/^[↑↓←→]+$/)) {
-                // up→down→left→right のような形式（既に矢印形式でない場合のみ）
-                cleanPattern = g.pattern
+              const patternStr = g.pattern as string;
+              if (patternStr.match(/^[↑↓←→]+$/)) {
+                // 既に矢印形式の場合はそのまま使用
+                cleanPattern = patternStr;
+              } else if (patternStr.includes('→') && patternStr.match(/^[a-zA-Z→]+$/)) {
+                // up→down→left→right のような形式（英単語と区切り文字のみの場合）
+                cleanPattern = patternStr
                   .split('→')
-                  .map(dir => {
+                  .map((dir: string) => {
                     switch (dir.trim().toLowerCase()) {
                       case 'up': return '↑';
                       case 'down': return '↓';
@@ -113,16 +113,14 @@ export class GestureListUseCase {
                     }
                   })
                   .join('');
-              } else if (g.pattern.match(/^[↑↓←→]+$/)) {
-                // 既に矢印形式の場合はそのまま使用
-                cleanPattern = g.pattern;
               } else {
                 // その他の文字列形式を矢印に変換
-                cleanPattern = g.pattern
+                cleanPattern = patternStr
                   .replace(/up/gi, '↑')
                   .replace(/down/gi, '↓')
                   .replace(/left/gi, '←')
-                  .replace(/right/gi, '→');
+                  .replace(/right/gi, '→')
+                  .replace(/→+/g, ''); // 余分な区切り文字を除去
               }
             } else {
               // その他の場合
@@ -132,16 +130,16 @@ export class GestureListUseCase {
             console.error('🚨 Pattern conversion error for gesture:', g.id, error);
             cleanPattern = '?';
           }
-          
+
           console.log('🔍 Debug - Pattern conversion:', {
             gestureId: g.id,
             originalPattern: g.pattern,
             convertedPattern: cleanPattern
           });
-          
+
           // アクション名を日本語で取得
           const actionDescription = this.patternFormatter.getActionDisplayName(g.action);
-          
+
           return {
             id: g.id,
             name: g.name,
@@ -154,9 +152,9 @@ export class GestureListUseCase {
           };
         })
       ];
-      
+
       return allGestures;
-      
+
     } catch (error) {
       console.error('🚨 GestureListUseCase: Failed to load gestures:', error);
       throw new Error(`Failed to load gesture list: ${(error as Error).message}`);
@@ -169,7 +167,7 @@ export class GestureListUseCase {
   async getDefaultGestures(): Promise<GestureListItem[]> {
     const settings = await this.settingsRepository.getSettings();
     const gestureStates = settings.defaultGestureStates;
-    
+
     return [
       // 基本ジェスチャー
       {
@@ -314,7 +312,7 @@ export class GestureListUseCase {
     categories: Record<string, number>;
   }> {
     const allGestures = await this.getAllGestures();
-    
+
     const stats = {
       total: allGestures.length,
       enabled: allGestures.filter(g => g.enabled).length,
