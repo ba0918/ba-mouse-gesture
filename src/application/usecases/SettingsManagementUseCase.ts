@@ -134,10 +134,20 @@ export class SettingsManagementUseCase {
       // ジェスチャーIDの検証（標準ジェスチャーのみ）
       this.validateGestureId(gestureId)
 
-      const result = await this.settingsRepository.updateGestureState(gestureId, enabled)
+      // Action名からジェスチャーIDへのマッピング（実際のリポジトリ操作用）
+      const actualGestureId = this.mapActionToGestureId(gestureId);
+
+      console.log('🔘 Gesture toggle:', gestureId, 'current enabled:', !enabled, 'new enabled:', enabled);
+      console.log('🔍 Toggle gesture debug info:', {
+        originalId: gestureId,
+        mappedId: actualGestureId,
+        enabled: enabled
+      });
+
+      const result = await this.settingsRepository.updateGestureState(actualGestureId, enabled)
 
       // 設定変更通知
-      await this.notifySettingsChange('gesture_toggled', { gestureId, enabled })
+      await this.notifySettingsChange('gesture_toggled', { gestureId: actualGestureId, enabled })
 
       return result
     } catch (error) {
@@ -500,20 +510,69 @@ export class SettingsManagementUseCase {
   }
 
   private validateGestureId(gestureId: string): void {
+    // Action名からジェスチャーIDへのマッピング
+    const actionToGestureIdMap: Record<string, string> = {
+      'back': 'left',
+      'forward': 'right', 
+      'scroll_top': 'up',
+      'scroll_bottom': 'down',
+      'close_tab': 'downright',
+      'new_tab': 'upright',
+      'duplicate_tab': 'rightdown',
+      'refresh': 'updown',
+      'super_refresh': 'super_refresh',
+      'prev_tab': 'prev_tab',
+      'next_tab': 'next_tab'
+    };
+
     const validGestureIds = [
       'left', 'right', 'up', 'down',
       'downright', 'upright', 'rightdown', 'updown',
       'super_refresh', 'prev_tab', 'next_tab'
-    ]
+    ];
 
-    if (!validGestureIds.includes(gestureId)) {
-      console.error('❌ Invalid gesture ID for standard gesture:', {
-        gestureId,
-        validIds: validGestureIds,
-        isCustomId: gestureId.startsWith('custom_')
-      });
-      throw new Error(`Invalid standard gesture ID: ${gestureId}. Valid IDs: ${validGestureIds.join(', ')}`)
+    // アクション名が渡された場合は対応するジェスチャーIDに変換
+    let actualGestureId = gestureId;
+    if (actionToGestureIdMap[gestureId]) {
+      actualGestureId = actionToGestureIdMap[gestureId];
+      console.log('🔄 Action name mapped to gesture ID:', { action: gestureId, gestureId: actualGestureId });
     }
+
+    if (!validGestureIds.includes(actualGestureId)) {
+      console.error('❌ Invalid gesture ID for standard gesture:', {
+        originalId: gestureId,
+        mappedId: actualGestureId,
+        validIds: validGestureIds,
+        isCustomId: gestureId.startsWith('custom_'),
+        availableActions: Object.keys(actionToGestureIdMap)
+      });
+      throw new Error(`Invalid standard gesture ID: ${gestureId} (mapped: ${actualGestureId}). Valid IDs: ${validGestureIds.join(', ')}`);
+    }
+  }
+
+  private mapActionToGestureId(gestureId: string): string {
+    // Action名からジェスチャーIDへのマッピング
+    const actionToGestureIdMap: Record<string, string> = {
+      'back': 'left',
+      'forward': 'right', 
+      'scroll_top': 'up',
+      'scroll_bottom': 'down',
+      'close_tab': 'downright',
+      'new_tab': 'upright',
+      'duplicate_tab': 'rightdown',
+      'refresh': 'updown',
+      'super_refresh': 'super_refresh',
+      'prev_tab': 'prev_tab',
+      'next_tab': 'next_tab'
+    };
+
+    // アクション名が渡された場合は対応するジェスチャーIDに変換
+    if (actionToGestureIdMap[gestureId]) {
+      return actionToGestureIdMap[gestureId];
+    }
+
+    // マッピングが見つからない場合は元のIDをそのまま返す
+    return gestureId;
   }
 
   private validateUrlPattern(pattern: string): void {
