@@ -7,10 +7,11 @@
   import ExcludeList from './components/ExcludeList.svelte';
   import DebugPanel from './components/DebugPanel.svelte';
   
-  // リアクティブ状態
-  let isLoading = true;
-  let saveStatus = '';
-  let saveStatusVisible = false;
+  // Svelte 5のリアクティブ状態
+  let isLoading = $state(true);
+  let saveStatus = $state('');
+  let saveStatusType = $state<'success' | 'error'>('success');
+  let saveStatusVisible = $state(false);
   
   onMount(() => {
     // Clean Architecture経由で設定を初期化
@@ -32,6 +33,7 @@
   
   function showSaveStatus(message: string, statusType: 'success' | 'error' = 'success') {
     saveStatus = message;
+    saveStatusType = statusType;
     saveStatusVisible = true;
     setTimeout(() => {
       saveStatusVisible = false;
@@ -71,7 +73,7 @@
       
       <!-- 保存ステータス -->
       {#if saveStatusVisible}
-        <div class="save-status {saveStatus.includes('失敗') || saveStatus.includes('エラー') ? 'error' : 'success'}">
+        <div class="save-status {saveStatusType}">
           {saveStatus}
         </div>
       {/if}

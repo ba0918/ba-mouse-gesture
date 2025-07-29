@@ -5,6 +5,7 @@
 
 // Svelteアプリのインポート
 import OptionsApp from './OptionsApp.svelte';
+import { mount } from 'svelte';
 import { ServiceFactory } from '../../application/services/ServiceFactory';
 
 /**
@@ -19,15 +20,15 @@ function initializeSvelteApp() {
       throw new Error('App container not found');
     }
     
-    // Svelteアプリを初期化（互換性のある方法）
-    const app = new OptionsApp({
+    // Svelte 5の mount 関数を使用
+    const app = mount(OptionsApp, {
       target: target
     });
     
     console.log('✅ Svelte Options App initialized successfully');
     
     // グローバルアクセス用（デバッグ目的）
-    (window as any).optionsApp = app;
+    (window as unknown as Record<string, unknown>).optionsApp = app;
     
     return app;
   } catch (error) {
@@ -50,7 +51,7 @@ function initializeSvelteApp() {
 // DOMContentLoaded時に初期化
 document.addEventListener('DOMContentLoaded', () => {
   // ServiceFactoryをグローバルに公開
-  (window as any).ServiceFactory = new ServiceFactory();
+  (window as unknown as Record<string, unknown>).ServiceFactory = new ServiceFactory();
   
   initializeSvelteApp();
 });
