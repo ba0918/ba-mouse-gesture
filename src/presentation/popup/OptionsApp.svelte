@@ -6,6 +6,8 @@
   import OptionsBasicSettings from './components/OptionsBasicSettings.svelte';
   import OptionsTrackSettings from './components/OptionsTrackSettings.svelte';
   import OptionsDebugSettings from './components/OptionsDebugSettings.svelte';
+  import OptionsCustomGestures from './components/OptionsCustomGestures.svelte';
+  import OptionsGestureList from './components/OptionsGestureList.svelte';
   import OptionsExcludeList from './components/OptionsExcludeList.svelte';
 
   // 状態管理
@@ -333,105 +335,7 @@
     }
   }
 
-  // パターン変換キャッシュ
-  const patternCache = new Map<string, string>();
-  
-  // パターン表示用ヘルパー関数（統一形式、キャッシュ付き）
-  function convertPatternToArrows(pattern: any): string {
-    if (!pattern) {
-      return '';
-    }
-    
-    // キャッシュキーを生成
-    const cacheKey = JSON.stringify(pattern);
-    if (patternCache.has(cacheKey)) {
-      return patternCache.get(cacheKey)!;
-    }
-    
-    let result = '';
-    
-    // 既に矢印形式の場合はそのまま返す（デフォルトジェスチャー用）
-    if (typeof pattern === 'string' && /^[↑↓←→]+$/.test(pattern)) {
-      result = pattern;
-      patternCache.set(cacheKey, result);
-      return result;
-    }
-    
-    // 配列形式の場合
-    if (Array.isArray(pattern) || (typeof pattern === 'object' && pattern.length !== undefined)) {
-      try {
-        const directions = Array.from(pattern);
-        const converted = directions.map(dir => {
-          const dirStr = String(dir).toLowerCase();
-          switch (dirStr) {
-            case 'up': return '↑';
-            case 'down': return '↓';
-            case 'left': return '←';
-            case 'right': return '→';
-            default: return dirStr;
-          }
-        }).join('');
-        result = converted;
-        patternCache.set(cacheKey, result);
-        return result;
-      } catch (error) {
-        console.error('Array conversion error:', error);
-      }
-    }
-    
-    // 文字列パターンの変換（区切り文字を処理）
-    if (typeof pattern === 'string') {
-      let converted = pattern;
-      
-      // 区切り文字で区切られている場合
-      if (pattern.includes('→')) {
-        // up→down→left→right のような形式
-        converted = pattern
-          .split('→')
-          .map(dir => {
-            const dirStr = dir.trim().toLowerCase();
-            switch (dirStr) {
-              case 'up': return '↑';
-              case 'down': return '↓';
-              case 'left': return '←';
-              case 'right': return '→';
-              default: return dirStr;
-            }
-          })
-          .join('');
-      } else {
-        // 単純な置換
-        converted = pattern
-          .replace(/UP/g, '↑')
-          .replace(/DOWN/g, '↓')
-          .replace(/LEFT/g, '←')
-          .replace(/RIGHT/g, '→')
-          .replace(/up/g, '↑')
-          .replace(/down/g, '↓')
-          .replace(/left/g, '←')
-          .replace(/right/g, '→');
-      }
-      
-      result = converted;
-      patternCache.set(cacheKey, result);
-      return result;
-    }
-    
-    // その他の形式（オブジェクトなど）
-    const stringPattern = String(pattern);
-    result = stringPattern
-      .replace(/UP/g, '↑')
-      .replace(/DOWN/g, '↓')
-      .replace(/LEFT/g, '←')
-      .replace(/RIGHT/g, '→')
-      .replace(/up/g, '↑')
-      .replace(/down/g, '↓')
-      .replace(/left/g, '←')
-      .replace(/right/g, '→');
-    
-    patternCache.set(cacheKey, result);
-    return result;
-  }
+
 
   function convertArrowsToPattern(arrows: string): string {
     if (!arrows || typeof arrows !== 'string') {
@@ -467,17 +371,30 @@
   }
 
 
-  function addDirection(direction: string) {
+
+
+  // カスタムジェスチャー用ハンドラー関数
+  function handleAddDirection(direction: string) {
     currentPattern.push(direction);
-    // 矢印表記で表示
-    gesturePatternDisplay = convertPatternToArrows(currentPattern.join(''));
+    // 矢印表記で表示 - 簡易変換
+    const arrowMap: Record<string, string> = {
+      'UP': '↑',
+      'DOWN': '↓', 
+      'LEFT': '←',
+      'RIGHT': '→'
+    };
+    gesturePatternDisplay = currentPattern.map(p => arrowMap[p] || p).join('');
     // エラーをクリア
     clearCustomGestureError();
   }
 
-  function clearPattern() {
+  function handleClearPattern() {
     currentPattern = [];
     gesturePatternDisplay = '';
+  }
+
+  function handleClearCustomGestureError() {
+    customGestureError = '';
   }
 
   function clearCustomGestureError() {
@@ -621,7 +538,7 @@
         }
       } else {
         const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
-        await settingsManagementUseCase.toggleDefaultGesture(gestureId, enabled);
+        await settingsManagementUseCase.toggleGesture(gestureId, enabled);
         console.log('✅ Default gesture saved');
         
         // デフォルトジェスチャーのUI更新
@@ -695,21 +612,7 @@
     confirmDialog = true;
   }
 
-  // フィルタされたジェスチャー一覧
-  let filteredGestures = $derived(gestures.filter(gesture => {
-    if (gestureSearch) {
-      const query = gestureSearch.toLowerCase();
-      if (!gesture.name.toLowerCase().includes(query) && 
-        !gesture.description.toLowerCase().includes(query)) {
-        return false;
-      }
-    }
-    
-    if (gestureFilter === 'default') return gesture.type === 'default';
-    if (gestureFilter === 'custom') return gesture.type === 'custom';
-    
-    return true;
-  }));
+
 </script>
 
 <div class="container">
@@ -738,174 +641,30 @@
       />
             
       <!-- ジェスチャー一覧 -->
-      <div class="section">
-        <h2>📋 ジェスチャー一覧</h2>
-        <div class="setting-item">
-          <div style="width: 100%;">
-            <div class="setting-label">利用可能なすべてのジェスチャー</div>
-            <div class="setting-description">
-              標準ジェスチャーとカスタムジェスチャーを一括管理・確認できます
-            </div>
-                        
-            <!-- 検索・フィルター -->
-            <div class="gesture-controls-bar" style="display: flex; gap: 8px; margin: 16px 0; align-items: center;">
-              <input type="text" bind:value={gestureSearch} placeholder="ジェスチャーを検索..." 
-                style="flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;">
-              <select bind:value={gestureFilter} style="padding: 8px; border: 1px solid #dadce0; border-radius: 4px;">
-                <option value="all">すべて</option>
-                <option value="default">標準ジェスチャー</option>
-                <option value="custom">カスタムジェスチャー</option>
-              </select>
-            </div>
-                        
-            <!-- ジェスチャー一覧表示 -->
-            <div class="all-gestures-container" style="border: 1px solid #e8eaed; border-radius: 8px; background: white; min-height: 200px;">
-              {#each filteredGestures as gesture (gesture.id)}
-                <div class="all-gesture-item" class:disabled={!gesture.enabled}>
-                  <div class="gesture-visual">
-                    <div class="gesture-pattern-large">{convertPatternToArrows(gesture.pattern)}</div>
-                  </div>
-                  <div class="gesture-details">
-                    <div class="gesture-title">
-                      {gesture.name}
-                    </div>
-                    <div class="gesture-description">{gesture.description}</div>
-                  </div>
-                  <div class="gesture-actions">
-                    <button 
-                      class="gesture-status-toggle" 
-                      class:enabled={gesture.enabled}
-                      aria-label={gesture.enabled ? 'ジェスチャーを無効にする' : 'ジェスチャーを有効にする'}
-                      onclick={async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                                                
-                        // 現在のジェスチャー状態を最新のリストから取得
-                        const currentGesture = gestures.find(g => g.id === gesture.id);
-                        const currentEnabled = currentGesture?.enabled ?? false;
-                        const newEnabled = !currentEnabled;
-                                                
-                        console.log('🔘 Default gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
-                        await toggleGesture(gesture.id, newEnabled);
-                      }}
-                    ></button>
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
-      </div>
+      <OptionsGestureList
+        bind:gestures={gestures}
+        bind:gestureSearch={gestureSearch}
+        bind:gestureFilter={gestureFilter}
+        isLoading={isLoading}
+        onToggleGesture={toggleGesture}
+      />
 
       <!-- カスタムジェスチャー -->
-      <div class="section">
-        <h2>カスタムジェスチャー</h2>
-        <div class="setting-item">
-          <div style="width: 100%;">
-            <div class="setting-label">独自のジェスチャーを作成・管理</div>
-            <div class="setting-description">
-              デフォルトジェスチャーをカスタマイズしたり、新しいパターンを追加できます
-            </div>
-                        
-            <!-- カスタムジェスチャー一覧 -->
-            <div class="custom-gesture-list">
-              <div class="all-gestures-container" style="border: 1px solid #e8eaed; border-radius: 8px; background: white; max-height: 300px; overflow-y: auto;">
-                {#each customGestures as gesture (gesture.id)}
-                  <div class="all-gesture-item" class:disabled={!gesture.enabled}>
-                    <div class="gesture-visual">
-                      <div class="gesture-pattern-large">{convertPatternToArrows(gesture.pattern)}</div>
-                    </div>
-                    <div class="gesture-details">
-                      <div class="gesture-title">{gesture.name}</div>
-                      <div class="gesture-description">{gesture.description}</div>
-                    </div>
-                    <div class="gesture-actions">
-                      <button 
-                        class="gesture-status-toggle" 
-                        class:enabled={gesture.enabled}
-                        aria-label={gesture.enabled ? 'カスタムジェスチャーを無効にする' : 'カスタムジェスチャーを有効にする'}
-                        onclick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                                                    
-                          // 現在のカスタムジェスチャー状態を最新のリストから取得
-                          const currentCustomGesture = customGestures.find(g => g.id === gesture.id);
-                          const currentEnabled = currentCustomGesture?.enabled ?? false;
-                          const newEnabled = !currentEnabled;
-                                                    
-                          console.log('🔘 Custom gesture toggle:', gesture.id, 'current enabled:', currentEnabled, 'new enabled:', newEnabled);
-                          await toggleGesture(gesture.id, newEnabled);
-                        }}
-                      ></button>
-                      <button 
-                        class="gesture-delete-btn" 
-                        aria-label="カスタムジェスチャーを削除"
-                        onclick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          await deleteCustomGesture(gesture.id, gesture.name);
-                        }}
-                      >削除</button>
-                    </div>
-                  </div>
-                {/each}
-                {#if customGestures.length === 0}
-                  <div class="empty-state">
-                    <p>カスタムジェスチャーが登録されていません</p>
-                  </div>
-                {/if}
-              </div>
-            </div>
-                        
-            <!-- 新規ジェスチャー追加フォーム -->
-            <div class="add-gesture-form" style="margin-top: 16px;">
-              <h3 style="font-size: 14px; margin: 0 0 12px 0; color: #202124;">新しいジェスチャーを追加</h3>
-              <div class="form-group">
-                <label for="gestureName">ジェスチャー名:</label>
-                <input type="text" bind:value={gestureName} class="form-input" placeholder="例: カスタム戻る" oninput={clearCustomGestureError}>
-              </div>
-              <div class="form-group">
-                <label for="gesturePattern">パターン:</label>
-                <div class="pattern-input-container">
-                  <input type="text" bind:value={gesturePatternDisplay} class="form-input" placeholder="下のボタンでパターンを入力" readonly>
-                  <button class="clear-btn" onclick={clearPattern}>クリア</button>
-                </div>
-                <div class="pattern-buttons">
-                  <button class="direction-btn" onclick={() => addDirection('UP')}>↑</button>
-                  <button class="direction-btn" onclick={() => addDirection('DOWN')}>↓</button>
-                  <button class="direction-btn" onclick={() => addDirection('LEFT')}>←</button>
-                  <button class="direction-btn" onclick={() => addDirection('RIGHT')}>→</button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="gestureAction">アクション:</label>
-                <select bind:value={gestureAction} class="form-select">
-                  <option value="back">戻る</option>
-                  <option value="forward">進む</option>
-                  <option value="scroll_up">上スクロール</option>
-                  <option value="scroll_down">下スクロール</option>
-                  <option value="close_tab">タブを閉じる</option>
-                  <option value="new_tab">新しいタブ</option>
-                  <option value="refresh">更新</option>
-                  <option value="duplicate_tab">タブを複製</option>
-                  <option value="super_refresh">スーパーリロード (NEW)</option>
-                  <option value="prev_tab">前のタブ (NEW)</option>
-                  <option value="next_tab">次のタブ (NEW)</option>
-                </select>
-              </div>
-              
-              <!-- カスタムジェスチャー追加エラー表示 -->
-              {#if customGestureError}
-                <div class="custom-gesture-error">
-                  {customGestureError}
-                </div>
-              {/if}
-              
-              <button class="add-btn" onclick={addCustomGesture}>カスタムジェスチャーを追加</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <OptionsCustomGestures
+        bind:customGestures={customGestures}
+        bind:gestureName={gestureName}
+        bind:gesturePatternDisplay={gesturePatternDisplay}
+        bind:gestureAction={gestureAction}
+        bind:currentPattern={currentPattern}
+        bind:customGestureError={customGestureError}
+        isLoading={isLoading}
+        onAddCustomGesture={addCustomGesture}
+        onDeleteCustomGesture={deleteCustomGesture}
+        onToggleGesture={toggleGesture}
+        onAddDirection={handleAddDirection}
+        onClearPattern={handleClearPattern}
+        onClearCustomGestureError={handleClearCustomGestureError}
+      />
 
       <!-- 除外サイト -->
       <OptionsExcludeList
@@ -976,21 +735,6 @@
         padding-bottom: 16px;
     }
     
-    .section {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .section h2 {
-        font-size: 18px;
-        margin: 0 0 20px 0;
-        color: #1a73e8;
-        border-bottom: 2px solid #e8f0fe;
-        padding-bottom: 12px;
-    }
     
     .setting-item {
         display: flex;
@@ -1204,229 +948,9 @@
         color: #d33b2c;
     }
 
-    .form-group {
-        margin-bottom: 12px;
-    }
 
-    .form-group label {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        color: #202124;
-        margin-bottom: 4px;
-    }
 
-    .form-input, .form-select {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #dadce0;
-        border-radius: 4px;
-        font-size: 14px;
-    }
 
-    .pattern-input-container {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-
-    .pattern-input-container .form-input {
-        flex: 1;
-    }
-
-    .clear-btn {
-        background: #5f6368;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        white-space: nowrap;
-    }
-
-    .clear-btn:hover {
-        background: #4a4a4a;
-    }
-
-    .pattern-buttons {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-    }
-
-    .direction-btn {
-        background: #f8f9fa;
-        border: 1px solid #dadce0;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        min-width: 40px;
-    }
-
-    .direction-btn:hover {
-        background: #e8f0fe;
-        border-color: #1a73e8;
-    }
-
-    .direction-btn:active {
-        background: #1a73e8;
-        color: white;
-    }
-
-    /* ジェスチャー一覧画面用スタイル */
-    .all-gestures-container {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .all-gesture-item {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        border-bottom: 1px solid #f1f3f4;
-        transition: background-color 0.2s;
-    }
-
-    .all-gesture-item:hover {
-        background-color: #f8f9fa;
-    }
-
-    .all-gesture-item:last-child {
-        border-bottom: none;
-    }
-
-    .all-gesture-item.disabled {
-        opacity: 0.6;
-        background-color: #fafbfc;
-    }
-
-    .gesture-visual {
-        width: 80px;
-        text-align: center;
-        margin-right: 16px;
-        flex-shrink: 0;
-    }
-
-    .gesture-pattern-large {
-        font-size: 20px;
-        line-height: 1.2;
-        margin-bottom: 4px;
-        word-break: break-all;
-        overflow-wrap: break-word;
-        max-width: 100%;
-    }
-
-    .gesture-pattern-text {
-        font-family: monospace;
-        font-size: 9px;
-        color: #5f6368;
-        background: #f1f3f4;
-        padding: 2px 4px;
-        border-radius: 3px;
-        word-break: break-all;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 76px;
-    }
-
-    .gesture-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .gesture-title {
-        font-weight: 600;
-        color: #202124;
-        margin-bottom: 4px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .gesture-description {
-        color: #5f6368;
-        font-size: 13px;
-        line-height: 1.3;
-    }
-
-    .custom-badge {
-        background: #34a853;
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-        padding: 2px 6px;
-        border-radius: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: 8px;
-    }
-
-    .gesture-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .gesture-status-toggle {
-        width: 40px;
-        height: 20px;
-        background: #dadce0;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        position: relative;
-        transition: background-color 0.3s;
-    }
-
-    .gesture-status-toggle.enabled {
-        background: #34a853;
-    }
-
-    .gesture-status-toggle::after {
-        content: '';
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: 50%;
-        top: 2px;
-        left: 2px;
-        transition: transform 0.3s;
-    }
-
-    .gesture-status-toggle.enabled::after {
-        transform: translateX(20px);
-    }
-
-    .gesture-delete-btn {
-        padding: 6px 12px;
-        background: #ea4335;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        flex-shrink: 0;
-        min-width: 50px;
-    }
-
-    .gesture-delete-btn:hover {
-        background: #d33b2c;
-        transform: scale(1.05);
-    }
-
-    .gesture-delete-btn:active {
-        transform: scale(0.95);
-    }
 
     /* カスタム確認ダイアログ */
     .confirm-dialog {
@@ -1542,28 +1066,5 @@
         }
     }
 
-    /* 空状態表示 */
-    .empty-state {
-        text-align: center;
-        padding: 32px 16px;
-    }
 
-    .empty-state p {
-        margin: 0;
-        color: #9aa0a6;
-        font-size: 14px;
-        font-weight: 400;
-        line-height: 1.4;
-    }
-
-    /* カスタムジェスチャーエラー表示 */
-    .custom-gesture-error {
-        background: #fce8e6;
-        color: #d33b2c;
-        padding: 8px 12px;
-        border-radius: 4px;
-        margin: 8px 0;
-        font-size: 13px;
-        border-left: 3px solid #ea4335;
-    }
 </style>
