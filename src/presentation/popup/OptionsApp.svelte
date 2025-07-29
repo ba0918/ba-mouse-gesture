@@ -518,7 +518,19 @@
       }
       
       // 標準ジェスチャーかカスタムジェスチャーかを判定
-      const isCustomGesture = customGestures.some(g => g.id === gestureId);
+      // カスタムジェスチャーは必ず custom_ で始まるIDを持つ
+      const isCustomGesture = gestureId.startsWith('custom_');
+      
+      console.log('🔍 Toggle gesture debug info:', {
+        gestureId,
+        enabled,
+        isCustomGesture,
+        customGesturesCount: customGestures.length,
+        customGesturesIds: customGestures.map(g => g.id).slice(0, 3), // 最初の3つのみ表示
+        gestureStartsWithCustom: gestureId.startsWith('custom_'),
+        gesturesCount: gestures.length,
+        allGestureTypes: gestures.map(g => ({ id: g.id, type: g.type })).slice(0, 5)
+      });
       
       if (isCustomGesture) {
         const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();

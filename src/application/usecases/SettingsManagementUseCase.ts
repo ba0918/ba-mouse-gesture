@@ -122,11 +122,16 @@ export class SettingsManagementUseCase {
   }
 
   /**
-   * 特定ジェスチャーの有効/無効を切り替え
+   * 特定ジェスチャーの有効/無効を切り替え（標準ジェスチャーのみ）
    */
   async toggleGesture(gestureId: string, enabled: boolean): Promise<Settings> {
     try {
-      // ジェスチャーIDの検証
+      // カスタムジェスチャーIDの場合はエラー
+      if (gestureId.startsWith('custom_')) {
+        throw new Error(`This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`)
+      }
+      
+      // ジェスチャーIDの検証（標準ジェスチャーのみ）
       this.validateGestureId(gestureId)
 
       const result = await this.settingsRepository.updateGestureState(gestureId, enabled)
@@ -502,7 +507,12 @@ export class SettingsManagementUseCase {
     ]
 
     if (!validGestureIds.includes(gestureId)) {
-      throw new Error(`Invalid gesture ID: ${gestureId}`)
+      console.error('❌ Invalid gesture ID for standard gesture:', {
+        gestureId,
+        validIds: validGestureIds,
+        isCustomId: gestureId.startsWith('custom_')
+      });
+      throw new Error(`Invalid standard gesture ID: ${gestureId}. Valid IDs: ${validGestureIds.join(', ')}`)
     }
   }
 
