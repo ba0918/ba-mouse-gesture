@@ -3,9 +3,8 @@
   import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
   
   // コンポーネントのインポート
-  import BasicSettings from './components/BasicSettings.svelte';
-  import DebugPanel from './components/DebugPanel.svelte';
-  import CustomGesturePanel from './components/CustomGesturePanel.svelte';
+  import OptionsBasicSettings from './components/OptionsBasicSettings.svelte';
+  import OptionsTrackSettings from './components/OptionsTrackSettings.svelte';
 
   // 状態管理
   let isLoading = $state(true);
@@ -316,64 +315,12 @@
       
       console.log('✅ All track settings saved successfully');
       showSaveStatus('軌跡設定を保存しました');
-      
-      // プレビューを更新
-      updatePreviewCanvas();
     } catch (error) {
       console.error('❌ 軌跡設定保存エラー:', error);
       showSaveStatus('軌跡設定の保存に失敗しました', 'error');
     }
   }
 
-  function updatePreviewCanvas() {
-    // ロード中の場合はスキップ
-    if (isLoading) {
-      return;
-    }
-    
-    // DOM更新後にキャンバスを取得
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const canvas = document.getElementById('previewCanvas') as HTMLCanvasElement;
-        if (!canvas) {
-          // ローディング完了後でもキャンバスが見つからない場合のみ警告
-          if (!isLoading) {
-            console.warn('Preview canvas not found after loading completed');
-          }
-          return;
-        }
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          console.warn('Canvas context not available');
-          return;
-        }
-        
-        // キャンバスをクリア
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 背景を白に設定
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 軌跡のスタイルを設定
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = strokeWidth;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        // サンプル軌跡を描画（ジェスチャーのような曲線）
-        ctx.beginPath();
-        ctx.moveTo(20, 80);
-        ctx.quadraticCurveTo(40, 30, 70, 50);
-        ctx.quadraticCurveTo(100, 70, 130, 35);
-        ctx.quadraticCurveTo(160, 15, 180, 45);
-        ctx.stroke();
-        
-        console.log('✅ Preview canvas updated');
-      }, 100);
-    });
-  }
 
   async function addExcludeUrl() {
     if (!newExcludeUrl.trim()) return;
@@ -823,51 +770,20 @@
     <!-- メインコンテンツ -->
     <div id="mainContent">
       <!-- 基本設定 -->
-      <div class="section">
-        <h2>基本設定</h2>
-        <div class="setting-item">
-          <div>
-            <div class="setting-label">マウスジェスチャーを有効にする</div>
-            <div class="setting-description">チェックを外すと全ての機能が無効になります</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" bind:checked={enabled} onchange={handleEnabledChange}>
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
+      <OptionsBasicSettings 
+        bind:enabled={enabled}
+        isLoading={isLoading}
+        onEnabledChange={handleEnabledChange}
+      />
             
       <!-- 軌跡カスタマイズ -->
-      <div class="section">
-        <h2>軌跡の表示設定</h2>
-        <div class="setting-item">
-          <div class="setting-label">軌跡の色</div>
-          <input type="color" bind:value={strokeColor} class="color-input" onchange={handleTrackSettingsChange}>
-        </div>
-        <div class="setting-item">
-          <div class="setting-label">軌跡の太さ</div>
-          <div style="display: flex; align-items: center;">
-            <input type="range" bind:value={strokeWidth} class="range-input" min="1" max="10" oninput={handleTrackSettingsChange}>
-            <span class="range-value">{strokeWidth}px</span>
-          </div>
-        </div>
-        <div class="setting-item">
-          <div>
-            <div class="setting-label">ジェスチャー感度</div>
-            <div class="setting-description">ジェスチャーとして認識される最小移動距離（低いほど敏感）</div>
-          </div>
-          <div style="display: flex; align-items: center;">
-            <input type="range" bind:value={gestureThreshold} class="range-input" min="5" max="50" oninput={handleTrackSettingsChange}>
-            <span class="range-value">{gestureThreshold}px</span>
-          </div>
-        </div>
-        <div class="setting-item">
-          <div>
-            <div class="setting-label">軌跡のプレビュー</div>
-            <canvas id="previewCanvas" class="preview-canvas" width="200" height="100"></canvas>
-          </div>
-        </div>
-      </div>
+      <OptionsTrackSettings
+        bind:strokeColor={strokeColor}
+        bind:strokeWidth={strokeWidth}
+        bind:gestureThreshold={gestureThreshold}
+        isLoading={isLoading}
+        onTrackSettingsChange={handleTrackSettingsChange}
+      />
             
       <!-- ジェスチャー一覧 -->
       <div class="section">
