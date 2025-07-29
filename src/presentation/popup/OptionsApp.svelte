@@ -22,7 +22,7 @@
   
   // デバッグ設定
   let debugEnabled = $state(false);
-  let debugLogLevel = $state(2);
+  let debugLogLevel = $state('2'); // 文字列型に変更
   let debugShowStatus = $state(false);
   let debugStatusPosition = $state('top-right');
   
@@ -83,9 +83,29 @@
           // デバッグ設定を読み込み（複数の可能性を考慮）
           const debugSettings = settings.debugSettings || settings;
           debugEnabled = settings.debugEnabled ?? debugSettings.debugEnabled ?? debugSettings.enabled ?? false;
-          debugLogLevel = settings.debugLogLevel ?? debugSettings.debugLogLevel ?? debugSettings.logLevel ?? 2;
+          let logLevelValue = settings.debugLogLevel ?? debugSettings.debugLogLevel ?? debugSettings.logLevel ?? 2;
           debugShowStatus = settings.debugShowStatus ?? debugSettings.debugShowStatus ?? debugSettings.showStatus ?? false;
           debugStatusPosition = settings.debugStatusPosition ?? debugSettings.debugStatusPosition ?? debugSettings.statusPosition ?? 'top-right';
+          
+          // デバッグログレベルの型確認と文字列化
+          if (typeof logLevelValue === 'string') {
+            const parsed = parseInt(logLevelValue, 10);
+            if (!isNaN(parsed) && parsed >= 0 && parsed <= 3) {
+              debugLogLevel = logLevelValue;
+            } else {
+              debugLogLevel = '2';
+            }
+          } else if (typeof logLevelValue === 'number') {
+            if (logLevelValue >= 0 && logLevelValue <= 3) {
+              debugLogLevel = logLevelValue.toString();
+            } else {
+              debugLogLevel = '2';
+            }
+          } else {
+            debugLogLevel = '2';
+          }
+          
+          console.log('🔍 Debug log level after processing:', debugLogLevel, typeof debugLogLevel);
 
           // DebugLoggerを初期化
           const logLevel = typeof debugLogLevel === 'string' ? parseInt(debugLogLevel) : debugLogLevel;
@@ -340,7 +360,7 @@
     try {
       const debugConfig = {
         debugEnabled,
-        debugLogLevel,
+        debugLogLevel: parseInt(debugLogLevel, 10), // 文字列を数値に変換
         debugShowStatus,
         debugStatusPosition
       };
