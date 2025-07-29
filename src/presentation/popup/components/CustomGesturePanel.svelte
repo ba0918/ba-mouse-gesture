@@ -366,10 +366,11 @@
 
     <!-- パターン作成 -->
     <div class="form-group">
-      <label>ジェスチャーパターン:</label>
+      <label for="gesturePatternDisplay">ジェスチャーパターン:</label>
       <div class="pattern-creator">
         <div class="pattern-display">
           <input
+            id="gesturePatternDisplay"
             type="text"
             value={patternDisplay}
             readonly

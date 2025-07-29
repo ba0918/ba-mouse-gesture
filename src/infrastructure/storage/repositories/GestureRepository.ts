@@ -541,7 +541,3 @@ export class GestureRepositoryError extends Error {
   }
 }
 
-// CommonJS export for Jest compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { GestureRepository, GestureRepositoryError }
-}

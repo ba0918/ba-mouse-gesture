@@ -70,7 +70,3 @@ export class DebugLogger {
   }
 }
 
-// CommonJS export for Jest compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DebugLogger }
-}

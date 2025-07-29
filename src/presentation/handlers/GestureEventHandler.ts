@@ -287,7 +287,3 @@ if (typeof window !== 'undefined') {
   (window as any).GestureEventHandler = GestureEventHandler;
 }
 
-// Node.js環境対応
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { GestureEventHandler };
-}
