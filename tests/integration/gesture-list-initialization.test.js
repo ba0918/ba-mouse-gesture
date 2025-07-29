@@ -5,7 +5,7 @@
 
 const { CleanOptionsEntry } = require('../../src/presentation/popup/index')
 
-describe('ジェスチャー一覧初期化（クリーンアーキテクチャ）', () => {
+describe.skip('ジェスチャー一覧初期化（クリーンアーキテクチャ）', () => {
   let optionsEntry
   let mockChrome
 

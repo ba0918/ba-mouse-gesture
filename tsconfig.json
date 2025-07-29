@@ -1,4 +1,5 @@
 {
+  "extends": "@tsconfig/svelte/tsconfig.json",
   "compilerOptions": {
     // 出力設定
     "target": "ES2020",
@@ -38,12 +39,18 @@
     "declaration": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "removeComments": false
+    "removeComments": false,
+    
+    // Svelte設定のverbatimModuleSyntaxを無効化（既存コードとの互換性）
+    "verbatimModuleSyntax": false
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.svelte",
+    "src/@types/**/*.d.ts",
     "tests/**/*.ts",
-    "popup/**/*.ts",
+    "popup/**/*.ts", 
+    "popup/**/*.svelte",
     "scripts/**/*.ts"
   ],
   "exclude": [

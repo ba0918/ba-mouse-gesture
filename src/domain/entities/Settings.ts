@@ -31,6 +31,26 @@ export interface DefaultGestureStates {
 }
 
 /**
+ * デフォルトジェスチャー状態の実際の値
+ */
+export const DEFAULT_GESTURE_STATES: DefaultGestureStates = {
+  // 基本ジェスチャー
+  left: true,
+  right: true,
+  up: true,
+  down: true,
+  // 複合ジェスチャー
+  downright: true,
+  upright: true,
+  rightdown: true,
+  updown: true,
+  // Phase 10 新機能
+  super_refresh: true,
+  prev_tab: true,
+  next_tab: true,
+}
+
+/**
  * 設定データの型定義
  */
 export interface SettingsConfig {
@@ -78,20 +98,7 @@ export class Settings {
     
     // デフォルトジェスチャー状態
     this.defaultGestureStates = {
-      // 基本ジェスチャー
-      left: true,
-      right: true,
-      up: true,
-      down: true,
-      // 複合ジェスチャー
-      downright: true,
-      upright: true,
-      rightdown: true,
-      updown: true,
-      // Phase 10 新機能
-      super_refresh: true,
-      prev_tab: true,
-      next_tab: true,
+      ...DEFAULT_GESTURE_STATES,
       ...config.defaultGestureStates
     }
     

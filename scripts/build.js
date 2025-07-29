@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const esbuild = require('esbuild')
+const sveltePlugin = require('esbuild-svelte')
 const fs = require('fs').promises
 const path = require('path')
 
@@ -11,19 +12,19 @@ const isWatch = process.argv.includes('--watch')
 // 出力ディレクトリ
 const distDir = path.join(__dirname, '..', 'dist')
 
-// ビルド対象のTypeScript/JavaScriptファイル
-// TypeScript移行対応（段階的に .js → .ts）
+// ビルド対象のTypeScript/Svelteファイル
+// Phase 1 TypeScript移行完了 + Phase 2 Svelte対応
 const buildFiles = [
   {
-    entryPoint: 'src/presentation/background/index.js', // 将来的に .ts
+    entryPoint: 'src/presentation/background/index.ts',
     outfile: 'dist/background/background.js'
   },
   {
-    entryPoint: 'src/presentation/contentScripts/index.js', // 将来的に .ts
+    entryPoint: 'src/presentation/contentScripts/index.ts',
     outfile: 'dist/content_scripts/gesture.js'
   },
   {
-    entryPoint: 'src/presentation/popup/index.js', // 将来的に .ts
+    entryPoint: 'src/presentation/popup/index.ts',
     outfile: 'dist/popup/options.js'
   }
 ]
@@ -83,7 +84,7 @@ async function build() {
     // TypeScript/JavaScriptファイルをビルド
     console.log('🔨 TypeScript/JavaScriptファイルをビルド中...')
     
-    // TypeScript対応ビルドオプション
+    // TypeScript + Svelte対応ビルドオプション
     const buildOptions = {
       bundle: true, // モジュール依存関係解決
       minify: isProduction,
@@ -91,7 +92,15 @@ async function build() {
       target: 'es2020',
       format: 'iife',
       external: ['chrome'], // Chrome API除外
-      // TypeScript設定
+      // プラグイン設定
+      plugins: [
+        sveltePlugin({
+          compilerOptions: {
+            dev: !isProduction
+          }
+        })
+      ],
+      // TypeScript + Svelte設定
       loader: {
         '.ts': 'ts',
         '.js': 'js'

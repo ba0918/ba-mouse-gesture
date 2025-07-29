@@ -174,7 +174,13 @@ export class GestureRecognitionUseCase {
       const settings: Settings = await this.settingsRepository.getSettings()
       // gestureIdをDefaultGestureStatesのkeyとしてキャスト
       const typedGestureId = gestureId as keyof typeof settings.defaultGestureStates
-      return settings.defaultGestureStates[typedGestureId] !== false
+      
+      // 存在しないキーの場合はfalseを返す
+      if (!(typedGestureId in settings.defaultGestureStates)) {
+        return false
+      }
+      
+      return settings.isGestureEnabled(typedGestureId)
     } catch (error) {
       console.error('Failed to check specific gesture enabled status:', error)
       return true
