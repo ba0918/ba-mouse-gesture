@@ -15,6 +15,7 @@ interface Point {
 interface Settings {
   enabled: boolean;
   gestureThreshold: number;
+  defaultGestureStates?: Record<string, boolean>;
 }
 
 interface ExecutionResult {
@@ -62,7 +63,8 @@ export class SimpleGestureUseCase {
     this.logger = logger || new DebugLogger(null);
     this.settings = {
       enabled: true,
-      gestureThreshold: 15
+      gestureThreshold: 15,
+      defaultGestureStates: {}
     };
   }
 
@@ -121,6 +123,15 @@ export class SimpleGestureUseCase {
       return {
         success: false,
         error: 'Messaging service not available'
+      };
+    }
+
+    // ジェスチャーの無効化チェック
+    if (!this.isGestureEnabled(gestureType)) {
+      this.logger.info(`Gesture ${gestureType} is disabled`);
+      return {
+        success: false,
+        error: `Gesture ${gestureType} is disabled`
       };
     }
 
@@ -207,6 +218,46 @@ export class SimpleGestureUseCase {
    */
   setEnabled(enabled: boolean): void {
     this.settings.enabled = enabled;
+  }
+
+  /**
+   * 特定のジェスチャーが有効かどうかをチェック
+   * @param gestureType ジェスチャータイプ
+   * @returns 有効かどうか
+   */
+  private isGestureEnabled(gestureType: string): boolean {
+    if (!this.settings.defaultGestureStates) {
+      return true; // デフォルトで有効
+    }
+
+    // ジェスチャータイプからアクション名を取得
+    const actionName = this.getActionNameFromGestureType(gestureType);
+    
+    // 設定があればそれを使用、なければデフォルトで有効
+    return this.settings.defaultGestureStates[actionName] !== false;
+  }
+
+  /**
+   * ジェスチャータイプからアクション名を取得
+   * @param gestureType ジェスチャータイプ
+   * @returns アクション名
+   */
+  private getActionNameFromGestureType(gestureType: string): string {
+    const gestureMapping: { [key: string]: string } = {
+      'UP': 'scroll_top',
+      'DOWN': 'scroll_bottom', 
+      'LEFT': 'back',
+      'RIGHT': 'forward',
+      'downright': 'close_tab',
+      'upright': 'new_tab',
+      'rightdown': 'duplicate_tab',
+      'updown': 'refresh',
+      'super_refresh': 'super_refresh',
+      'prev_tab': 'prev_tab',
+      'next_tab': 'next_tab'
+    };
+    
+    return gestureMapping[gestureType] || gestureType;
   }
 
   /**
