@@ -502,4 +502,188 @@ export class GesturePattern {
     
     return 'right' // fallback
   }
+
+  /**
+   * 矢印記号からGesturePatternを作成
+   * @param arrowPattern - 矢印パターン（"↑↓←→"）
+   * @returns GesturePattern
+   */
+  static fromArrows(arrowPattern: string): GesturePattern {
+    if (!arrowPattern || typeof arrowPattern !== 'string') {
+      return new GesturePattern([])
+    }
+    
+    const arrowMap: { [key: string]: Direction } = {
+      '↑': 'up',
+      '↓': 'down',
+      '←': 'left',
+      '→': 'right'
+    }
+    
+    const directions: Direction[] = []
+    for (const char of arrowPattern) {
+      if (arrowMap[char]) {
+        directions.push(arrowMap[char])
+      }
+    }
+    
+    return new GesturePattern(directions)
+  }
+
+  /**
+   * 矢印記号への変換
+   * @returns 矢印パターン（"↑↓←→"）
+   */
+  toArrows(): string {
+    const arrowMap: { [key: string]: string } = {
+      'up': '↑',
+      'down': '↓',
+      'left': '←',
+      'right': '→'
+    }
+    
+    return this._directions.map(dir => arrowMap[dir]).join('')
+  }
+
+  /**
+   * 統一パターン変換メソッド - すべてのパターン形式を矢印文字列に統一
+   * @param pattern - 任意形式のパターン（string, array, object, GesturePattern）
+   * @returns 矢印パターン（"↑↓←→"） - デリミタなし、統一形式
+   */
+  static normalizePattern(pattern: unknown): string {
+    if (!pattern) {
+      return ''
+    }
+
+    // 既にGesturePatternインスタンスの場合
+    if (pattern instanceof GesturePattern) {
+      return pattern.toArrows()
+    }
+
+    // 既に矢印文字列の場合
+    if (typeof pattern === 'string' && /^[↑↓←→]*$/.test(pattern)) {
+      return pattern
+    }
+
+    // 文字列パターンの処理
+    if (typeof pattern === 'string') {
+      return GesturePattern._normalizeStringPattern(pattern).toArrows()
+    }
+
+    // 配列パターンの処理
+    if (Array.isArray(pattern)) {
+      return GesturePattern._normalizeArrayPattern(pattern).toArrows()
+    }
+
+    // オブジェクトパターンの処理
+    if (typeof pattern === 'object' && pattern !== null) {
+      return GesturePattern._normalizeObjectPattern(pattern).toArrows()
+    }
+
+    // その他の場合は空文字列
+    return ''
+  }
+
+  /**
+   * 文字列パターンの統一処理
+   */
+  private static _normalizeStringPattern(pattern: string): GesturePattern {
+    // デリミタ区切りパターン（up→down, up,down, up down等）
+    const delimiters = ['→', ',', ' ', '-', '_']
+    for (const delimiter of delimiters) {
+      if (pattern.includes(delimiter)) {
+        const parts = pattern.split(delimiter)
+          .map(part => part.trim().toLowerCase())
+          .filter(part => part && ['up', 'down', 'left', 'right'].includes(part))
+        return new GesturePattern(parts as Direction[])
+      }
+    }
+
+    // 連続英語パターン（updownleftright）
+    const directions: Direction[] = []
+    const directionPattern = /(up|down|left|right)/gi
+    let match
+    while ((match = directionPattern.exec(pattern)) !== null) {
+      directions.push(match[0].toLowerCase() as Direction)
+    }
+    if (directions.length > 0) {
+      return new GesturePattern(directions)
+    }
+
+    // 単一文字パターン（UDLR）
+    const charMap: { [key: string]: Direction } = {
+      'u': 'up', 'U': 'up',
+      'd': 'down', 'D': 'down', 
+      'l': 'left', 'L': 'left',
+      'r': 'right', 'R': 'right'
+    }
+    const charDirections = pattern.split('').map(char => charMap[char]).filter(Boolean)
+    if (charDirections.length > 0) {
+      return new GesturePattern(charDirections)
+    }
+
+    return new GesturePattern([])
+  }
+
+  /**
+   * 配列パターンの統一処理
+   */
+  private static _normalizeArrayPattern(pattern: unknown[]): GesturePattern {
+    const directions: Direction[] = []
+    
+    for (const item of pattern) {
+      const itemStr = String(item)
+      
+      // 既に矢印の場合は変換
+      if (itemStr === '↑') {
+        directions.push('up')
+      } else if (itemStr === '↓') {
+        directions.push('down')
+      } else if (itemStr === '←') {
+        directions.push('left')
+      } else if (itemStr === '→') {
+        directions.push('right')
+      } else {
+        // 英語方向名の場合
+        const normalized = itemStr.toLowerCase()
+        if (['up', 'down', 'left', 'right'].includes(normalized)) {
+          directions.push(normalized as Direction)
+        }
+      }
+    }
+    
+    return new GesturePattern(directions)
+  }
+
+  /**
+   * オブジェクトパターンの統一処理
+   */
+  private static _normalizeObjectPattern(pattern: any): GesturePattern {
+    // GesturePatternオブジェクト（getDirectionsメソッド有り）
+    if (typeof pattern.getDirections === 'function') {
+      try {
+        const directions = pattern.getDirections()
+        return new GesturePattern(directions)
+      } catch {
+        // getDirections()が失敗した場合は次の処理へ
+      }
+    }
+
+    // _directionsプロパティを持つオブジェクト
+    if (Array.isArray(pattern._directions)) {
+      return GesturePattern._normalizeArrayPattern(pattern._directions)
+    }
+
+    // toStringメソッドがあるオブジェクト
+    if (typeof pattern.toString === 'function') {
+      try {
+        const stringPattern = pattern.toString()
+        return GesturePattern._normalizeStringPattern(stringPattern)
+      } catch {
+        // toString()が失敗した場合は空パターン
+      }
+    }
+
+    return new GesturePattern([])
+  }
 }

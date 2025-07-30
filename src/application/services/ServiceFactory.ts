@@ -14,6 +14,9 @@ import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase
 import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagementUseCase';
 import { GestureApplicationService } from './GestureApplicationService';
 
+// Domain layer imports
+import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
+
 // Infrastructure services interfaces
 interface InfrastructureServices {
   chromeStorage?: any;
@@ -356,9 +359,9 @@ export class ServiceFactory {
         const customGestureUseCase = this.useCases.customGestureManagementUseCase!;
         
         try {
-          // デフォルトジェスチャーの取得
+          // デフォルトジェスチャーの取得（統一定義使用）
           const settings = await settingsUseCase.getCurrentSettings();
-          const defaultGestures = this._getDefaultGestures(settings);
+          const defaultGestures = this._getDefaultGesturesFromUnifiedDefinition(settings);
           
           // カスタムジェスチャーの取得
           const customGestures = await customGestureUseCase.getAllCustomGestures();
@@ -404,30 +407,20 @@ export class ServiceFactory {
   }
 
   /**
-   * デフォルトジェスチャーの定義を取得
+   * デフォルトジェスチャーの定義を取得（統一定義使用）
    */
-  private _getDefaultGestures(settings: any): any[] {
+  private _getDefaultGesturesFromUnifiedDefinition(settings: any): any[] {
     const defaultGestureStates = settings.defaultGestureStates || {};
     
-    const defaultGestures = [
-      { id: 'back', name: 'ブラウザの戻る', pattern: '←', action: 'back', category: 'basic', description: '前のページに戻る' },
-      { id: 'forward', name: 'ブラウザの進む', pattern: '→', action: 'forward', category: 'basic', description: '次のページに進む' },
-      { id: 'refresh', name: 'ページ更新', pattern: '↑↓', action: 'refresh', category: 'page', description: 'ページをリロード' },
-      { id: 'super_refresh', name: 'スーパーリロード', pattern: '↑↓↑', action: 'super_refresh', category: 'page', description: 'キャッシュクリア付きリロード' },
-      { id: 'close_tab', name: 'タブを閉じる', pattern: '↓→', action: 'close_tab', category: 'tab', description: '現在のタブを閉じる' },
-      { id: 'new_tab', name: '新しいタブを開く', pattern: '↑→', action: 'new_tab', category: 'tab', description: '新しいタブを開く' },
-      { id: 'duplicate_tab', name: 'タブ複製', pattern: '→↓', action: 'duplicate_tab', category: 'tab', description: '現在のタブを複製' },
-      { id: 'scroll_top', name: 'ページ最上部スクロール', pattern: '↑', action: 'scroll_top', category: 'page', description: 'ページの先頭に移動' },
-      { id: 'scroll_bottom', name: 'ページ最下部スクロール', pattern: '↓', action: 'scroll_bottom', category: 'page', description: 'ページの末尾に移動' },
-      { id: 'prev_tab', name: '前のタブ', pattern: '←→', action: 'prev_tab', category: 'tab', description: '前のタブに切り替え' },
-      { id: 'next_tab', name: '次のタブ', pattern: '→←', action: 'next_tab', category: 'tab', description: '次のタブに切り替え' }
-    ];
+    // 統一定義から状態付きジェスチャーリストを生成
+    const gesturesWithState = DefaultGestureDefinitions.createGestureListItems(defaultGestureStates as unknown as Record<string, boolean>);
     
-    return defaultGestures.map(gesture => ({
-      ...gesture,
-      type: 'default' as const,
-      enabled: defaultGestureStates[gesture.id] !== false // デフォルトは有効
-    }));
+    console.log('✅ UNIFIED - ServiceFactory default gestures from central definition:');
+    gesturesWithState.slice(0, 3).forEach((gesture, index) => {
+      console.log(`  [${index}] id: "${gesture.id}", action: "${gesture.action}", enabled: ${gesture.enabled}`);
+    });
+    
+    return gesturesWithState;
   }
 
   /**

@@ -3,7 +3,8 @@
  * 設定管理のビジネスロジックを統合するUseCaseクラス
  */
 
-import { Settings, DebugSettings } from '../../domain/entities'
+import { Settings, DebugSettings } from '../../domain/entities';
+import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
 
 // Repository interfaces
 interface SettingsRepository {
@@ -131,25 +132,18 @@ export class SettingsManagementUseCase {
         throw new Error(`This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`)
       }
       
-      console.log('🔍 Debug - Original gestureId received:', gestureId, 'enabled:', enabled);
+      console.log('✅ FIXED - SettingsManagementUseCase with correct gesture ID:');
+      console.log('  gestureId:', gestureId, '(should be gesture ID like "left", "right")');
+      console.log('  enabled:', enabled);
       
       // ジェスチャーIDの検証（標準ジェスチャーのみ）
       this.validateGestureId(gestureId)
 
-      // Action名からジェスチャーIDへのマッピング（実際のリポジトリ操作用）
-      const actualGestureId = this.mapActionToGestureId(gestureId);
-
-      console.log('🔍 Debug - Mapped gestureId:', {
-        originalId: gestureId,
-        mappedId: actualGestureId,
-        enabled: enabled,
-        isActionName: gestureId !== actualGestureId
-      });
-
-      const result = await this.settingsRepository.updateGestureState(actualGestureId, enabled)
+      // 根本原因修正後：マッピング不要、直接ジェスチャーIDを使用
+      const result = await this.settingsRepository.updateGestureState(gestureId, enabled)
 
       // 設定変更通知
-      await this.notifySettingsChange('gesture_toggled', { gestureId: actualGestureId, enabled })
+      await this.notifySettingsChange('gesture_toggled', { gestureId, enabled })
 
       return result
     } catch (error) {
@@ -513,92 +507,19 @@ export class SettingsManagementUseCase {
   }
 
   private validateGestureId(gestureId: string): void {
-    // Action名・ジェスチャーIDからジェスチャーIDへのマッピング
-    const actionToGestureIdMap: Record<string, string> = {
-      // アクション名 → ジェスチャーID
-      'back': 'left',
-      'forward': 'right', 
-      'scroll_top': 'up',
-      'scroll_bottom': 'down',
-      'close_tab': 'downright',
-      'new_tab': 'upright',
-      'duplicate_tab': 'rightdown',
-      'refresh': 'updown',
-      'super_refresh': 'super_refresh',
-      'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab',
-      // ジェスチャーID → ジェスチャーID（UI側から直接IDが渡される場合）
-      'left': 'left',
-      'right': 'right',
-      'up': 'up',
-      'down': 'down',
-      'downright': 'downright',
-      'upright': 'upright',
-      'rightdown': 'rightdown',
-      'updown': 'updown'
-    };
+    // 統一定義から有効なジェスチャーIDを取得
+    const validGestureIds = DefaultGestureDefinitions.getValidGestureIds();
 
-    const validGestureIds = [
-      'left', 'right', 'up', 'down',
-      'downright', 'upright', 'rightdown', 'updown',
-      'super_refresh', 'prev_tab', 'next_tab'
-    ];
-
-    // アクション名またはジェスチャーIDが渡された場合は対応するジェスチャーIDに変換
-    let actualGestureId = gestureId;
-    if (actionToGestureIdMap[gestureId]) {
-      actualGestureId = actionToGestureIdMap[gestureId];
-      if (gestureId !== actualGestureId) {
-        console.log('🔄 Action name mapped to gesture ID:', { action: gestureId, gestureId: actualGestureId });
-      }
-    }
-
-    if (!validGestureIds.includes(actualGestureId)) {
+    if (!validGestureIds.includes(gestureId)) {
       console.error('❌ Invalid gesture ID for standard gesture:', {
-        originalId: gestureId,
-        mappedId: actualGestureId,
-        validIds: validGestureIds,
-        isCustomId: gestureId.startsWith('custom_'),
-        availableActions: Object.keys(actionToGestureIdMap)
+        receivedId: gestureId,
+        validIds: Array.from(validGestureIds),
+        isCustomId: gestureId.startsWith('custom_')
       });
-      throw new Error(`Invalid standard gesture ID: ${gestureId} (mapped: ${actualGestureId}). Valid IDs: ${validGestureIds.join(', ')}`);
+      throw new Error(`Invalid standard gesture ID: ${gestureId}. Valid IDs: ${Array.from(validGestureIds).join(', ')}`);
     }
   }
 
-  private mapActionToGestureId(gestureId: string): string {
-    // Action名からジェスチャーIDへのマッピング + ジェスチャーIDからジェスチャーIDへのマッピング
-    const actionToGestureIdMap: Record<string, string> = {
-      // アクション名 → ジェスチャーID
-      'back': 'left',
-      'forward': 'right', 
-      'scroll_top': 'up',
-      'scroll_bottom': 'down',
-      'close_tab': 'downright',
-      'new_tab': 'upright',
-      'duplicate_tab': 'rightdown',
-      'refresh': 'updown',
-      'super_refresh': 'super_refresh',
-      'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab',
-      // ジェスチャーID → ジェスチャーID（UI側から直接IDが渡される場合）
-      'left': 'left',
-      'right': 'right',
-      'up': 'up',
-      'down': 'down',
-      'downright': 'downright',
-      'upright': 'upright',
-      'rightdown': 'rightdown',
-      'updown': 'updown'
-    };
-
-    // マッピングが存在する場合は対応するジェスチャーIDに変換
-    if (actionToGestureIdMap[gestureId]) {
-      return actionToGestureIdMap[gestureId];
-    }
-
-    // マッピングが見つからない場合は元のIDをそのまま返す
-    return gestureId;
-  }
 
   private validateUrlPattern(pattern: string): void {
     if (!pattern || typeof pattern !== 'string' || pattern.trim().length === 0) {

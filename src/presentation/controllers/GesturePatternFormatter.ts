@@ -4,6 +4,9 @@
  * Clean Architecture - Presentation層
  */
 
+import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
+import { GesturePattern as DomainGesturePattern } from '../../domain/valueObjects/GesturePattern';
+
 // 型定義
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'up' | 'down' | 'left' | 'right' | 'U' | 'D' | 'L' | 'R';
 type Arrow = '↑' | '↓' | '←' | '→';
@@ -16,14 +19,14 @@ interface ActionDisplayNames {
   [key: string]: string;
 }
 
-interface GesturePattern {
+interface LegacyGesturePattern {
   _directions?: Direction[];
   toString?: () => string;
 }
 
 interface CategoryInfo {
   name: string;
-  gestures: any[];
+  gestures: unknown[];
 }
 
 interface GestureCategories {
@@ -42,58 +45,14 @@ interface ArrowMap {
 
 class GesturePatternFormatter {
   /**
-   * パターンを矢印表記に変換
+   * パターンを矢印表記に変換（統一メソッド使用）
    * @param pattern - ジェスチャーパターン（文字列、配列、オブジェクト）
    * @param maxLength - 最大表示長（省略表示用）
    * @returns 矢印表記のパターン
    */
-  formatPatternToArrows(pattern: any, maxLength: number = 8): string {
-    let arrowPattern = '';
-    
-    if (typeof pattern === 'string') {
-      // 既に矢印文字列の場合はそのまま返す
-      if (/^[↑↓←→]+$/.test(pattern)) {
-        arrowPattern = pattern;
-      } else if (pattern.includes(',')) {
-        // カンマ区切りの場合は分割して処理
-        arrowPattern = pattern
-          .split(',')
-          .map(dir => dir.trim())
-          .map(dir => this.directionToArrow(dir))
-          .join('');
-      } else {
-        // 英語方向文字列の場合は変換
-        arrowPattern = pattern
-          .replace(/UP/gi, '↑')
-          .replace(/DOWN/gi, '↓')
-          .replace(/LEFT/gi, '←')
-          .replace(/RIGHT/gi, '→');
-      }
-    } else if (Array.isArray(pattern)) {
-      // 配列パターンの処理
-      arrowPattern = pattern
-        .map(dir => this.directionToArrow(dir))
-        .join('');
-    } else if (pattern && typeof pattern === 'object' && (pattern as GesturePattern)._directions && Array.isArray((pattern as GesturePattern)._directions)) {
-      // GesturePatternオブジェクトの処理
-      arrowPattern = (pattern as GesturePattern)._directions!
-        .map(dir => this.directionToArrow(dir))
-        .join('');
-    } else if (pattern && typeof pattern.toString === 'function') {
-      // その他のオブジェクトでtoStringメソッドがある場合
-      const stringPattern = pattern.toString();
-      if (/^[↑↓←→]+$/.test(stringPattern)) {
-        arrowPattern = stringPattern;
-      } else {
-        arrowPattern = stringPattern
-          .replace(/UP/gi, '↑')
-          .replace(/DOWN/gi, '↓')
-          .replace(/LEFT/gi, '←')
-          .replace(/RIGHT/gi, '→');
-      }
-    } else {
-      arrowPattern = String(pattern || '');
-    }
+  formatPatternToArrows(pattern: unknown, maxLength: number = 8): string {
+    // ドメイン層の統一変換メソッドを使用
+    const arrowPattern = DomainGesturePattern.normalizePattern(pattern);
     
     // 長すぎる場合は省略表示
     if (maxLength > 1 && arrowPattern.length > maxLength) {
@@ -108,7 +67,7 @@ class GesturePatternFormatter {
    * @param direction - 方向文字列
    * @returns 矢印文字
    */
-  directionToArrow(direction: any): string {
+  directionToArrow(direction: unknown): string {
     // 既に矢印の場合はそのまま
     if (typeof direction === 'string' && /^[↑↓←→]$/.test(direction)) {
       return direction;
@@ -130,22 +89,11 @@ class GesturePatternFormatter {
    * @returns 表示用アクション名
    */
   getActionDisplayName(action: string): string {
-    const actionNames: ActionDisplayNames = {
-      back: 'ブラウザの戻る',
-      forward: 'ブラウザの進む',
-      scroll_top: 'ページ最上部スクロール',
-      scroll_bottom: 'ページ最下部スクロール',
-      scroll_up: 'ページ最上部スクロール',
-      scroll_down: 'ページ最下部スクロール',
-      close_tab: 'タブを閉じる',
-      new_tab: '新しいタブを開く',
-      duplicate_tab: 'タブ複製',
-      refresh: 'ページ更新',
-      hard_refresh: 'スーパーリロード',
-      super_refresh: 'スーパーリロード（キャッシュクリア付き）',
-      prev_tab: '前のタブに切り替え',
-      next_tab: '次のタブに切り替え',
-      
+    // 統一定義からアクション表示名を取得
+    const unifiedActionNames = DefaultGestureDefinitions.getActionDisplayNames();
+    
+    // 統一定義にない場合は拡張定義を使用
+    const additionalActionNames: ActionDisplayNames = {
       // 追加のアクション名（将来拡張用）
       bookmark: 'ブックマーク追加',
       zoom_in: '拡大',
@@ -158,7 +106,7 @@ class GesturePatternFormatter {
       fullscreen: 'フルスクリーン'
     };
     
-    return actionNames[action] || action;
+    return unifiedActionNames[action] || additionalActionNames[action] || action;
   }
 
   /**
@@ -166,7 +114,7 @@ class GesturePatternFormatter {
    * @param gestures - ジェスチャー配列
    * @returns カテゴリ別のジェスチャー
    */
-  groupGesturesByCategory(gestures: any[]): GestureCategories {
+  groupGesturesByCategory(gestures: unknown[]): GestureCategories {
     const categories: GestureCategories = {
       navigation: { name: 'ナビゲーション', gestures: [] },
       tabs: { name: 'タブ操作', gestures: [] },
@@ -175,7 +123,8 @@ class GesturePatternFormatter {
     };
 
     gestures.forEach(gesture => {
-      const action = gesture.action;
+      const gestureItem = gesture as { action: string };
+      const action = gestureItem.action;
       
       if (['back', 'forward'].includes(action)) {
         categories.navigation.gestures.push(gesture);
@@ -209,7 +158,7 @@ class GesturePatternFormatter {
    * @param pattern - ジェスチャーパターン
    * @returns 複雑度スコア（1-5）
    */
-  calculatePatternComplexity(pattern: any): number {
+  calculatePatternComplexity(pattern: unknown): number {
     const arrowPattern = this.formatPatternToArrows(pattern);
     const length = arrowPattern.length;
     
@@ -228,7 +177,7 @@ export {
   type Arrow,
   type DirectionMap,
   type ActionDisplayNames,
-  type GesturePattern,
+  type LegacyGesturePattern,
   type CategoryInfo,
   type GestureCategories,
   type ArrowMap

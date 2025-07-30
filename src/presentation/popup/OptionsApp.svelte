@@ -168,19 +168,25 @@
 
   async function loadGestures() {
     try {
+      console.log('🔍 DEBUG: loadGestures() called');
       const serviceFactory = (window as any).ServiceFactory;
       if (!serviceFactory) {
         console.warn('ServiceFactory not available for loadGestures');
         return;
       }
       
+      console.log('🔍 DEBUG: Creating GestureListUseCase');
       const gestureListUseCase = serviceFactory.createGestureListUseCase();
+      console.log('🔍 DEBUG: Calling getAllGestures()');
       const loadedGestures = await gestureListUseCase.getAllGestures();
+      console.log('🔍 DEBUG: getAllGestures() returned:', loadedGestures ? loadedGestures.length : 'null', 'items');
+      
       // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
       gestures = [...(loadedGestures || [])];
-      console.log('✅ Gestures loaded:', gestures.length);
-      console.log('📊 Gesture data structure:', gestures.slice(0, 2)); // 最初の2つをデバッグ
-      console.log('🔍 Debug - First gesture details:', gestures[0]);
+      console.log('✅ FIXED - Gestures loaded with correct ID/action mapping:', gestures.length);
+      gestures.slice(0, 3).forEach((g: any, i: number) => {
+        console.log(`  [${i}] id: "${g.id}", action: "${g.action}", enabled: ${g.enabled}`);
+      });
     } catch (error) {
       console.error('❌ ジェスチャー読み込みエラー:', error);
       gestures = [];
@@ -526,16 +532,7 @@
       // カスタムジェスチャーは必ず custom_ で始まるIDを持つ
       const isCustomGesture = gestureId.startsWith('custom_');
       
-      console.log('🔍 Toggle gesture debug info:', {
-        gestureId,
-        enabled,
-        isCustomGesture,
-        customGesturesCount: customGestures.length,
-        customGesturesIds: customGestures.map(g => g.id).slice(0, 3), // 最初の3つのみ表示
-        gestureStartsWithCustom: gestureId.startsWith('custom_'),
-        gesturesCount: gestures.length,
-        allGestureTypes: gestures.map(g => ({ id: g.id, type: g.type })).slice(0, 5)
-      });
+      console.log('✅ FIXED - OptionsApp received correct gesture ID:', gestureId, 'enabled:', enabled);
       
       if (isCustomGesture) {
         const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
