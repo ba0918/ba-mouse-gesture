@@ -34,8 +34,8 @@ module.exports = [
         DebugLogger: 'readonly',
         CustomGestureManager: 'readonly',
         CustomPatternMatcher: 'readonly',
-        GestureLearningManager: 'readonly',
-        AdaptiveThresholdManager: 'readonly',
+
+
         OptionsManager: 'readonly',
         confirm: 'readonly',
         alert: 'readonly',

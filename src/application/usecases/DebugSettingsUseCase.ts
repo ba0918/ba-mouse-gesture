@@ -7,6 +7,7 @@
 
 import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity.js';
 import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter.js';
+import { NoOpLogger } from '../../infrastructure/adapters/NoOpLogger.js';
 
 // 型定義
 interface SyncConsistencyResult {
@@ -37,14 +38,22 @@ interface DebugInfo {
   error?: string;
 }
 
+// Loggerインターフェースの定義
+interface Logger {
+  error(message: string, ...args: any[]): void;
+  warn(message: string, ...args: any[]): void;
+  info(message: string, ...args: any[]): void;
+  debug(message: string, ...args: any[]): void;
+}
+
 export class DebugSettingsUseCase {
   private settingsRepository: any = null;
   private storageAdapter: DebugStorageAdapter | null = null;
   private isListenerStarted: boolean = false;
   private syncCallbacks: Set<(newEntity: any, oldEntity: any) => void> = new Set();
-  private logger: any = null; // DebugLoggerインスタンス
+  private logger: Logger; // DebugLoggerインスタンス
 
-  constructor(settingsRepository: any = null, logger: any = null) {
+  constructor(settingsRepository: any = null, logger: Logger | null = null) {
     // 引数が与えられた場合は互換性モード、そうでなければ独自実装
     if (settingsRepository) {
       this.settingsRepository = settingsRepository;
@@ -57,50 +66,23 @@ export class DebugSettingsUseCase {
       if (!DebugStorageAdapterClass) {
         throw new Error('DebugStorageAdapter is not available');
       }
-      this.storageAdapter = new DebugStorageAdapterClass(logger);
+      this.storageAdapter = new DebugStorageAdapterClass(logger || new NoOpLogger());
     }
     
-    this.logger = logger;
+    // NoOpLoggerクラスを動的にチェック
+    const NoOpLoggerClass = (typeof window !== 'undefined' && (window as any).NoOpLogger) || 
+      NoOpLogger;
+    this.logger = logger || new NoOpLoggerClass();
   }
   
   /**
    * DebugLoggerを設定
    */
-  setLogger(logger: any): void {
+  setLogger(logger: Logger): void {
     this.logger = logger;
     if (this.storageAdapter) {
       this.storageAdapter.setLogger(logger);
     }
-  }
-  
-  /**
-   * 静的ログ制御を使用してログを出力
-   * DebugLogger未初期化時でもlogLevel=0設定を尊重
-   */
-  private logWithLevel(level: number, message: string, ...args: any[]): void {
-    if (this.logger) {
-      // DebugLoggerが利用可能な場合はそれを使用
-      switch(level) {
-      case 0: this.logger.error(message, ...args); break;
-      case 1: this.logger.warn(message, ...args); break;
-      case 2: this.logger.info(message, ...args); break;
-      case 3: this.logger.debug(message, ...args); break;
-      }
-    } else {
-      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
-        DebugSettingsEntity;
-      
-      if (DebugSettingsEntityClass && DebugSettingsEntityClass.shouldLogStatic(level)) {
-        // DebugLogger未初期化時は静的ログ制御を使用
-        switch(level) {
-        case 0: console.error(`❌ ${message}`, ...args); break;
-        case 1: console.warn(`⚠️ ${message}`, ...args); break;
-        case 2: console.log(`🔧 ${message}`, ...args); break;
-        case 3: console.log(`🐛 ${message}`, ...args); break;
-        }
-      }
-    }
-    // レベルが許可されていない場合は何も出力しない
   }
 
   /**
@@ -108,7 +90,7 @@ export class DebugSettingsUseCase {
    */
   async getDebugSettings(): Promise<DebugSettingsEntity> {
     try {
-      this.logWithLevel(2, 'DebugSettingsUseCase: Loading debug settings from unified storage');
+      this.logger.info('DebugSettingsUseCase: Loading debug settings from unified storage');
       
       if (!this.storageAdapter) {
         throw new Error('StorageAdapter is not available');
@@ -121,11 +103,11 @@ export class DebugSettingsUseCase {
       
       const entity = DebugSettingsEntityClass.fromPlainObject(settingsData);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Loaded debug settings:', entity.getSyncInfo());
+      this.logger.info('DebugSettingsUseCase: Loaded debug settings:', entity.getSyncInfo());
       return entity;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to load debug settings:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to load debug settings:', error);
       // フォールバックとしてデフォルト設定を返す
       const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
         DebugSettingsEntity;
@@ -141,7 +123,7 @@ export class DebugSettingsUseCase {
       const debugSettings = await this.getDebugSettings();
       return debugSettings.enabled;
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to check if debug enabled:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to check if debug enabled:', error);
       return false;
     }
   }
@@ -151,7 +133,7 @@ export class DebugSettingsUseCase {
    */
   async saveDebugSettings(debugSettings: DebugSettingsEntity | any): Promise<DebugSettingsEntity> {
     try {
-      this.logWithLevel(2, 'DebugSettingsUseCase: Saving debug settings to unified storage');
+      this.logger.info('DebugSettingsUseCase: Saving debug settings to unified storage');
       
       if (!this.storageAdapter) {
         throw new Error('StorageAdapter is not available');
@@ -169,7 +151,7 @@ export class DebugSettingsUseCase {
       // 統一されたストレージに保存（popup/content script両方で同期）
       const savedSettings = await this.storageAdapter.saveSettings(debugSettings.toStorageFormat());
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Debug settings saved successfully:', savedSettings);
+      this.logger.info('DebugSettingsUseCase: Debug settings saved successfully:', savedSettings);
       
       // 設定変更通知（コールバック実行）
       this.notifySettingsChanged(debugSettings);
@@ -177,7 +159,7 @@ export class DebugSettingsUseCase {
       return DebugSettingsEntityClass.fromPlainObject(savedSettings);
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to save debug settings:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to save debug settings:', error);
       throw new Error(`Failed to save debug settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -200,7 +182,7 @@ export class DebugSettingsUseCase {
     // 初回のみストレージリスナーを開始
     if (!this.isListenerStarted) {
       this.storageAdapter.startChangeListener((changes: any) => {
-        this.logWithLevel(2, 'DebugSettingsUseCase: Settings change detected:', {
+        this.logger.info('DebugSettingsUseCase: Settings change detected:', {
           old: changes.oldSettings,
           new: changes.newSettings
         });
@@ -217,17 +199,17 @@ export class DebugSettingsUseCase {
             try {
               cb(newEntity, oldEntity);
             } catch (error) {
-              this.logWithLevel(0, 'DebugSettingsUseCase: Callback failed:', error);
+              this.logger.error('DebugSettingsUseCase: Callback failed:', error);
             }
           });
           
         } catch (error) {
-          this.logWithLevel(0, 'DebugSettingsUseCase: Failed to process settings change:', error);
+          this.logger.error('DebugSettingsUseCase: Failed to process settings change:', error);
         }
       });
       
       this.isListenerStarted = true;
-      this.logWithLevel(2, 'DebugSettingsUseCase: Sync listener started');
+      this.logger.info('DebugSettingsUseCase: Sync listener started');
     }
   }
 
@@ -245,7 +227,7 @@ export class DebugSettingsUseCase {
     if (this.syncCallbacks.size === 0 && this.storageAdapter) {
       this.storageAdapter.stopChangeListener();
       this.isListenerStarted = false;
-      this.logWithLevel(2, 'DebugSettingsUseCase: Sync listener stopped');
+      this.logger.info('DebugSettingsUseCase: Sync listener stopped');
     }
   }
 
@@ -259,11 +241,11 @@ export class DebugSettingsUseCase {
       
       await this.saveDebugSettings(debugSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Debug enabled toggled:', newState);
+      this.logger.info('DebugSettingsUseCase: Debug enabled toggled:', newState);
       return newState;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to toggle debug enabled:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to toggle debug enabled:', error);
       throw error;
     }
   }
@@ -278,11 +260,11 @@ export class DebugSettingsUseCase {
       
       await this.saveDebugSettings(debugSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Show status toggled:', newState);
+      this.logger.info('DebugSettingsUseCase: Show status toggled:', newState);
       return newState;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to toggle show status:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to toggle show status:', error);
       throw error;
     }
   }
@@ -297,11 +279,11 @@ export class DebugSettingsUseCase {
       
       await this.saveDebugSettings(debugSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Log level updated:', level);
+      this.logger.info('DebugSettingsUseCase: Log level updated:', level);
       return true;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to update log level:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to update log level:', error);
       throw error;
     }
   }
@@ -316,11 +298,11 @@ export class DebugSettingsUseCase {
       
       await this.saveDebugSettings(debugSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Status position updated:', position);
+      this.logger.info('DebugSettingsUseCase: Status position updated:', position);
       return true;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to update status position:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to update status position:', error);
       throw error;
     }
   }
@@ -335,11 +317,11 @@ export class DebugSettingsUseCase {
       
       await this.saveDebugSettings(updatedSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Multiple settings updated:', newSettings);
+      this.logger.info('DebugSettingsUseCase: Multiple settings updated:', newSettings);
       return updatedSettings;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to update multiple settings:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to update multiple settings:', error);
       throw error;
     }
   }
@@ -374,7 +356,7 @@ export class DebugSettingsUseCase {
       };
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to validate sync consistency:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to validate sync consistency:', error);
       return {
         isConsistent: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -394,7 +376,7 @@ export class DebugSettingsUseCase {
       const legacyCheck = await this.storageAdapter.checkLegacyData();
       
       if (legacyCheck.hasLegacyData) {
-        this.logWithLevel(1, 'DebugSettingsUseCase: Legacy local storage data detected');
+        this.logger.warn('DebugSettingsUseCase: Legacy local storage data detected');
         
         const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
           DebugSettingsEntity;
@@ -406,7 +388,7 @@ export class DebugSettingsUseCase {
         const consistencyCheck = currentSettings.validateSyncConsistency(legacyEntity);
         
         if (!consistencyCheck.isConsistent) {
-          this.logWithLevel(1, 'DebugSettingsUseCase: Inconsistency detected, cleaning up legacy data');
+          this.logger.warn('DebugSettingsUseCase: Inconsistency detected, cleaning up legacy data');
           await this.storageAdapter.cleanupLegacyData();
         }
         
@@ -420,7 +402,7 @@ export class DebugSettingsUseCase {
       return { hadLegacyData: false };
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to check/migrate legacy data:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to check/migrate legacy data:', error);
       return { 
         hadLegacyData: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -433,7 +415,7 @@ export class DebugSettingsUseCase {
    */
   async initializeDebugSettings(): Promise<DebugSettingsEntity> {
     try {
-      this.logWithLevel(2, 'DebugSettingsUseCase: Initializing debug settings');
+      this.logger.info('DebugSettingsUseCase: Initializing debug settings');
       
       // 旧データの確認と移行
       await this.checkAndMigrateLegacyData();
@@ -442,7 +424,7 @@ export class DebugSettingsUseCase {
       
       // 既に設定が存在する場合はそのまま使用
       if (existingSettings && existingSettings.enabled !== undefined) {
-        this.logWithLevel(2, 'DebugSettingsUseCase: Using existing debug settings');
+        this.logger.info('DebugSettingsUseCase: Using existing debug settings');
         return existingSettings;
       }
       
@@ -453,11 +435,11 @@ export class DebugSettingsUseCase {
       const defaultSettings = DebugSettingsEntityClass.getDefault();
       const savedSettings = await this.saveDebugSettings(defaultSettings);
       
-      this.logWithLevel(2, 'DebugSettingsUseCase: Debug settings initialized with defaults');
+      this.logger.info('DebugSettingsUseCase: Debug settings initialized with defaults');
       return savedSettings;
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to initialize debug settings:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to initialize debug settings:', error);
       throw error;
     }
   }
@@ -466,7 +448,7 @@ export class DebugSettingsUseCase {
    * 設定変更通知（内部用）
    */
   private notifySettingsChanged(newSettings: DebugSettingsEntity): void {
-    this.logWithLevel(2, 'DebugSettingsUseCase: Notifying settings change:', newSettings.getSyncInfo());
+    this.logger.info('DebugSettingsUseCase: Notifying settings change:', newSettings.getSyncInfo());
   }
 
   /**
@@ -489,7 +471,7 @@ export class DebugSettingsUseCase {
       };
       
     } catch (error) {
-      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to get debug info:', error);
+      this.logger.error('DebugSettingsUseCase: Failed to get debug info:', error);
       return {
         useCase: 'DebugSettingsUseCase',
         error: error instanceof Error ? error.message : 'Unknown error',

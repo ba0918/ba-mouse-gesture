@@ -4,6 +4,7 @@
  */
 
 import { DebugLogger, type LogLevel, type DebugSettings } from '../../infrastructure/adapters/DebugLogger';
+import { ActionName } from '../../domain/types';
 
 // デバッグ設定
 const debugSettings: DebugSettings = {
@@ -17,21 +18,16 @@ const debugSettings: DebugSettings = {
 const logger = new DebugLogger(debugSettings);
 
 // メッセージ型定義
-interface SimpleGestureMessage {
-  type: 'simpleGesture';
-  direction: string;
-}
-
-interface ComplexGestureMessage {
-  type: 'complexGesture';
-  gestureType: string;
+interface ActionMessage {
+  type: 'executeAction';
+  action: ActionName;
 }
 
 interface DebugMessage {
   type: 'clearStorage' | 'getStorageInfo';
 }
 
-type MessageRequest = SimpleGestureMessage | ComplexGestureMessage | DebugMessage;
+type MessageRequest = ActionMessage | DebugMessage;
 
 interface MessageResponse {
   success: boolean;
@@ -61,11 +57,11 @@ chrome.runtime.onMessage.addListener(function (
   logger.debug('Message received:', request);
   logger.debug('Sender tab ID:', sender.tab?.id);
     
-  if (request.type === 'simpleGesture') {
-    const direction = request.direction;
+  if (request.type === 'executeAction') {
+    const actionName = request.action;
     const tabId = sender.tab?.id;
         
-    logger.info(`Processing gesture: ${direction} for tab ${tabId}`);
+    logger.info(`Processing action: ${actionName} for tab ${tabId}`);
         
     if (!tabId) {
       logger.error('No tab ID available');
@@ -73,38 +69,14 @@ chrome.runtime.onMessage.addListener(function (
       return;
     }
         
-    // シンプルなアクション実行
-    executeSimpleAction(direction, tabId)
+    // 統一されたアクション実行
+    executeAction(actionName, tabId)
       .then(result => {
         logger.info('Action completed:', result);
         sendResponse({ success: true, action: result });
       })
       .catch(error => {
         logger.error('Action failed:', error);
-        sendResponse({ success: false, error: (error as Error).message });
-      });
-        
-    return true; // 非同期レスポンス
-  } else if (request.type === 'complexGesture') {
-    const gestureType = request.gestureType;
-    const tabId = sender.tab?.id;
-        
-    logger.info(`Processing complex gesture: ${gestureType} for tab ${tabId}`);
-        
-    if (!tabId) {
-      logger.error('No tab ID available');
-      sendResponse({ success: false, error: 'No tab ID' });
-      return;
-    }
-        
-    // 複合ジェスチャーアクション実行
-    executeComplexAction(gestureType, tabId)
-      .then(result => {
-        logger.info('Complex action completed:', result);
-        sendResponse({ success: true, action: result });
-      })
-      .catch(error => {
-        logger.error('Complex action failed:', error);
         sendResponse({ success: false, error: (error as Error).message });
       });
         
@@ -157,82 +129,60 @@ chrome.runtime.onMessage.addListener(function (
   sendResponse({ success: false, error: 'Unknown message type' });
 });
 
-// シンプルアクション実行
-async function executeSimpleAction(direction: string, tabId: number): Promise<string> {
-  logger.debug(`Executing ${direction} action for tab ${tabId}`);
+// 統一されたアクション実行
+async function executeAction(actionName: ActionName, tabId: number): Promise<string> {
+  logger.debug(`Executing action: ${actionName} for tab ${tabId}`);
     
   try {
-    switch (direction) {
-    case 'LEFT':
+    switch (actionName) {
+    // ナビゲーション
+    case 'back':
       logger.debug('Going back');
       await chrome.tabs.goBack(tabId);
       return 'Navigated back';
-                
-    case 'RIGHT':
+      
+    case 'forward':
       logger.debug('Going forward');
       await chrome.tabs.goForward(tabId);
       return 'Navigated forward';
-                
-    case 'UP':
+      
+    // スクロール
+    case 'scroll_top':
       logger.debug('Scrolling to top');
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'top'
       } as ScrollMessage);
       return 'Scrolled to top';
-                
-    case 'DOWN':
+      
+    case 'scroll_bottom':
       logger.debug('Scrolling to bottom');
       await chrome.tabs.sendMessage(tabId, {
         type: 'scroll',
         direction: 'bottom'
       } as ScrollMessage);
       return 'Scrolled to bottom';
-                
-    default:
-      throw new Error(`Unknown direction: ${direction}`);
-    }
-  } catch (error) {
-    logger.error(`${direction} action failed:`, error);
-    throw error;
-  }
-}
-
-// 複合アクション実行
-async function executeComplexAction(gestureType: string, tabId: number): Promise<string> {
-  logger.debug(`Executing complex gesture: ${gestureType} for tab ${tabId}`);
-    
-  try {
-    switch (gestureType) {
-    case 'downright':
-      logger.debug('Closing tab (↓→)');
+      
+    // タブ操作
+    case 'close_tab':
+      logger.debug('Closing tab');
       await chrome.tabs.remove(tabId);
       return 'Tab closed';
-                
-    case 'upright':
-      logger.debug('Opening new tab (↑→)');
+      
+    case 'new_tab':
+      logger.debug('Opening new tab');
       await chrome.tabs.create({});
       return 'New tab opened';
-                
-    case 'rightdown': {
-      logger.debug('Duplicating tab (→↓)');
+      
+    case 'duplicate_tab': {
+      logger.debug('Duplicating tab');
       const currentTab = await chrome.tabs.get(tabId);
       await chrome.tabs.create({ url: currentTab.url });
       return 'Tab duplicated';
     }
-                
-    case 'updown':
-      logger.debug('Reloading tab (↑↓)');
-      await chrome.tabs.reload(tabId);
-      return 'Tab reloaded';
-
-    case 'super_refresh':
-      logger.debug('Super reloading tab (↑↓↑)');
-      await chrome.tabs.reload(tabId, {bypassCache: true});
-      return 'Tab super reloaded (cache cleared)';
-
+    
     case 'prev_tab': {
-      logger.debug('Switching to previous tab (←→)');
+      logger.debug('Switching to previous tab');
       const tabs = await chrome.tabs.query({currentWindow: true});
       const currentIndex = tabs.findIndex(tab => tab.id === tabId);
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
@@ -241,9 +191,9 @@ async function executeComplexAction(gestureType: string, tabId: number): Promise
       }
       return 'Switched to previous tab';
     }
-
+    
     case 'next_tab': {
-      logger.debug('Switching to next tab (→←)');
+      logger.debug('Switching to next tab');
       const tabs = await chrome.tabs.query({currentWindow: true});
       const currentIndex = tabs.findIndex(tab => tab.id === tabId);
       const nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
@@ -252,12 +202,23 @@ async function executeComplexAction(gestureType: string, tabId: number): Promise
       }
       return 'Switched to next tab';
     }
-                
+    
+    // ページ操作
+    case 'refresh':
+      logger.debug('Reloading tab');
+      await chrome.tabs.reload(tabId);
+      return 'Tab reloaded';
+      
+    case 'super_refresh':
+      logger.debug('Super reloading tab (cache cleared)');
+      await chrome.tabs.reload(tabId, {bypassCache: true});
+      return 'Tab super reloaded (cache cleared)';
+      
     default:
-      throw new Error(`Unknown gesture type: ${gestureType}`);
+      throw new Error(`Unknown action: ${actionName}`);
     }
   } catch (error) {
-    logger.error(`Complex gesture ${gestureType} failed:`, error);
+    logger.error(`Action ${actionName} failed:`, error);
     throw error;
   }
 }

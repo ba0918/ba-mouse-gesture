@@ -118,14 +118,14 @@ class MockGestureRecognizer {
 
   convertGestureTypeToAction(gestureType) {
     const gestureMapping = {
-      'LEFT': 'back',
-      'RIGHT': 'forward', 
-      'UP': 'scroll_top',
-      'DOWN': 'scroll_bottom',
-      'downright': 'close_tab',
-      'upright': 'new_tab',
-      'rightdown': 'duplicate_tab',
-      'updown': 'refresh',
+      '←': 'back',
+      '→': 'forward', 
+      '↑': 'scroll_top',
+      '↓': 'scroll_bottom',
+      '↓→': 'close_tab',
+      '↑→': 'new_tab',
+      '→↓': 'duplicate_tab',
+      '↑↓': 'refresh',
       'super_refresh': 'super_refresh',
       'prev_tab': 'prev_tab',
       'next_tab': 'next_tab'
@@ -135,7 +135,7 @@ class MockGestureRecognizer {
   }
 
   isComplexGesture(gestureType) {
-    const complexGestures = ['downright', 'upright', 'rightdown', 'updown', 'super_refresh', 'prev_tab', 'next_tab']
+    const complexGestures = ['↓→', '↑→', '→↓', '↑↓', 'super_refresh', 'prev_tab', 'next_tab']
     return complexGestures.includes(gestureType)
   }
 }
@@ -325,14 +325,14 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       const testGestureRecognizer = new MockGestureRecognizer(mockSettingsManager)
       
       // 直接メソッドをテスト
-      expect(testGestureRecognizer.convertGestureTypeToAction('LEFT')).toBe('back')
-      expect(testGestureRecognizer.convertGestureTypeToAction('RIGHT')).toBe('forward')
-      expect(testGestureRecognizer.convertGestureTypeToAction('UP')).toBe('scroll_top')
-      expect(testGestureRecognizer.convertGestureTypeToAction('DOWN')).toBe('scroll_bottom')
-      expect(testGestureRecognizer.convertGestureTypeToAction('downright')).toBe('close_tab')
-      expect(testGestureRecognizer.convertGestureTypeToAction('upright')).toBe('new_tab')
-      expect(testGestureRecognizer.convertGestureTypeToAction('rightdown')).toBe('duplicate_tab')
-      expect(testGestureRecognizer.convertGestureTypeToAction('updown')).toBe('refresh')
+      expect(testGestureRecognizer.convertGestureTypeToAction('←')).toBe('back')
+      expect(testGestureRecognizer.convertGestureTypeToAction('→')).toBe('forward')
+      expect(testGestureRecognizer.convertGestureTypeToAction('↑')).toBe('scroll_top')
+      expect(testGestureRecognizer.convertGestureTypeToAction('↓')).toBe('scroll_bottom')
+      expect(testGestureRecognizer.convertGestureTypeToAction('↓→')).toBe('close_tab')
+      expect(testGestureRecognizer.convertGestureTypeToAction('↑→')).toBe('new_tab')
+      expect(testGestureRecognizer.convertGestureTypeToAction('→↓')).toBe('duplicate_tab')
+      expect(testGestureRecognizer.convertGestureTypeToAction('↑↓')).toBe('refresh')
     })
   })
 })

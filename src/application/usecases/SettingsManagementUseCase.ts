@@ -3,7 +3,7 @@
  * 設定管理のビジネスロジックを統合するUseCaseクラス
  */
 
-import { Settings, DebugSettings } from '../../domain/entities';
+import { Settings, DebugSettingsEntity } from '../../domain/entities';
 import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
@@ -16,7 +16,7 @@ interface SettingsRepository {
   updateGestureState(gestureId: string, enabled: boolean): Promise<Settings>
   addExcludeSite(pattern: string): Promise<Settings>
   removeExcludeSite(pattern: string): Promise<Settings>
-  updateDebugSettings(debugConfig: Partial<DebugSettings>): Promise<Settings>
+  updateDebugSettings(debugConfig: Record<string, any>): Promise<Settings>
   resetToDefaults(): Promise<Settings>
   createBackup(): Promise<SettingsBackupData>
   restoreFromBackup(backup: SettingsBackupData): Promise<Settings>
@@ -192,7 +192,7 @@ export class SettingsManagementUseCase {
   /**
    * デバッグ設定を更新
    */
-  async updateDebugSettings(debugConfig: Partial<DebugSettings>): Promise<Settings> {
+  async updateDebugSettings(debugConfig: Record<string, any>): Promise<Settings> {
     try {
       // デバッグ設定の検証
       this.validateDebugSettings(debugConfig)
@@ -533,7 +533,7 @@ export class SettingsManagementUseCase {
     }
   }
 
-  private validateDebugSettings(debugConfig: Partial<DebugSettings>): void {
+  private validateDebugSettings(debugConfig: Record<string, any>): void {
     if (!debugConfig || typeof debugConfig !== 'object') {
       throw new Error('Invalid debug config. Expected object')
     }

@@ -17,6 +17,12 @@ interface Settings {
   gestureThreshold: number;
   excludeList: string[];
   defaultGestureStates?: Record<string, boolean>;
+  debugSettings?: {
+    enabled: boolean;
+    logLevel: number;
+    showStatus: boolean;
+    statusPosition: string;
+  };
 }
 
 interface Point {
@@ -53,6 +59,7 @@ export class GestureManager {
   private gestureUseCase: SimpleGestureUseCase | null = null;
   private messagingAdapter: SimpleMessagingAdapter | null = null;
   private canvasRenderer: CanvasRendererAdapter | null = null;
+  private debugElement: HTMLElement | null = null;
   
   private settings: Settings = {
     enabled: true,
@@ -131,6 +138,9 @@ export class GestureManager {
       // 設定変更監視
       this.watchSettingsChanges();
       
+      // デバッグ表示初期化
+      this.initializeDebugDisplay();
+      
       this.isInitialized = true;
       console.log('✅ GestureManager: Initialization complete');
       return true;
@@ -193,8 +203,10 @@ export class GestureManager {
         
         if (result.success) {
           console.log('Gesture executed successfully:', result.gestureType, result.action);
+          this.showDebugMessage(`✓ ${result.gestureType} → ${result.action}`);
         } else {
           console.log('Gesture execution failed:', result.error);
+          this.showDebugMessage(`✗ ${result.error}`);
         }
       }
       
@@ -237,7 +249,13 @@ export class GestureManager {
           strokeWidth: settingsData.strokeWidth || 3,
           gestureThreshold: settingsData.gestureThreshold || 15,
           excludeList: settingsData.excludeList || [],
-          defaultGestureStates: settingsData.defaultGestureStates || {}
+          defaultGestureStates: settingsData.defaultGestureStates || {},
+          debugSettings: settingsData.debugSettings || {
+            enabled: false,
+            logLevel: 2,
+            showStatus: false,
+            statusPosition: 'top-right'
+          }
         };
       }
       console.log('Settings loaded:', this.settings);
@@ -331,6 +349,9 @@ export class GestureManager {
   private updateSettings(newSettings: Partial<Settings>): void {
     this.settings = { ...this.settings, ...newSettings };
     
+    // デバッグ表示の更新
+    this.updateDebugDisplay();
+    
     // 各コンポーネントに設定を伝播
     if (this.eventHandler) {
       this.eventHandler.updateSettings(this.settings);
@@ -356,11 +377,103 @@ export class GestureManager {
       this.canvasRenderer = null;
     }
     
+    if (this.debugElement) {
+      this.debugElement.remove();
+      this.debugElement = null;
+    }
+    
     this.gestureUseCase = null;
     this.messagingAdapter = null;
     this.isInitialized = false;
     
     console.log('GestureManager destroyed');
+  }
+
+  /**
+   * デバッグ表示初期化
+   */
+  private initializeDebugDisplay(): void {
+    if (!this.settings.debugSettings?.enabled || !this.settings.debugSettings?.showStatus) {
+      return;
+    }
+
+    this.debugElement = document.createElement('div');
+    this.debugElement.id = 'gesture-debug-display';
+    this.debugElement.style.cssText = `
+      position: fixed;
+      z-index: 999999;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      max-width: 300px;
+      max-height: 150px;
+      overflow-y: auto;
+      pointer-events: none;
+    `;
+
+    // 位置設定
+    const position = this.settings.debugSettings.statusPosition || 'top-right';
+    switch (position) {
+      case 'top-left':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'top-right':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+      case 'bottom-left':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'bottom-right':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+    }
+
+    document.body.appendChild(this.debugElement);
+    this.showDebugMessage('Debug display initialized');
+  }
+
+  /**
+   * デバッグメッセージ表示
+   */
+  private showDebugMessage(message: string): void {
+    if (!this.debugElement || !this.settings.debugSettings?.enabled) {
+      return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString();
+    const logDiv = document.createElement('div');
+    logDiv.textContent = `[${timestamp}] ${message}`;
+    logDiv.style.marginBottom = '2px';
+    
+    this.debugElement.appendChild(logDiv);
+    
+    // 最大5件のメッセージを保持
+    while (this.debugElement.children.length > 5) {
+      this.debugElement.removeChild(this.debugElement.firstChild!);
+    }
+    
+    this.debugElement.scrollTop = this.debugElement.scrollHeight;
+  }
+
+  /**
+   * デバッグ表示更新
+   */
+  private updateDebugDisplay(): void {
+    // 既存の表示を削除
+    if (this.debugElement) {
+      this.debugElement.remove();
+      this.debugElement = null;
+    }
+    
+    // 新しい設定で再初期化
+    this.initializeDebugDisplay();
   }
 
   /**

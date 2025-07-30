@@ -67,14 +67,14 @@ describe('ジェスチャー無効化機能統合テスト', () => {
         excludeList: [],
         gestureThreshold: 15,
         defaultGestureStates: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          downright: true,
-          upright: true,
-          rightdown: true,
-          updown: true,
+          '←': true,
+          '→': true,
+          '↑': true,
+          '↓': true,
+          '↓→': true,
+          '↑→': true,
+          '→↓': true,
+          '↑↓': true,
           super_refresh: true,
           prev_tab: true,
           next_tab: true
@@ -154,13 +154,13 @@ describe('ジェスチャー無効化機能統合テスト', () => {
   describe('設定画面からの状態変更統合テスト', () => {
     test('設定画面でジェスチャーを無効化→実際の動作が停止される', async () => {
       // 1. 初期状態：すべて有効
-      expect(gestureSystem.isGestureEnabled('left')).toBe(true)
+      expect(gestureSystem.isGestureEnabled('←')).toBe(true)
       
-      // 2. 設定画面でleftジェスチャーを無効化（シミュレート）
+      // 2. 設定画面で←ジェスチャーを無効化（シミュレート）
       const updatedSettings = {
         defaultGestureStates: {
           ...gestureSystem.settings.defaultGestureStates,
-          left: false
+          '←': false
         }
       }
       
@@ -172,40 +172,40 @@ describe('ジェスチャー無効化機能統合テスト', () => {
       gestureSystem.updateSettings(updatedSettings)
       
       // 5. 無効化されたジェスチャーが実行されないことを確認
-      expect(gestureSystem.isGestureEnabled('left')).toBe(false)
-      const result = gestureSystem.handleSimpleGesture('LEFT', 50)
+      expect(gestureSystem.isGestureEnabled('←')).toBe(false)
+      const result = gestureSystem.handleSimpleGesture('←', 50)
       
       expect(result.executed).toBe(false)
       expect(result.reason).toBe('disabled')
-      expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture LEFT is disabled')
-      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー LEFT は無効です', mockDebugLogger.LOG_LEVELS.WARN)
+      expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture ← is disabled')
+      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー ← は無効です', mockDebugLogger.LOG_LEVELS.WARN)
       expect(gestureSystem.sendGestureMessage).not.toHaveBeenCalled()
     })
 
     test('一部のジェスチャーのみ無効化→他のジェスチャーは正常動作', () => {
-      // leftとupdownを無効化、他は有効のまま
+      // ←と↑↓を無効化、他は有効のまま
       const updatedSettings = {
         defaultGestureStates: {
           ...gestureSystem.settings.defaultGestureStates,
-          left: false,
-          updown: false
+          '←': false,
+          '↑↓': false
         }
       }
       
       gestureSystem.updateSettings(updatedSettings)
       
       // 無効化されたジェスチャー
-      const leftResult = gestureSystem.handleSimpleGesture('LEFT', 50)
+      const leftResult = gestureSystem.handleSimpleGesture('←', 50)
       expect(leftResult.executed).toBe(false)
       
-      const updownResult = gestureSystem.handleComplexGesture({ type: 'default', action: 'updown' }, 80)
+      const updownResult = gestureSystem.handleComplexGesture({ type: 'default', action: '↑↓' }, 80)
       expect(updownResult.executed).toBe(false)
       
       // 有効なジェスチャー
-      const rightResult = gestureSystem.handleSimpleGesture('RIGHT', 50)
+      const rightResult = gestureSystem.handleSimpleGesture('→', 50)
       expect(rightResult.executed).toBe(true)
       
-      const downrightResult = gestureSystem.handleComplexGesture({ type: 'default', action: 'downright' }, 80)
+      const downrightResult = gestureSystem.handleComplexGesture({ type: 'default', action: '↓→' }, 80)
       expect(downrightResult.executed).toBe(true)
       
       expect(gestureSystem.sendGestureMessage).toHaveBeenCalledTimes(2)
@@ -263,16 +263,16 @@ describe('ジェスチャー無効化機能統合テスト', () => {
 
   describe('カスタムジェスチャーとの共存テスト', () => {
     test('デフォルトジェスチャー無効化時もカスタムジェスチャーは動作する', () => {
-      // デフォルトのleftジェスチャーを無効化
+      // デフォルトの←ジェスチャーを無効化
       gestureSystem.updateSettings({
         defaultGestureStates: {
           ...gestureSystem.settings.defaultGestureStates,
-          left: false
+          '←': false
         }
       })
       
-      // デフォルトのleftジェスチャーは実行されない
-      const defaultResult = gestureSystem.handleSimpleGesture('LEFT', 50)
+      // デフォルトの←ジェスチャーは実行されない
+      const defaultResult = gestureSystem.handleSimpleGesture('←', 50)
       expect(defaultResult.executed).toBe(false)
       
       // カスタムジェスチャーは実行される
@@ -335,10 +335,10 @@ describe('ジェスチャー無効化機能統合テスト', () => {
       }
       
       // デフォルトで有効として動作することを確認
-      expect(gestureSystem.isGestureEnabled('left')).toBe(true)
+      expect(gestureSystem.isGestureEnabled('←')).toBe(true)
       expect(gestureSystem.isGestureEnabled('super_refresh')).toBe(true)
       
-      const result = gestureSystem.handleSimpleGesture('LEFT', 50)
+      const result = gestureSystem.handleSimpleGesture('←', 50)
       expect(result.executed).toBe(true)
       expect(mockDebugLogger.debug).toHaveBeenCalledWith('defaultGestureStates not found, assuming enabled')
     })
@@ -363,7 +363,7 @@ describe('ジェスチャー無効化機能統合テスト', () => {
       expect(success).toBe(true)
       
       // エラー時でもジェスチャーは動作する
-      const result = gestureSystem.handleSimpleGesture('LEFT', 50)
+      const result = gestureSystem.handleSimpleGesture('←', 50)
       expect(result.executed).toBe(true)
     })
   })

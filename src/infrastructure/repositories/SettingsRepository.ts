@@ -134,7 +134,7 @@ export class SettingsRepository {
    */
   async updateGestureState(gestureId: string, enabled: boolean): Promise<Settings> {
     const settings = await this.getSettings()
-    settings.setGestureEnabled(gestureId as keyof DefaultGestureStates, enabled)
+    settings.setGestureEnabled(gestureId, enabled)
     await this.saveSettings(settings)
     return settings
   }

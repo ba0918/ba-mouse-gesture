@@ -58,7 +58,7 @@ export class DebugSettingsEntity {
   constructor({
     enabled = false,
     logLevel = 2, // INFO レベル
-    showStatus = false,  
+    showStatus = false,
     statusPosition = 'top-right',
     createdAt = null,
     updatedAt = null
@@ -67,11 +67,11 @@ export class DebugSettingsEntity {
     this.logLevel = logLevel;
     this.showStatus = showStatus;
     this.statusPosition = statusPosition;
-    
+
     // タイムスタンプ管理
     this.createdAt = createdAt || new Date().toISOString();
     this.updatedAt = updatedAt || new Date().toISOString();
-    
+
     // 検証を実行
     this.validate();
   }
@@ -130,15 +130,15 @@ export class DebugSettingsEntity {
    * 複数の設定を一括更新
    */
   updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
-      
+
     const updated = new DebugSettingsEntityClass({
       ...this.toPlainObject(),
       ...newSettings,
       updatedAt: new Date().toISOString()
     });
-    
+
     return updated;
   }
 
@@ -168,11 +168,11 @@ export class DebugSettingsEntity {
       };
     }
 
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
 
-    const other = otherSettings instanceof DebugSettingsEntityClass 
-      ? otherSettings 
+    const other = otherSettings instanceof DebugSettingsEntityClass
+      ? otherSettings
       : new DebugSettingsEntityClass(otherSettings);
 
     const inconsistencies: string[] = [];
@@ -251,16 +251,16 @@ export class DebugSettingsEntity {
    */
   getChanges(otherSettings: DebugSettingsEntity | DebugSettingsData): Record<string, ChangeRecord> {
     const changes: Record<string, ChangeRecord> = {};
-    
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
-      
-    const other = otherSettings instanceof DebugSettingsEntityClass 
-      ? otherSettings 
+
+    const other = otherSettings instanceof DebugSettingsEntityClass
+      ? otherSettings
       : new DebugSettingsEntityClass(otherSettings);
-    
+
     const fields: (keyof DebugSettingsEntity)[] = ['enabled', 'logLevel', 'showStatus', 'statusPosition'];
-    
+
     fields.forEach(field => {
       if (this[field] !== other[field]) {
         changes[String(field)] = {
@@ -269,7 +269,7 @@ export class DebugSettingsEntity {
         };
       }
     });
-    
+
     return changes;
   }
 
@@ -277,7 +277,7 @@ export class DebugSettingsEntity {
    * 設定の複製
    */
   clone(): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
     return new DebugSettingsEntityClass(this.toPlainObject());
   }
@@ -286,13 +286,13 @@ export class DebugSettingsEntity {
    * 設定の比較
    */
   equals(otherSettings: DebugSettingsEntity): boolean {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
-      
+
     if (!(otherSettings instanceof DebugSettingsEntityClass)) {
       return false;
     }
-    
+
     return (
       this.enabled === otherSettings.enabled &&
       this.logLevel === otherSettings.logLevel &&
@@ -321,7 +321,7 @@ export class DebugSettingsEntity {
    * プレーンオブジェクトからエンティティを作成
    */
   static fromPlainObject(obj: DebugSettingsData): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
     return new DebugSettingsEntityClass(obj);
   }
@@ -330,7 +330,7 @@ export class DebugSettingsEntity {
    * デフォルト設定を取得
    */
   static getDefault(): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
       DebugSettingsEntity;
     return new DebugSettingsEntityClass({
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
@@ -339,7 +339,7 @@ export class DebugSettingsEntity {
       statusPosition: 'top-right'
     });
   }
-  
+
   /**
    * 静的なログ制御（初期化前でも使用可能）
    * Chrome Storage API読み込み前の早期ログ制御のため
@@ -350,7 +350,7 @@ export class DebugSettingsEntity {
     }
     return this._defaultInstance;
   }
-  
+
   /**
    * 静的なログレベルチェック（初期化前でも使用可能）
    * @param level - ログレベル (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG)
@@ -376,9 +376,4 @@ export class DebugSettingsEntity {
   toString(): string {
     return `DebugSettingsEntity(enabled=${this.enabled}, logLevel=${this.logLevel}, showStatus=${this.showStatus}, position=${this.statusPosition}, updated=${this.updatedAt})`;
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).DebugSettingsEntity = DebugSettingsEntity;
 }

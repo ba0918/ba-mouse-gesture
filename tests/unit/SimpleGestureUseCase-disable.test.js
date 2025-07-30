@@ -89,8 +89,27 @@ class MockSimpleGestureUseCase {
       return true
     }
 
-    const actionName = this.getActionNameFromGestureType(gestureType)
-    return this.settings.defaultGestureStates[actionName] !== false
+    // ジェスチャータイプからジェスチャーIDを取得（UI側と一致）
+    const gestureId = this.getGestureIdFromGestureType(gestureType)
+    return this.settings.defaultGestureStates[gestureId] !== false
+  }
+
+  getGestureIdFromGestureType(gestureType) {
+    const gestureIdMapping = {
+      'UP': 'up',
+      'DOWN': 'down', 
+      'LEFT': 'left',
+      'RIGHT': 'right',
+      'downright': 'downright',
+      'upright': 'upright',
+      'rightdown': 'rightdown',
+      'updown': 'updown',
+      'super_refresh': 'super_refresh',
+      'prev_tab': 'prev_tab',
+      'next_tab': 'next_tab'
+    }
+    
+    return gestureIdMapping[gestureType] || gestureType.toLowerCase()
   }
 
   getActionNameFromGestureType(gestureType) {
@@ -159,8 +178,8 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
       // 設定を更新（ジェスチャー有効）
       useCase.updateSettings({
         defaultGestureStates: {
-          back: true,
-          forward: true
+          left: true,   // ジェスチャーIDで設定
+          right: true
         }
       })
 
@@ -180,8 +199,8 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
       // 設定を更新（leftジェスチャー無効）
       useCase.updateSettings({
         defaultGestureStates: {
-          back: false,
-          forward: true
+          left: false,  // ジェスチャーIDで設定
+          right: true
         }
       })
 
@@ -200,11 +219,11 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
     })
 
     test('複合ジェスチャーの無効化チェック', async () => {
-      // 設定を更新（close_tab無効）
+      // 設定を更新（downright無効）
       useCase.updateSettings({
         defaultGestureStates: {
-          close_tab: false,
-          new_tab: true
+          downright: false,  // ジェスチャーIDで設定
+          upright: true
         }
       })
 
@@ -240,23 +259,23 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
   })
 
   describe('ジェスチャーマッピングの確認', () => {
-    test('ジェスチャータイプからアクション名への変換が正しい', async () => {
+    test('ジェスチャータイプからジェスチャーIDへの変換が正しい', async () => {
       const testCases = [
-        { gestureType: 'UP', actionName: 'scroll_top' },
-        { gestureType: 'DOWN', actionName: 'scroll_bottom' },
-        { gestureType: 'LEFT', actionName: 'back' },
-        { gestureType: 'RIGHT', actionName: 'forward' },
-        { gestureType: 'downright', actionName: 'close_tab' },
-        { gestureType: 'upright', actionName: 'new_tab' },
-        { gestureType: 'rightdown', actionName: 'duplicate_tab' },
-        { gestureType: 'updown', actionName: 'refresh' }
+        { gestureType: 'UP', gestureId: 'up' },
+        { gestureType: 'DOWN', gestureId: 'down' },
+        { gestureType: 'LEFT', gestureId: 'left' },
+        { gestureType: 'RIGHT', gestureId: 'right' },
+        { gestureType: 'downright', gestureId: 'downright' },
+        { gestureType: 'upright', gestureId: 'upright' },
+        { gestureType: 'rightdown', gestureId: 'rightdown' },
+        { gestureType: 'updown', gestureId: 'updown' }
       ]
 
       for (const testCase of testCases) {
-        // 該当アクションを無効化
+        // 該当ジェスチャーIDを無効化
         useCase.updateSettings({
           defaultGestureStates: {
-            [testCase.actionName]: false
+            [testCase.gestureId]: false
           }
         })
 

@@ -1,5 +1,6 @@
 import { GesturePattern } from '../valueObjects/GesturePattern'
 import { Threshold } from '../valueObjects/Threshold'
+import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions'
 
 /**
  * アクションの型定義
@@ -76,8 +77,8 @@ export class Gesture {
    * @returns 基本ジェスチャーの場合true
    */
   isBasicGesture(): boolean {
-    const basicGestures = ['left', 'right', 'up', 'down']
-    return basicGestures.includes(this.id)
+    const definition = DefaultGestureDefinitions.getDefinitionById(this.id)
+    return definition?.category === 'basic'
   }
 
   /**
@@ -109,20 +110,8 @@ export class Gesture {
    * @returns アクション表示名
    */
   getActionDisplayName(): string {
-    const actionNames: Record<GestureAction, string> = {
-      back: 'ブラウザの戻る',
-      forward: 'ブラウザの進む',
-      scroll_up: 'ページ最上部スクロール',
-      scroll_down: 'ページ最下部スクロール',
-      close_tab: 'タブを閉じる',
-      new_tab: '新しいタブを開く',
-      refresh: 'ページ更新',
-      duplicate_tab: 'タブ複製',
-      super_refresh: 'スーパーリロード（キャッシュクリア付き）',
-      prev_tab: '前のタブに切り替え',
-      next_tab: '次のタブに切り替え'
-    }
-    return actionNames[this.action] || this.action
+    const displayNames = DefaultGestureDefinitions.getActionDisplayNames()
+    return displayNames[this.action] || this.action
   }
 
   /**
@@ -187,43 +176,24 @@ export class Gesture {
    * @returns 復元されたジェスチャー
    */
   static fromJSON(data: any): Gesture {
-    try {
-      // データ形式のバリデーション
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid data format: data must be an object')
-      }
-      
-      // 必須フィールドのチェック
-      if (!data.id || !data.name || !data.action) {
-        throw new Error('Invalid data format: missing required fields (id, name, action)')
-      }
-      
-      // パターンのデシリアライゼーション（エラー処理付き）
-      let pattern: GesturePattern
-      try {
-        pattern = GesturePattern.fromArray(data.pattern)
-      } catch (patternError) {
-        console.warn('Gesture.fromJSON: Failed to deserialize pattern, using empty pattern:', patternError)
-        pattern = GesturePattern.empty()
-      }
-      
-      // デフォルト値の設定
-      const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true
-      
-      const gesture = new Gesture(data.id, data.name, pattern, data.action as GestureAction, enabled)
-      gesture.createdAt = data.createdAt || new Date().toISOString()
-      return gesture
-    } catch (error) {
-      console.error('Gesture.fromJSON: Failed to deserialize gesture:', error, data)
-      
-      // フォールバック: 最小限の有効なジェスチャーを作成
-      return new Gesture(
-        data?.id || `fallback_${Date.now()}`,
-        data?.name || 'Invalid Gesture',
-        GesturePattern.empty(),
-        (data?.action as GestureAction) || 'back',
-        false // 無効状態で作成
-      )
+    // データ形式のバリデーション
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid data format: data must be an object')
     }
+    
+    // 必須フィールドのチェック
+    if (!data.id || !data.name || !data.action) {
+      throw new Error('Invalid data format: missing required fields (id, name, action)')
+    }
+    
+    // パターンのデシリアライゼーション
+    const pattern = GesturePattern.fromArray(data.pattern)
+    
+    // デフォルト値の設定
+    const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true
+    
+    const gesture = new Gesture(data.id, data.name, pattern, data.action as GestureAction, enabled)
+    gesture.createdAt = data.createdAt || new Date().toISOString()
+    return gesture
   }
 }

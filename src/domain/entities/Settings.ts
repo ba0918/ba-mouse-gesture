@@ -1,53 +1,23 @@
 import { Threshold } from '../valueObjects/Threshold'
-
-/**
- * デバッグ設定の型定義
- */
-export interface DebugSettings {
-  enabled: boolean
-  logLevel: number
-  showStatus: boolean
-  statusPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
-}
+import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions'
+import { DebugSettingsEntity } from './DebugSettingsEntity'
 
 /**
  * デフォルトジェスチャー状態の型定義
+ * DefaultGestureDefinitionsから動的に生成される
  */
-export interface DefaultGestureStates {
-  // 基本ジェスチャー
-  left: boolean
-  right: boolean
-  up: boolean
-  down: boolean
-  // 複合ジェスチャー
-  downright: boolean
-  upright: boolean
-  rightdown: boolean
-  updown: boolean
-  // Phase 10 新機能
-  super_refresh: boolean
-  prev_tab: boolean
-  next_tab: boolean
-}
+export type DefaultGestureStates = Record<string, boolean>
 
 /**
- * デフォルトジェスチャー状態の実際の値
+ * デフォルトジェスチャー状態の実際の値を取得
+ * DefaultGestureDefinitionsをSingle Source of Truthとして使用
  */
-export const DEFAULT_GESTURE_STATES: DefaultGestureStates = {
-  // 基本ジェスチャー
-  left: true,
-  right: true,
-  up: true,
-  down: true,
-  // 複合ジェスチャー
-  downright: true,
-  upright: true,
-  rightdown: true,
-  updown: true,
-  // Phase 10 新機能
-  super_refresh: true,
-  prev_tab: true,
-  next_tab: true,
+function createDefaultGestureStates(): DefaultGestureStates {
+  const states: DefaultGestureStates = {}
+  DefaultGestureDefinitions.getValidGestureIds().forEach(id => {
+    states[id] = true // デフォルトは全て有効
+  })
+  return states
 }
 
 /**
@@ -59,8 +29,8 @@ export interface SettingsConfig {
   strokeWidth?: number
   gestureThreshold?: number
   excludeList?: string[]
-  defaultGestureStates?: Partial<DefaultGestureStates>
-  debugSettings?: Partial<DebugSettings>
+  defaultGestureStates?: Record<string, boolean>
+  debugSettings?: Record<string, any> // DebugSettingsEntityと互換性のため
 }
 
 /**
@@ -81,7 +51,7 @@ export class Settings {
   public gestureThreshold: number
   public excludeList: string[]
   public defaultGestureStates: DefaultGestureStates
-  public debugSettings: DebugSettings
+  public debugSettings: DebugSettingsEntity
   public readonly version: string
   public lastModified: string
 
@@ -97,32 +67,16 @@ export class Settings {
     this.excludeList = config.excludeList || []
     
     // デフォルトジェスチャー状態
+    const defaultStates = createDefaultGestureStates()
     this.defaultGestureStates = {
-      ...DEFAULT_GESTURE_STATES,
+      ...defaultStates,
       ...config.defaultGestureStates
     }
     
-    // デバッグ設定
-    const incomingDebugSettings = config.debugSettings || {}
-    
-    // logLevelの数値型保証処理
-    const processedLogLevel = incomingDebugSettings.logLevel !== undefined 
-      ? (typeof incomingDebugSettings.logLevel === 'string' ? parseInt(incomingDebugSettings.logLevel, 10) : incomingDebugSettings.logLevel)
-      : 2
-      
-    // 数値型logLevelを保証したincoming設定
-    const processedIncomingDebugSettings = {
-      ...incomingDebugSettings,
-      logLevel: processedLogLevel
-    }
-      
-    this.debugSettings = {
-      enabled: false,
-      showStatus: false,
-      statusPosition: 'top-right' as const,
-      ...processedIncomingDebugSettings,
-      logLevel: processedLogLevel // 処理済みのlogLevelを使用
-    }
+    // デバッグ設定（DebugSettingsEntityに統一）
+    this.debugSettings = config.debugSettings 
+      ? DebugSettingsEntity.fromPlainObject(config.debugSettings)
+      : DebugSettingsEntity.getDefault()
     
     // メタデータ
     this.version = '1.0.0'
@@ -151,7 +105,11 @@ export class Settings {
    * @param gestureId - ジェスチャーID
    * @returns 有効な場合true
    */
-  isGestureEnabled(gestureId: keyof DefaultGestureStates): boolean {
+  isGestureEnabled(gestureId: string): boolean {
+    // バリデーション: 有効なジェスチャーIDかチェック
+    if (!DefaultGestureDefinitions.getValidGestureIds().includes(gestureId)) {
+      return false
+    }
     return this.defaultGestureStates[gestureId] !== false
   }
 
@@ -160,7 +118,11 @@ export class Settings {
    * @param gestureId - ジェスチャーID
    * @param enabled - 有効/無効
    */
-  setGestureEnabled(gestureId: keyof DefaultGestureStates, enabled: boolean): void {
+  setGestureEnabled(gestureId: string, enabled: boolean): void {
+    // バリデーション: 有効なジェスチャーIDかチェック
+    if (!DefaultGestureDefinitions.getValidGestureIds().includes(gestureId)) {
+      throw new Error(`Invalid gesture ID: ${gestureId}`)
+    }
     this.defaultGestureStates[gestureId] = Boolean(enabled)
     this.updateModified()
   }
@@ -272,16 +234,16 @@ export class Settings {
    * デバッグ設定を取得
    * @returns デバッグ設定のコピー
    */
-  getDebugSettings(): DebugSettings {
-    return { ...this.debugSettings }
+  getDebugSettings(): DebugSettingsEntity {
+    return this.debugSettings.clone()
   }
 
   /**
    * デバッグ設定を更新
    * @param debugConfig - デバッグ設定
    */
-  setDebugSettings(debugConfig: Partial<DebugSettings>): void {
-    this.debugSettings = { ...this.debugSettings, ...debugConfig }
+  setDebugSettings(debugConfig: Record<string, any>): void {
+    this.debugSettings = this.debugSettings.updateSettings(debugConfig)
     this.updateModified()
   }
 
@@ -321,18 +283,11 @@ export class Settings {
    * @returns 有効な場合true
    */
   private isValidDebugSettings(): boolean {
-    if (!this.debugSettings || typeof this.debugSettings !== 'object') {
+    try {
+      return this.debugSettings && this.debugSettings.validate()
+    } catch {
       return false
     }
-    
-    const { enabled, logLevel, showStatus, statusPosition } = this.debugSettings
-    
-    return typeof enabled === 'boolean' &&
-           typeof logLevel === 'number' &&
-           logLevel >= 0 && logLevel <= 3 &&
-           typeof showStatus === 'boolean' &&
-           typeof statusPosition === 'string' &&
-           ['top-right', 'top-left', 'bottom-right', 'bottom-left'].includes(statusPosition)
   }
 
   /**
@@ -349,6 +304,14 @@ export class Settings {
     const defaultConfig = new Settings()
     Object.assign(this, defaultConfig)
     this.updateModified()
+  }
+
+  /**
+   * 利用可能なジェスチャーIDの一覧を取得
+   * @returns ジェスチャーIDの配列
+   */
+  getAvailableGestureIds(): readonly string[] {
+    return DefaultGestureDefinitions.getValidGestureIds()
   }
 
   /**
@@ -371,7 +334,7 @@ export class Settings {
       gestureThreshold: this.gestureThreshold,
       excludeList: [...this.excludeList],
       defaultGestureStates: { ...this.defaultGestureStates },
-      debugSettings: { ...this.debugSettings },
+      debugSettings: this.debugSettings.toPlainObject(),
       version: this.version,
       lastModified: this.lastModified
     }

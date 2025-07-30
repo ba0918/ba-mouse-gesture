@@ -46,7 +46,7 @@ export interface CustomGestureDTO {
   action: GestureAction
   enabled: boolean
   description: string
-  usage: UsageStatisticsDTO
+
   createdAt: string
   updatedAt: string
 }
@@ -61,37 +61,11 @@ export interface CustomGestureUpdateDTO {
   description?: string
 }
 
-/**
- * 使用統計DTO
- */
-export interface UsageStatisticsDTO {
-  totalUses: number
-  lastUsed: string
-  averageAccuracy: number
-  successRate: number
-}
 
-/**
- * 学習結果DTO
- */
-export interface LearningResultDTO {
-  gestureId: string
-  samplesProcessed: number
-  accuracy: number
-  results: unknown[]
-  statistics: Record<string, unknown>
-  message: string
-}
 
-/**
- * ジェスチャー統計DTO
- */
-export interface GestureStatisticsDTO {
-  recognition: Record<string, unknown>
-  performance: Record<string, unknown>
-  learning: Record<string, unknown>
-  timestamp: string
-}
+
+
+
 
 /**
  * ジェスチャーバックアップDTO
@@ -100,7 +74,7 @@ export interface GestureBackupDTO {
   timestamp: string
   version: string
   customGestures: CustomGestureDTO[]
-  learningData: Record<string, unknown>
+
 }
 
 /**
@@ -167,10 +141,7 @@ export interface IGestureService {
     additionalSamples: RawPoint[][]
   ): Promise<LearningResultDTO>
 
-  /**
-   * ジェスチャー統計の取得
-   */
-  getGestureStatistics(): Promise<GestureStatisticsDTO>
+
 
   /**
    * ジェスチャーのエクスポート

@@ -18,16 +18,16 @@ export class URLParserAdapter {
         const urlObj = new window.URL(url);
         return urlObj.hostname;
       }
-      
+
       // Node.js環境またはURL APIが利用できない場合
       if (typeof globalThis !== 'undefined' && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         return urlObj.hostname;
       }
-      
+
       // フォールバック: 正規表現による解析
       return this.parseHostnameWithRegex(url);
-      
+
     } catch (error) {
       console.warn('URLParserAdapter: Failed to parse URL:', url, error);
       return this.parseHostnameWithRegex(url);
@@ -47,14 +47,14 @@ export class URLParserAdapter {
         const urlObj = new window.URL(url);
         return urlObj.pathname;
       }
-      
+
       if (typeof globalThis !== 'undefined' && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         return urlObj.pathname;
       }
-      
+
       return this.parsePathnameWithRegex(url);
-      
+
     } catch (error) {
       console.warn('URLParserAdapter: Failed to parse pathname:', url, error);
       return this.parsePathnameWithRegex(url);
@@ -74,15 +74,15 @@ export class URLParserAdapter {
         new window.URL(url);
         return true;
       }
-      
+
       if (typeof globalThis !== 'undefined' && globalThis.URL) {
         new globalThis.URL(url);
         return true;
       }
-      
+
       // 基本的なURL形式チェック
       return /^https?:\/\/.+/.test(url);
-      
+
     } catch {
       return false;
     }
@@ -128,7 +128,7 @@ export class URLParserAdapter {
         });
         return params;
       }
-      
+
       if (typeof globalThis !== 'undefined' && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         const params: Record<string, string> = {};
@@ -140,7 +140,7 @@ export class URLParserAdapter {
 
       // フォールバック: 正規表現による解析
       return this.parseSearchParamsWithRegex(url);
-      
+
     } catch (error) {
       console.warn('URLParserAdapter: Failed to parse search params:', url, error);
       return {};
@@ -155,13 +155,13 @@ export class URLParserAdapter {
       if (typeof window !== 'undefined' && window.URL) {
         return new window.URL(url).href;
       }
-      
+
       if (typeof globalThis !== 'undefined' && globalThis.URL) {
         return new globalThis.URL(url).href;
       }
-      
+
       return url;
-      
+
     } catch (error) {
       console.warn('URLParserAdapter: Failed to normalize URL:', url, error);
       return url;
@@ -199,7 +199,7 @@ export class URLParserAdapter {
     try {
       const params: Record<string, string> = {};
       const match = url.match(/\?([^#]*)/);
-      
+
       if (match && match[1]) {
         const pairs = match[1].split('&');
         for (const pair of pairs) {
@@ -209,15 +209,10 @@ export class URLParserAdapter {
           }
         }
       }
-      
+
       return params;
     } catch {
       return {};
     }
   }
-}
-
-// グローバル定義（ブラウザ環境用）
-if (typeof window !== 'undefined') {
-  (window as any).URLParserAdapter = URLParserAdapter;
 }

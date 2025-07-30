@@ -236,16 +236,8 @@ export class CustomGesture extends Gesture {
       
       return gesture
     } catch (error) {
-      console.error('CustomGesture.fromJSON: Failed to deserialize custom gesture:', error, data)
-      
-      // フォールバック: 最小限の有効なカスタムジェスチャーを作成
-      return new CustomGesture(
-        data?.id || `fallback_${Date.now()}`,
-        data?.name || 'Invalid Gesture',
-        GesturePattern.empty(),
-        (data?.action as GestureAction) || 'back',
-        false // 無効状態で作成
-      )
+      // Fail-Fast: エラーを再投げして呼び出し側にエラーハンドリングを委譲
+      throw new Error(`Failed to deserialize CustomGesture: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 }

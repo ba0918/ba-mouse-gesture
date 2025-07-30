@@ -9,7 +9,6 @@ import { SettingsRepository } from '../../infrastructure/storage/repositories/Se
 import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
 
 // Application layer imports
-import { GestureRecognitionUseCase } from '../usecases/GestureRecognitionUseCase';
 import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase';
 import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagementUseCase';
 import { GestureApplicationService } from './GestureApplicationService';
@@ -30,7 +29,6 @@ interface RepositoryServices {
 }
 
 interface UseCaseServices {
-  gestureRecognitionUseCase?: GestureRecognitionUseCase;
   settingsManagementUseCase?: SettingsManagementUseCase;
   customGestureManagementUseCase?: CustomGestureManagementUseCase;
 }
@@ -238,13 +236,6 @@ export class ServiceFactory {
    * UseCase層の初期化
    */
   private _initializeUseCases(): void {
-    // Gesture Recognition UseCase
-    if (this.repositories.settingsRepository && this.repositories.gestureRepository) {
-      this.useCases.gestureRecognitionUseCase = new GestureRecognitionUseCase(
-        this.repositories.settingsRepository as any,
-        this.repositories.gestureRepository as any
-      );
-    }
     
     // Settings Management UseCase
     if (this.repositories.settingsRepository) {

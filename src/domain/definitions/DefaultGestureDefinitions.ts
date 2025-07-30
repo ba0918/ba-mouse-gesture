@@ -8,11 +8,13 @@
  * - OCP原則：新しいジェスチャー追加時の既存コード変更を最小化
  */
 
+import { ActionName } from '../types';
+
 export interface GestureDefinition {
   id: string;           // ジェスチャーID（内部管理用）
   name: string;         // 表示名
   pattern: string;      // パターン表示（矢印）
-  action: string;       // アクション名（実行処理用）
+  action: ActionName;   // アクション名（実行処理用）
   category: string;     // カテゴリ
   description: string;  // 説明
 }
@@ -142,7 +144,7 @@ export class DefaultGestureDefinitions {
   /**
    * 特定のアクション名の定義を取得
    */
-  static getDefinitionByAction(action: string): GestureDefinition | undefined {
+  static getDefinitionByAction(action: ActionName): GestureDefinition | undefined {
     return this.GESTURE_DEFINITIONS.find(def => def.action === action);
   }
 
@@ -174,8 +176,8 @@ export class DefaultGestureDefinitions {
   /**
    * アクション名とジェスチャーIDのマッピングを取得
    */
-  static getActionToIdMapping(): Record<string, string> {
-    const mapping: Record<string, string> = {};
+  static getActionToIdMapping(): Record<ActionName, string> {
+    const mapping: Record<ActionName, string> = {} as Record<ActionName, string>;
     this.GESTURE_DEFINITIONS.forEach(def => {
       mapping[def.action] = def.id;
     });
@@ -185,8 +187,8 @@ export class DefaultGestureDefinitions {
   /**
    * ジェスチャーIDとアクション名のマッピングを取得
    */
-  static getIdToActionMapping(): Record<string, string> {
-    const mapping: Record<string, string> = {};
+  static getIdToActionMapping(): Record<string, ActionName> {
+    const mapping: Record<string, ActionName> = {} as Record<string, ActionName>;
     this.GESTURE_DEFINITIONS.forEach(def => {
       mapping[def.id] = def.action;
     });
@@ -196,8 +198,8 @@ export class DefaultGestureDefinitions {
   /**
    * アクション名の日本語表示名マッピングを取得
    */
-  static getActionDisplayNames(): Record<string, string> {
-    const mapping: Record<string, string> = {};
+  static getActionDisplayNames(): Record<ActionName, string> {
+    const mapping: Record<ActionName, string> = {} as Record<ActionName, string>;
     this.GESTURE_DEFINITIONS.forEach(def => {
       mapping[def.action] = def.name;
     });

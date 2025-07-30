@@ -70,14 +70,14 @@ describe('ジェスチャー無効化機能', () => {
         excludeList: [],
         gestureThreshold: 15,
         defaultGestureStates: {
-          left: true,
-          right: true,
-          up: true,
-          down: true,
-          downright: true,
-          upright: true,
-          rightdown: true,
-          updown: true,
+          '←': true,
+          '→': true,
+          '↑': true,
+          '↓': true,
+          '↓→': true,
+          '↑→': true,
+          '→↓': true,
+          '↑↓': true,
           super_refresh: true,
           prev_tab: true,
           next_tab: true
@@ -96,13 +96,13 @@ describe('ジェスチャー無効化機能', () => {
         return enabled !== false
       }.bind(gestureScript)
 
-      expect(isGestureEnabled('left')).toBe(true)
-      expect(isGestureEnabled('right')).toBe(true)
+      expect(isGestureEnabled('←')).toBe(true)
+      expect(isGestureEnabled('→')).toBe(true)
       
       // 無効化した場合
-      gestureScript.settings.defaultGestureStates.left = false
-      expect(isGestureEnabled('left')).toBe(false)
-      expect(isGestureEnabled('right')).toBe(true)
+      gestureScript.settings.defaultGestureStates['←'] = false
+      expect(isGestureEnabled('←')).toBe(false)
+      expect(isGestureEnabled('→')).toBe(true)
     })
 
     test('defaultGestureStatesが未設定の場合、デフォルトで有効を返す', () => {
@@ -121,7 +121,7 @@ describe('ジェスチャー無効化機能', () => {
         return enabled !== false
       }.bind(testScript)
 
-      expect(isGestureEnabled('left')).toBe(true)
+      expect(isGestureEnabled('←')).toBe(true)
       expect(mockDebugLogger.debug).toHaveBeenCalledWith('defaultGestureStates not found, assuming enabled')
     })
 
@@ -134,7 +134,7 @@ describe('ジェスチャー無効化機能', () => {
         return enabled !== false
       }.bind(gestureScript)
 
-      // 存在しないjestureId
+      // 存在しないgestureId
       expect(isGestureEnabled('unknown_gesture')).toBe(true)
     })
   })
@@ -167,15 +167,15 @@ describe('ジェスチャー無効化機能', () => {
       }.bind(gestureScript)
 
       // 有効なジェスチャー
-      gestureScript.settings.defaultGestureStates.left = true
-      handleSimpleGesture('LEFT', 50)
+      gestureScript.settings.defaultGestureStates['←'] = true
+      handleSimpleGesture('←', 50)
 
       expect(sendGestureMessage).toHaveBeenCalledWith({
         type: 'simpleGesture',
-        direction: 'LEFT',
+        direction: '←',
         distance: 50
       })
-      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('Gesture: LEFT (50px)')
+      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('Gesture: ← (50px)')
     })
 
     test('無効なジェスチャーは実行されない', () => {
@@ -205,12 +205,12 @@ describe('ジェスチャー無効化機能', () => {
       }.bind(gestureScript)
 
       // 無効なジェスチャー
-      gestureScript.settings.defaultGestureStates.left = false
-      handleSimpleGesture('LEFT', 50)
+      gestureScript.settings.defaultGestureStates['←'] = false
+      handleSimpleGesture('←', 50)
 
       expect(sendGestureMessage).not.toHaveBeenCalled()
-      expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture LEFT is disabled')
-      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー LEFT は無効です', mockDebugLogger.LOG_LEVELS.WARN)
+      expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture ← is disabled')
+      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー ← は無効です', mockDebugLogger.LOG_LEVELS.WARN)
     })
   })
 
@@ -242,15 +242,15 @@ describe('ジェスチャー無効化機能', () => {
       }.bind(gestureScript)
 
       // 有効な複合ジェスチャー
-      gestureScript.settings.defaultGestureStates.updown = true
-      handleComplexGesture({ type: 'default', action: 'updown' }, 80)
+      gestureScript.settings.defaultGestureStates['↑↓'] = true
+      handleComplexGesture({ type: 'default', action: '↑↓' }, 80)
 
       expect(sendGestureMessage).toHaveBeenCalledWith({
         type: 'complexGesture',
-        gestureType: 'updown',
+        gestureType: '↑↓',
         distance: 80
       })
-      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('Complex Gesture: updown (80px)')
+      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('Complex Gesture: ↑↓ (80px)')
     })
 
     test('無効な複合ジェスチャーは実行されない', () => {
@@ -280,12 +280,12 @@ describe('ジェスチャー無効化機能', () => {
       }.bind(gestureScript)
 
       // 無効な複合ジェスチャー
-      gestureScript.settings.defaultGestureStates.updown = false
-      handleComplexGesture({ type: 'default', action: 'updown' }, 80)
+      gestureScript.settings.defaultGestureStates['↑↓'] = false
+      handleComplexGesture({ type: 'default', action: '↑↓' }, 80)
 
       expect(sendGestureMessage).not.toHaveBeenCalled()
-      expect(mockDebugLogger.info).toHaveBeenCalledWith('Complex gesture updown is disabled')
-      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー updown は無効です', mockDebugLogger.LOG_LEVELS.WARN)
+      expect(mockDebugLogger.info).toHaveBeenCalledWith('Complex gesture ↑↓ is disabled')
+      expect(mockDebugLogger.showStatus).toHaveBeenCalledWith('ジェスチャー ↑↓ は無効です', mockDebugLogger.LOG_LEVELS.WARN)
     })
 
     test('カスタムジェスチャーは状態チェックをスキップして実行される', () => {
@@ -359,27 +359,27 @@ describe('ジェスチャー無効化機能', () => {
 
       // 一部のジェスチャーを無効化
       gestureScript.settings.defaultGestureStates = {
-        left: false,
-        right: true,
-        up: true,
-        down: false,
-        downright: true,
-        upright: false,
-        rightdown: true,
-        updown: true,
-        super_refresh: false,
-        prev_tab: true,
-        next_tab: true
+        '←': false,
+        '→': true,
+        '↑': true,
+        '↓': false,
+        '↓→': true,
+        '↑→': false,
+        '→↓': true,
+        '↑↓': true,
+        'super_refresh': false,
+        'prev_tab': true,
+        'next_tab': true
       }
 
-      expect(isGestureEnabled('left')).toBe(false)
-      expect(isGestureEnabled('right')).toBe(true)
-      expect(isGestureEnabled('up')).toBe(true)
-      expect(isGestureEnabled('down')).toBe(false)
-      expect(isGestureEnabled('downright')).toBe(true)
-      expect(isGestureEnabled('upright')).toBe(false)
-      expect(isGestureEnabled('rightdown')).toBe(true)
-      expect(isGestureEnabled('updown')).toBe(true)
+      expect(isGestureEnabled('←')).toBe(false)
+      expect(isGestureEnabled('→')).toBe(true)
+      expect(isGestureEnabled('↑')).toBe(true)
+      expect(isGestureEnabled('↓')).toBe(false)
+      expect(isGestureEnabled('↓→')).toBe(true)
+      expect(isGestureEnabled('↑→')).toBe(false)
+      expect(isGestureEnabled('→↓')).toBe(true)
+      expect(isGestureEnabled('↑↓')).toBe(true)
       expect(isGestureEnabled('super_refresh')).toBe(false)
       expect(isGestureEnabled('prev_tab')).toBe(true)
       expect(isGestureEnabled('next_tab')).toBe(true)
@@ -395,19 +395,19 @@ describe('ジェスチャー無効化機能', () => {
         excludeList: [],
         gestureThreshold: 15,
         defaultGestureStates: {
-          left: true,
-          right: true,
-          up: true,
-          down: true
+          '←': true,
+          '→': true,
+          '↑': true,
+          '↓': true
         }
       }
 
       const storedSettings = {
         enabled: true,
         defaultGestureStates: {
-          left: false,
-          right: true,
-          super_refresh: false
+          '←': false,
+          '→': true,
+          'super_refresh': false
         }
       }
 
@@ -427,9 +427,9 @@ describe('ジェスチャー無効化機能', () => {
 
       expect(success).toBe(true)
       expect(gestureScript.settings.defaultGestureStates).toEqual({
-        left: false,    // ストレージから上書き
-        right: true,    // ストレージから上書き
-        super_refresh: false  // ストレージから追加
+        '←': false,    // ストレージから上書き
+        '→': true,    // ストレージから上書き
+        'super_refresh': false  // ストレージから追加
       })
     })
   })

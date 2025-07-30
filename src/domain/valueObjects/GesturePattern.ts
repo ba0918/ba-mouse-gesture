@@ -2,13 +2,19 @@ import { Point } from './Point'
 import { Threshold } from './Threshold'
 
 /**
- * ジェスチャーの方向を表す型
+ * ジェスチャーの方向を表す型（矢印記号統一）
  */
-export type Direction = 'up' | 'down' | 'left' | 'right'
+export type Direction = '↑' | '↓' | '←' | '→'
+
+/**
+ * 有効な方向の定数配列
+ */
+const VALID_DIRECTIONS: Direction[] = ['↑', '↓', '←', '→']
 
 /**
  * GesturePattern 値オブジェクト
  * ジェスチャーのパターン（方向の配列）を表現する不変オブジェクト
+ * 矢印記号統一により設計を大幅簡素化
  */
 export class GesturePattern {
   private readonly _directions: Direction[]
@@ -34,9 +40,8 @@ export class GesturePattern {
    * @returns 検証済みの方向
    */
   private validateDirection(direction: string): Direction {
-    const validDirections: Direction[] = ['up', 'down', 'left', 'right']
-    if (!validDirections.includes(direction as Direction)) {
-      throw new Error(`Invalid direction: ${direction}. Must be one of: ${validDirections.join(', ')}`)
+    if (!VALID_DIRECTIONS.includes(direction as Direction)) {
+      throw new Error(`Invalid direction: ${direction}. Must be one of: ${VALID_DIRECTIONS.join(', ')}`)
     }
     return direction as Direction
   }
@@ -287,9 +292,7 @@ export class GesturePattern {
    */
   isValid(): boolean {
     return this._length > 0 && 
-           this._directions.every(dir => 
-             ['up', 'down', 'left', 'right'].includes(dir)
-           )
+           this._directions.every(dir => VALID_DIRECTIONS.includes(dir))
   }
 
   /**
@@ -301,11 +304,11 @@ export class GesturePattern {
   }
 
   /**
-   * 文字列表現
-   * @returns 文字列表現
+   * 文字列表現（矢印記号の連続）
+   * @returns 文字列表現 例: "↑↓←→"
    */
   toString(): string {
-    return this._directions.join('→')
+    return this._directions.join('')
   }
 
   /**
@@ -329,112 +332,23 @@ export class GesturePattern {
    * @param directions - 方向データ
    * @returns 復元されたパターン
    */
-  static fromArray(directions: unknown): GesturePattern {
-    // データ形式のバリデーション
-    if (!directions) {
-      console.warn('GesturePattern.fromArray: directions is null/undefined, returning empty pattern')
-      return new GesturePattern([])
-    }
-    
-    // 配列でない場合の処理
+  static fromArray(directions: Direction[]): GesturePattern {
     if (!Array.isArray(directions)) {
-      console.warn('GesturePattern.fromArray: directions is not an array:', typeof directions, directions)
-      
-      // 文字列の場合は分割を試みる
-      if (typeof directions === 'string') {
-        try {
-          let parsed: string[] = []
-          
-          if (directions.includes('→')) {
-            // "up→right→down" 形式
-            parsed = directions.split('→').map(d => d.trim()).filter(d => d)
-          } else if (directions.includes(',')) {
-            // "up,right,down" 形式
-            parsed = directions.split(',').map(d => d.trim()).filter(d => d)
-          } else {
-            // 矢印記号が連続している場合（"↑↓←→"）を個別文字に分割
-            const arrowMap: { [key: string]: Direction } = {
-              '↑': 'up',
-              '↓': 'down', 
-              '←': 'left',
-              '→': 'right'
-            }
-            
-            // 文字列を1文字ずつ処理
-            for (let i = 0; i < directions.length; i++) {
-              const char = directions[i]
-              if (arrowMap[char]) {
-                parsed.push(arrowMap[char])
-              } else if (char.trim()) {
-                // 英語の方向名の可能性をチェック
-                const remaining = directions.substring(i)
-                for (const direction of Object.values(arrowMap)) {
-                  if (remaining.toLowerCase().startsWith(direction)) {
-                    parsed.push(direction)
-                    i += direction.length - 1 // インデックスを調整
-                    break
-                  }
-                }
-              }
-            }
-          }
-          
-          // 解析結果が空でないことを確認
-          if (parsed.length === 0) {
-            console.warn('GesturePattern.fromArray: No valid directions found, returning empty pattern')
-            return new GesturePattern([])
-          }
-          
-          return new GesturePattern(parsed as Direction[])
-        } catch (error) {
-          console.error('GesturePattern.fromArray: Failed to parse string directions:', error)
-          return new GesturePattern([])
-        }
-      }
-      
-      // その他の形式は空パターンとして扱う
-      return new GesturePattern([])
+      throw new Error('Directions must be an array')
     }
-    
-    // 配列の検証を強化
-    try {
-      // 空配列チェック
-      if (directions.length === 0) {
-        console.warn('GesturePattern.fromArray: Empty array provided')
-        return new GesturePattern([])
-      }
-      
-      // 各要素が有効な方向値かチェック
-      const validDirections: Direction[] = ['up', 'down', 'left', 'right']
-      const filteredDirections = directions.filter(dir => {
-        const isValid = typeof dir === 'string' && validDirections.includes(dir.toLowerCase() as Direction)
-        if (!isValid) {
-          console.warn('GesturePattern.fromArray: Invalid direction found:', dir, 'type:', typeof dir)
-        }
-        return isValid
-      }).map(dir => (dir as string).toLowerCase() as Direction)
-      
-      if (filteredDirections.length === 0) {
-        console.warn('GesturePattern.fromArray: No valid directions found after filtering')
-        return new GesturePattern([])
-      }
-      
-      return new GesturePattern(filteredDirections)
-      
-    } catch (error) {
-      console.error('GesturePattern.fromArray: Error processing array:', error)
-      return new GesturePattern([])
-    }
+    return new GesturePattern(directions)
   }
 
   /**
    * 文字列からGesturePatternを復元
-   * @param str - "up→right→down" 形式の文字列
+   * @param str - 矢印文字列 例: "↑↓←→"
    * @returns 復元されたパターン
    */
   static fromString(str: string): GesturePattern {
-    if (!str) return new GesturePattern([])
-    return new GesturePattern(str.split('→') as Direction[])
+    if (!str || typeof str !== 'string') {
+      return new GesturePattern([])
+    }
+    return new GesturePattern(str.split('') as Direction[])
   }
 
   /**
@@ -456,11 +370,11 @@ export class GesturePattern {
 
   /**
    * 点の配列からパターンを生成
-   * @param points - 点の配列
+   * @param points - 点の配列（PointオブジェクトまたはPoint互換オブジェクト）
    * @param threshold - 閾値
    * @returns 生成されたパターン
    */
-  static fromPoints(points: Point[], threshold: Threshold): GesturePattern {
+  static fromPoints(points: Point[] | Array<{x: number, y: number}>, threshold: Threshold): GesturePattern {
     if (!Array.isArray(points) || points.length < 2) {
       return GesturePattern.empty()
     }
@@ -471,10 +385,15 @@ export class GesturePattern {
     for (let i = 0; i < points.length - 1; i++) {
       const current = points[i]
       const next = points[i + 1]
-      const distance = current.distanceTo(next)
+      
+      // 距離計算（Point互換オブジェクトに対応）
+      const dx = next.x - current.x
+      const dy = next.y - current.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
       
       if (distance >= minDistance) {
-        const angle = current.angleTo(next)
+        // 角度計算（Point互換オブジェクトに対応）
+        const angle = Math.atan2(dy, dx)
         const direction = GesturePattern.angleToDirection(angle)
         
         // 連続する同じ方向は無視
@@ -495,195 +414,11 @@ export class GesturePattern {
   static angleToDirection(angle: number): Direction {
     const degree = (angle * 180 / Math.PI + 360) % 360
     
-    if (degree >= 315 || degree < 45) return 'right'
-    if (degree >= 45 && degree < 135) return 'down'
-    if (degree >= 135 && degree < 225) return 'left'
-    if (degree >= 225 && degree < 315) return 'up'
+    if (degree >= 315 || degree < 45) return '→'
+    if (degree >= 45 && degree < 135) return '↓'
+    if (degree >= 135 && degree < 225) return '←'
+    if (degree >= 225 && degree < 315) return '↑'
     
-    return 'right' // fallback
-  }
-
-  /**
-   * 矢印記号からGesturePatternを作成
-   * @param arrowPattern - 矢印パターン（"↑↓←→"）
-   * @returns GesturePattern
-   */
-  static fromArrows(arrowPattern: string): GesturePattern {
-    if (!arrowPattern || typeof arrowPattern !== 'string') {
-      return new GesturePattern([])
-    }
-    
-    const arrowMap: { [key: string]: Direction } = {
-      '↑': 'up',
-      '↓': 'down',
-      '←': 'left',
-      '→': 'right'
-    }
-    
-    const directions: Direction[] = []
-    for (const char of arrowPattern) {
-      if (arrowMap[char]) {
-        directions.push(arrowMap[char])
-      }
-    }
-    
-    return new GesturePattern(directions)
-  }
-
-  /**
-   * 矢印記号への変換
-   * @returns 矢印パターン（"↑↓←→"）
-   */
-  toArrows(): string {
-    const arrowMap: { [key: string]: string } = {
-      'up': '↑',
-      'down': '↓',
-      'left': '←',
-      'right': '→'
-    }
-    
-    return this._directions.map(dir => arrowMap[dir]).join('')
-  }
-
-  /**
-   * 統一パターン変換メソッド - すべてのパターン形式を矢印文字列に統一
-   * @param pattern - 任意形式のパターン（string, array, object, GesturePattern）
-   * @returns 矢印パターン（"↑↓←→"） - デリミタなし、統一形式
-   */
-  static normalizePattern(pattern: unknown): string {
-    if (!pattern) {
-      return ''
-    }
-
-    // 既にGesturePatternインスタンスの場合
-    if (pattern instanceof GesturePattern) {
-      return pattern.toArrows()
-    }
-
-    // 既に矢印文字列の場合
-    if (typeof pattern === 'string' && /^[↑↓←→]*$/.test(pattern)) {
-      return pattern
-    }
-
-    // 文字列パターンの処理
-    if (typeof pattern === 'string') {
-      return GesturePattern._normalizeStringPattern(pattern).toArrows()
-    }
-
-    // 配列パターンの処理
-    if (Array.isArray(pattern)) {
-      return GesturePattern._normalizeArrayPattern(pattern).toArrows()
-    }
-
-    // オブジェクトパターンの処理
-    if (typeof pattern === 'object' && pattern !== null) {
-      return GesturePattern._normalizeObjectPattern(pattern).toArrows()
-    }
-
-    // その他の場合は空文字列
-    return ''
-  }
-
-  /**
-   * 文字列パターンの統一処理
-   */
-  private static _normalizeStringPattern(pattern: string): GesturePattern {
-    // デリミタ区切りパターン（up→down, up,down, up down等）
-    const delimiters = ['→', ',', ' ', '-', '_']
-    for (const delimiter of delimiters) {
-      if (pattern.includes(delimiter)) {
-        const parts = pattern.split(delimiter)
-          .map(part => part.trim().toLowerCase())
-          .filter(part => part && ['up', 'down', 'left', 'right'].includes(part))
-        return new GesturePattern(parts as Direction[])
-      }
-    }
-
-    // 連続英語パターン（updownleftright）
-    const directions: Direction[] = []
-    const directionPattern = /(up|down|left|right)/gi
-    let match
-    while ((match = directionPattern.exec(pattern)) !== null) {
-      directions.push(match[0].toLowerCase() as Direction)
-    }
-    if (directions.length > 0) {
-      return new GesturePattern(directions)
-    }
-
-    // 単一文字パターン（UDLR）
-    const charMap: { [key: string]: Direction } = {
-      'u': 'up', 'U': 'up',
-      'd': 'down', 'D': 'down', 
-      'l': 'left', 'L': 'left',
-      'r': 'right', 'R': 'right'
-    }
-    const charDirections = pattern.split('').map(char => charMap[char]).filter(Boolean)
-    if (charDirections.length > 0) {
-      return new GesturePattern(charDirections)
-    }
-
-    return new GesturePattern([])
-  }
-
-  /**
-   * 配列パターンの統一処理
-   */
-  private static _normalizeArrayPattern(pattern: unknown[]): GesturePattern {
-    const directions: Direction[] = []
-    
-    for (const item of pattern) {
-      const itemStr = String(item)
-      
-      // 既に矢印の場合は変換
-      if (itemStr === '↑') {
-        directions.push('up')
-      } else if (itemStr === '↓') {
-        directions.push('down')
-      } else if (itemStr === '←') {
-        directions.push('left')
-      } else if (itemStr === '→') {
-        directions.push('right')
-      } else {
-        // 英語方向名の場合
-        const normalized = itemStr.toLowerCase()
-        if (['up', 'down', 'left', 'right'].includes(normalized)) {
-          directions.push(normalized as Direction)
-        }
-      }
-    }
-    
-    return new GesturePattern(directions)
-  }
-
-  /**
-   * オブジェクトパターンの統一処理
-   */
-  private static _normalizeObjectPattern(pattern: any): GesturePattern {
-    // GesturePatternオブジェクト（getDirectionsメソッド有り）
-    if (typeof pattern.getDirections === 'function') {
-      try {
-        const directions = pattern.getDirections()
-        return new GesturePattern(directions)
-      } catch {
-        // getDirections()が失敗した場合は次の処理へ
-      }
-    }
-
-    // _directionsプロパティを持つオブジェクト
-    if (Array.isArray(pattern._directions)) {
-      return GesturePattern._normalizeArrayPattern(pattern._directions)
-    }
-
-    // toStringメソッドがあるオブジェクト
-    if (typeof pattern.toString === 'function') {
-      try {
-        const stringPattern = pattern.toString()
-        return GesturePattern._normalizeStringPattern(stringPattern)
-      } catch {
-        // toString()が失敗した場合は空パターン
-      }
-    }
-
-    return new GesturePattern([])
+    return '→' // fallback
   }
 }

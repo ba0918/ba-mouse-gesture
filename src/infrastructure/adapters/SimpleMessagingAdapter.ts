@@ -20,7 +20,7 @@ interface DebugInfo {
 export class SimpleMessagingAdapter {
   private defaultTimeout: number = 5000;
 
-  constructor() {}
+  constructor() { }
 
   /**
    * backgroundスクリプトにメッセージを送信
@@ -31,33 +31,33 @@ export class SimpleMessagingAdapter {
   sendMessage(message: any, timeout: number = this.defaultTimeout): Promise<MessageResponse> {
     return new Promise((resolve) => {
       if (!this.isAvailable()) {
-        resolve({ 
-          success: false, 
-          error: 'Chrome runtime not available' 
+        resolve({
+          success: false,
+          error: 'Chrome runtime not available'
         });
         return;
       }
 
       // タイムアウト設定
       const timer = setTimeout(() => {
-        resolve({ 
-          success: false, 
-          error: 'Message timeout' 
+        resolve({
+          success: false,
+          error: 'Message timeout'
         });
       }, timeout);
 
       chrome.runtime.sendMessage(message, (response: any) => {
         clearTimeout(timer);
-        
+
         if (chrome.runtime.lastError) {
-          resolve({ 
-            success: false, 
-            error: chrome.runtime.lastError.message 
+          resolve({
+            success: false,
+            error: chrome.runtime.lastError.message
           });
         } else {
-          resolve(response || { 
-            success: false, 
-            error: 'No response' 
+          resolve(response || {
+            success: false,
+            error: 'No response'
           });
         }
       });
@@ -72,38 +72,38 @@ export class SimpleMessagingAdapter {
    * @returns レスポンス
    */
   sendMessageToTab(
-    tabId: number, 
-    message: any, 
+    tabId: number,
+    message: any,
     timeout: number = this.defaultTimeout
   ): Promise<MessageResponse> {
     return new Promise((resolve) => {
       if (!this.isAvailable() || !chrome.tabs) {
-        resolve({ 
-          success: false, 
-          error: 'Chrome tabs API not available' 
+        resolve({
+          success: false,
+          error: 'Chrome tabs API not available'
         });
         return;
       }
 
       // タイムアウト設定
       const timer = setTimeout(() => {
-        resolve({ 
-          success: false, 
-          error: 'Message timeout' 
+        resolve({
+          success: false,
+          error: 'Message timeout'
         });
       }, timeout);
 
       chrome.tabs.sendMessage(tabId, message, (response: any) => {
         clearTimeout(timer);
-        
+
         if (chrome.runtime.lastError) {
-          resolve({ 
-            success: false, 
-            error: chrome.runtime.lastError.message 
+          resolve({
+            success: false,
+            error: chrome.runtime.lastError.message
           });
         } else {
-          resolve(response || { 
-            success: true 
+          resolve(response || {
+            success: true
           });
         }
       });
@@ -116,8 +116,8 @@ export class SimpleMessagingAdapter {
    */
   onMessage(
     handler: (
-      message: any, 
-      sender: chrome.runtime.MessageSender, 
+      message: any,
+      sender: chrome.runtime.MessageSender,
       sendResponse: (response?: any) => void
     ) => boolean | void
   ): void {
@@ -129,8 +129,8 @@ export class SimpleMessagingAdapter {
           return Boolean(result);
         } catch (error) {
           console.error('Message handler error:', error);
-          sendResponse({ 
-            success: false, 
+          sendResponse({
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
           });
           return false;
@@ -144,9 +144,9 @@ export class SimpleMessagingAdapter {
    * @returns 利用可能性
    */
   isAvailable(): boolean {
-    return typeof chrome !== 'undefined' && 
-           Boolean(chrome.runtime) && 
-           Boolean(chrome.runtime.sendMessage);
+    return typeof chrome !== 'undefined' &&
+      Boolean(chrome.runtime) &&
+      Boolean(chrome.runtime.sendMessage);
   }
 
   /**
@@ -169,9 +169,4 @@ export class SimpleMessagingAdapter {
       className: 'SimpleMessagingAdapter'
     };
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).SimpleMessagingAdapter = SimpleMessagingAdapter;
 }

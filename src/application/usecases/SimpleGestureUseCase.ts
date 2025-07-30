@@ -7,9 +7,10 @@ import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureReco
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
 // 型定義
-interface Point {
+interface TrailPoint {
   x: number;
   y: number;
+  timestamp?: number;
 }
 
 interface Settings {
@@ -32,9 +33,8 @@ interface ActionResult {
 }
 
 interface ActionMessage {
-  type: string;
-  direction?: string;
-  gestureType?: string;
+  type: 'executeAction';
+  action: string;
 }
 
 interface MessagingService {
@@ -73,7 +73,7 @@ export class SimpleGestureUseCase {
    * @param trail - 軌跡データ  
    * @returns 実行結果
    */
-  async executeGesture(trail: Point[]): Promise<ExecutionResult> {
+  async executeGesture(trail: TrailPoint[]): Promise<ExecutionResult> {
     try {
       // 設定チェック
       if (!this.settings.enabled) {
@@ -84,22 +84,23 @@ export class SimpleGestureUseCase {
       }
 
       // ジェスチャー認識
-      const gestureType = this.gestureRecognizer.recognizeGesture(trail);
-      if (!gestureType) {
+      const gesturePattern = this.gestureRecognizer.recognizeGesture(trail);
+      if (!gesturePattern) {
         return { 
           success: false, 
           error: 'Gesture not recognized' 
         };
       }
 
-      this.logger.info('Recognized gesture:', gestureType);
+      const gestureString = gesturePattern.toString();
+      this.logger.info('Recognized gesture:', gestureString);
 
       // アクション実行
-      const result = await this.executeAction(gestureType);
+      const result = await this.executeAction(gestureString);
       
       return {
         success: result.success,
-        gestureType: gestureType,
+        gestureType: gestureString,
         action: result.action,
         error: result.error
       };
@@ -162,18 +163,15 @@ export class SimpleGestureUseCase {
    * @returns アクションメッセージ
    */
   private createActionMessage(gestureType: string): ActionMessage {
-    if (this.gestureRecognizer.isSimpleGestureType(gestureType)) {
-      return {
-        type: 'simpleGesture',
-        direction: gestureType
-      };
-    } else {
-      return {
-        type: 'complexGesture',
-        gestureType: gestureType
-      };
-    }
+    // 統一されたアクション名を取得
+    const actionName = this.getActionNameFromGestureType(gestureType);
+    
+    return {
+      type: 'executeAction',
+      action: actionName
+    };
   }
+
 
   /**
    * 設定を更新
@@ -230,11 +228,34 @@ export class SimpleGestureUseCase {
       return true; // デフォルトで有効
     }
 
-    // ジェスチャータイプからアクション名を取得
-    const actionName = this.getActionNameFromGestureType(gestureType);
+    // ジェスチャータイプからジェスチャーIDを取得（UI側と一致）
+    const gestureId = this.getGestureIdFromGestureType(gestureType);
     
     // 設定があればそれを使用、なければデフォルトで有効
-    return this.settings.defaultGestureStates[actionName] !== false;
+    return this.settings.defaultGestureStates[gestureId] !== false;
+  }
+
+  /**
+   * ジェスチャータイプからジェスチャーIDを取得（UI側の設定キーと一致）
+   * @param gestureType ジェスチャータイプ
+   * @returns ジェスチャーID
+   */
+  private getGestureIdFromGestureType(gestureType: string): string {
+    const gestureIdMapping: { [key: string]: string } = {
+      '↑': 'up',
+      '↓': 'down', 
+      '←': 'left',
+      '→': 'right',
+      '↓→': 'downright',
+      '↑→': 'upright',
+      '→↓': 'rightdown',
+      '↑↓': 'updown',
+      '↑↓↑': 'super_refresh',
+      '←→': 'prev_tab',
+      '→←': 'next_tab'
+    };
+    
+    return gestureIdMapping[gestureType] || gestureType.toLowerCase();
   }
 
   /**
@@ -244,17 +265,17 @@ export class SimpleGestureUseCase {
    */
   private getActionNameFromGestureType(gestureType: string): string {
     const gestureMapping: { [key: string]: string } = {
-      'UP': 'scroll_top',
-      'DOWN': 'scroll_bottom', 
-      'LEFT': 'back',
-      'RIGHT': 'forward',
-      'downright': 'close_tab',
-      'upright': 'new_tab',
-      'rightdown': 'duplicate_tab',
-      'updown': 'refresh',
-      'super_refresh': 'super_refresh',
-      'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab'
+      '↑': 'scroll_top',
+      '↓': 'scroll_bottom', 
+      '←': 'back',
+      '→': 'forward',
+      '↓→': 'close_tab',
+      '↑→': 'new_tab',
+      '→↓': 'duplicate_tab',
+      '↑↓': 'refresh',
+      '↑↓↑': 'super_refresh',
+      '←→': 'prev_tab',
+      '→←': 'next_tab'
     };
     
     return gestureMapping[gestureType] || gestureType;
@@ -266,6 +287,14 @@ export class SimpleGestureUseCase {
    */
   getSettings(): Settings {
     return { ...this.settings };
+  }
+
+  /**
+   * ロガーを設定
+   * @param logger デバッグロガー
+   */
+  setLogger(logger: DebugLogger): void {
+    this.logger = logger;
   }
 
   /**

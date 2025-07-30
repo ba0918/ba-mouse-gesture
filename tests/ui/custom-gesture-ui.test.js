@@ -22,10 +22,10 @@ describe('カスタムジェスチャーUI機能', () => {
       </select>
       <button id="addGestureBtn">追加</button>
       <button id="clearPatternBtn">クリア</button>
-      <button class="direction-btn" data-direction="UP">↑</button>
-      <button class="direction-btn" data-direction="DOWN">↓</button>
-      <button class="direction-btn" data-direction="LEFT">←</button>
-      <button class="direction-btn" data-direction="RIGHT">→</button>
+      <button class="direction-btn" data-direction="↑">↑</button>
+      <button class="direction-btn" data-direction="↓">↓</button>
+      <button class="direction-btn" data-direction="←">←</button>
+      <button class="direction-btn" data-direction="→">→</button>
       <div id="saveStatus" style="display: none;"></div>
     `
 
@@ -370,17 +370,17 @@ describe('カスタムジェスチャーUI機能', () => {
 
   describe('パターン入力機能', () => {
     test('方向ボタンクリックでパターンが追加される', () => {
-      optionsManager.addDirectionToPattern('UP')
-      optionsManager.addDirectionToPattern('RIGHT')
+      optionsManager.addDirectionToPattern('↑')
+      optionsManager.addDirectionToPattern('→')
 
-      expect(optionsManager.currentPattern).toEqual(['UP', 'RIGHT'])
+      expect(optionsManager.currentPattern).toEqual(['↑', '→'])
       
       const display = document.getElementById('gesturePatternDisplay')
-      expect(display.value).toBe('UP → RIGHT')
+      expect(display.value).toBe('↑ → →')
     })
 
     test('パターンクリアボタンで入力がリセットされる', () => {
-      optionsManager.currentPattern = ['UP', 'DOWN']
+      optionsManager.currentPattern = ['↑', '↓']
       optionsManager.updatePatternDisplay()
 
       optionsManager.clearPattern()
@@ -404,7 +404,7 @@ describe('カスタムジェスチャーUI機能', () => {
       // フォームに値を設定
       document.getElementById('gestureName').value = 'テストジェスチャー'
       document.getElementById('gestureAction').value = 'back'
-      optionsManager.currentPattern = ['UP', 'DOWN']
+      optionsManager.currentPattern = ['↑', '↓']
 
       // addCustomGestureのモック設定
       mockCustomGestureManager.addCustomGesture.mockResolvedValue({
@@ -416,7 +416,7 @@ describe('カスタムジェスチャーUI機能', () => {
 
       expect(mockCustomGestureManager.addCustomGesture).toHaveBeenCalledWith({
         name: 'テストジェスチャー',
-        pattern: ['UP', 'DOWN'],
+        pattern: ['↑', '↓'],
         action: 'back'
       })
 
@@ -427,7 +427,7 @@ describe('カスタムジェスチャーUI機能', () => {
 
     test('名前が空の場合エラーメッセージが表示される', async () => {
       document.getElementById('gestureName').value = ''
-      optionsManager.currentPattern = ['UP']
+      optionsManager.currentPattern = ['↑']
 
       const showSaveStatusSpy = jest.spyOn(optionsManager, 'showSaveStatus')
 
@@ -451,7 +451,7 @@ describe('カスタムジェスチャーUI機能', () => {
 
     test('追加に失敗した場合エラーメッセージが表示される', async () => {
       document.getElementById('gestureName').value = 'テスト'
-      optionsManager.currentPattern = ['UP']
+      optionsManager.currentPattern = ['↑']
 
       mockCustomGestureManager.addCustomGesture.mockResolvedValue({
         success: false,
@@ -482,14 +482,14 @@ describe('カスタムジェスチャーUI機能', () => {
         {
           id: 'test-1',
           name: 'テストジェスチャー1',
-          pattern: ['UP', 'DOWN'],
+          pattern: ['↑', '↓'],
           action: 'back',
           enabled: true
         },
         {
           id: 'test-2',
           name: 'テストジェスチャー2',
-          pattern: ['LEFT', 'RIGHT'],
+          pattern: ['←', '→'],
           action: 'forward',
           enabled: false
         }
@@ -503,12 +503,12 @@ describe('カスタムジェスチャーUI機能', () => {
       
       // 1つ目のジェスチャー
       expect(container.innerHTML).toContain('テストジェスチャー1')
-      expect(container.innerHTML).toContain('UP → DOWN')
+      expect(container.innerHTML).toContain('↑ → ↓')
       expect(container.innerHTML).toContain('戻る')
       
       // 2つ目のジェスチャー
       expect(container.innerHTML).toContain('テストジェスチャー2')
-      expect(container.innerHTML).toContain('LEFT → RIGHT')
+      expect(container.innerHTML).toContain('← → →')
       expect(container.innerHTML).toContain('進む')
 
       // ボタンが存在することを確認
@@ -522,7 +522,7 @@ describe('カスタムジェスチャーUI機能', () => {
         {
           id: 'test-1',
           name: 'テストジェスチャー',
-          pattern: ['UP'],
+          pattern: ['↑'],
           action: 'back',
           enabled: false
         }
@@ -546,7 +546,7 @@ describe('カスタムジェスチャーUI機能', () => {
       const testGesture = {
         id: 'test1',
         name: 'テストジェスチャー',
-        pattern: ['UP', 'DOWN'],
+        pattern: ['↑', '↓'],
         action: 'close_tab',
         enabled: true
       }
@@ -579,7 +579,7 @@ describe('カスタムジェスチャーUI機能', () => {
       const testGesture = {
         id: 'test1',
         name: 'テストジェスチャー',
-        pattern: ['UP', 'DOWN'],
+        pattern: ['↑', '↓'],
         action: 'close_tab',
         enabled: true
       }
@@ -618,7 +618,7 @@ describe('カスタムジェスチャーUI機能', () => {
       const testGesture = {
         id: 'test1',
         name: 'テストジェスチャー',
-        pattern: ['UP', 'DOWN'],
+        pattern: ['↑', '↓'],
         action: 'close_tab',
         enabled: true
       }
@@ -649,7 +649,7 @@ describe('カスタムジェスチャーUI機能', () => {
       const mockGesture = {
         id: 'test-1',
         name: '編集テスト',
-        pattern: ['RIGHT', 'DOWN'],
+        pattern: ['→', '↓'],
         action: 'close_tab',
         enabled: true
       }
@@ -660,8 +660,8 @@ describe('カスタムジェスチャーUI機能', () => {
 
       expect(document.getElementById('gestureName').value).toBe('編集テスト')
       expect(document.getElementById('gestureAction').value).toBe('close_tab')
-      expect(optionsManager.currentPattern).toEqual(['RIGHT', 'DOWN'])
-      expect(document.getElementById('gesturePatternDisplay').value).toBe('RIGHT → DOWN')
+      expect(optionsManager.currentPattern).toEqual(['→', '↓'])
+      expect(document.getElementById('gesturePatternDisplay').value).toBe('→ → ↓')
 
       // ボタンが編集モードに変更されることを確認
       const addBtn = document.getElementById('addGestureBtn')
@@ -672,7 +672,7 @@ describe('カスタムジェスチャーUI機能', () => {
       // 編集モードに設定
       document.getElementById('gestureName').value = '編集後の名前'
       document.getElementById('gestureAction').value = 'forward'
-      optionsManager.currentPattern = ['LEFT', 'UP']
+      optionsManager.currentPattern = ['←', '↑']
 
       mockCustomGestureManager.updateCustomGesture.mockResolvedValue({
         success: true
@@ -682,7 +682,7 @@ describe('カスタムジェスチャーUI機能', () => {
 
       expect(mockCustomGestureManager.updateCustomGesture).toHaveBeenCalledWith('test-1', {
         name: '編集後の名前',
-        pattern: ['LEFT', 'UP'],
+        pattern: ['←', '↑'],
         action: 'forward'
       })
 

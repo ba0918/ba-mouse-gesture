@@ -12,13 +12,6 @@ interface CacheEntry {
   timestamp: number
 }
 
-interface LearningData {
-  [gestureId: string]: {
-    lastUpdated?: string
-    [key: string]: any
-  }
-}
-
 interface UsageStats {
   id: string
   name: string
@@ -33,7 +26,6 @@ interface PerformanceStats {
   totalUsage: number
   averageSuccessRate: number
   topPerformers: UsageStats[]
-  learningDataSize: number
 }
 
 interface OptimizationResult {
@@ -47,13 +39,11 @@ interface BackupData {
   timestamp: string
   version: string
   customGestures: any[]
-  learningData: LearningData
 }
 
 interface RepositoryStatus {
   isHealthy: boolean
   customGesturesCount?: number
-  learningDataEntries?: number
   cacheSize?: number
   storage?: any
   error?: string
@@ -64,7 +54,7 @@ type GestureChangeCallback = (changes: any) => void
 export class GestureRepository {
   private readonly storage: ChromeStorageAdapter
   private readonly customGesturesKey: string = 'customGestures'
-  private readonly learningDataKey: string = 'gestureLearningData'
+
   private readonly cache: Map<string, CacheEntry> = new Map()
   private readonly cacheTimeout: number = 3000 // 3秒でキャッシュ無効化
 
@@ -242,110 +232,20 @@ export class GestureRepository {
   }
 
   /**
-   * 学習データを取得
-   */
-  async getLearningData(): Promise<LearningData> {
-    // キャッシュチェック
-    const cachedData = this.cache.get(this.learningDataKey)
-    if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-      return cachedData.data
-    }
-
-    try {
-      const result = await this.storage.get(this.learningDataKey)
-      const learningData = result[this.learningDataKey] || {}
-
-      // キャッシュに保存
-      this.cache.set(this.learningDataKey, {
-        data: learningData,
-        timestamp: Date.now()
-      })
-
-      return learningData
-    } catch (error) {
-      console.error('Failed to load learning data:', error)
-      return {}
-    }
-  }
-
-  /**
-   * 学習データを保存
-   * @param learningData - 学習データ
-   */
-  async saveLearningData(learningData: LearningData): Promise<void> {
-    try {
-      if (!learningData || typeof learningData !== 'object') {
-        throw new Error('Learning data must be an object')
-      }
-
-      await this.storage.set({ [this.learningDataKey]: learningData })
-
-      // キャッシュ更新
-      this.cache.set(this.learningDataKey, {
-        data: learningData,
-        timestamp: Date.now()
-      })
-
-    } catch (error) {
-      console.error('Failed to save learning data:', error)
-      throw new GestureRepositoryError('Failed to save learning data', error)
-    }
-  }
-
-  /**
-   * 学習データをリセット
-   * @param gestureId - 特定ジェスチャーのリセット（省略時は全体）
-   */
-  async resetLearningData(gestureId: string | null = null): Promise<void> {
-    if (gestureId) {
-      const learningData = await this.getLearningData()
-      delete learningData[gestureId]
-      await this.saveLearningData(learningData)
-    } else {
-      await this.saveLearningData({})
-    }
-  }
-
-  /**
    * ジェスチャーパフォーマンス統計を取得
    */
   async getPerformanceStats(): Promise<Record<string, unknown>> {
     const customGestures = await this.getCustomGestures()
-    const learningData = await this.getLearningData()
 
     const stats: PerformanceStats = {
       totalCustomGestures: customGestures.length,
       enabledGestures: customGestures.filter(g => g.enabled).length,
       totalUsage: 0,
       averageSuccessRate: 0,
-      topPerformers: [],
-      learningDataSize: Object.keys(learningData).length
+      topPerformers: []
     }
 
-    // 使用統計の計算
-    const usageStats: UsageStats[] = customGestures.map(gesture => ({
-      id: gesture.id,
-      name: gesture.name,
-      totalUsage: gesture.usage.totalCount,
-      successRate: gesture.getSuccessRate(),
-      enabled: gesture.enabled
-    }))
-
-    stats.totalUsage = usageStats.reduce((sum, stat) => sum + stat.totalUsage, 0)
-
-    const enabledStats = usageStats.filter(stat => stat.enabled && stat.totalUsage > 0)
-    if (enabledStats.length > 0) {
-      stats.averageSuccessRate = enabledStats.reduce((sum, stat) =>
-        sum + stat.successRate, 0) / enabledStats.length
-    }
-
-    // トップパフォーマーの特定
-    stats.topPerformers = usageStats
-      .filter(stat => stat.totalUsage >= 5) // 十分な使用回数がある
-      .sort((a, b) => (b.successRate * b.totalUsage) - (a.successRate * a.totalUsage))
-      .slice(0, 5)
-
-    return stats as Record<string, unknown>
+    return stats
   }
 
   /**
@@ -361,8 +261,7 @@ export class GestureRepository {
     try {
       // 現在のサイズを測定
       result.beforeSize = await this.storage.getBytesInUse([
-        this.customGesturesKey,
-        this.learningDataKey
+        this.customGesturesKey
       ])
 
       // カスタムジェスチャーの最適化
@@ -380,33 +279,11 @@ export class GestureRepository {
         await this.saveCustomGestures(optimizedGestures)
       }
 
-      // 学習データの最適化
-      const learningData = await this.getLearningData()
-      const optimizedLearningData: LearningData = {}
 
-      Object.keys(learningData).forEach(gestureId => {
-        const data = learningData[gestureId]
-        // 古いデータの除去（30日以上前）
-        if (data.lastUpdated) {
-          const daysSinceUpdate = (Date.now() - new Date(data.lastUpdated).getTime()) / (1000 * 60 * 60 * 24)
-          if (daysSinceUpdate <= 30) {
-            optimizedLearningData[gestureId] = data
-          } else {
-            result.optimizations.push(`Removed old learning data: ${gestureId}`)
-          }
-        } else {
-          optimizedLearningData[gestureId] = data
-        }
-      })
-
-      if (Object.keys(optimizedLearningData).length !== Object.keys(learningData).length) {
-        await this.saveLearningData(optimizedLearningData)
-      }
 
       // 最適化後のサイズを測定
       result.afterSize = await this.storage.getBytesInUse([
-        this.customGesturesKey,
-        this.learningDataKey
+        this.customGesturesKey
       ])
 
     } catch (error) {
@@ -421,13 +298,11 @@ export class GestureRepository {
    */
   async createBackup(): Promise<BackupData> {
     const customGestures = await this.getCustomGestures()
-    const learningData = await this.getLearningData()
 
     return {
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      customGestures: customGestures.map(g => this.serializeCustomGesture(g)),
-      learningData: learningData
+      customGestures: customGestures.map(g => this.serializeCustomGesture(g))
     }
   }
 
@@ -436,7 +311,7 @@ export class GestureRepository {
    * @param backup - バックアップデータ
    */
   async restoreFromBackup(backup: BackupData): Promise<void> {
-    if (!backup.customGestures && !backup.learningData) {
+    if (!backup.customGestures) {
       throw new Error('Invalid backup data')
     }
 
@@ -446,9 +321,7 @@ export class GestureRepository {
       await this.saveCustomGestures(gestures)
     }
 
-    if (backup.learningData) {
-      await this.saveLearningData(backup.learningData)
-    }
+
   }
 
   /**
@@ -466,10 +339,7 @@ export class GestureRepository {
           changed = true
         }
 
-        if (this.learningDataKey in changes) {
-          this.cache.delete(this.learningDataKey)
-          changed = true
-        }
+
 
         if (changed) {
           callback(changes)
@@ -505,14 +375,14 @@ export class GestureRepository {
   async getRepositoryStatus(): Promise<RepositoryStatus> {
     try {
       const customGestures = await this.getCustomGestures()
-      const learningData = await this.getLearningData()
+
       // ChromeStorageAdapterにはgetUsageStatsメソッドがないため、getBytesInUseを使用
       const storageUsage = await this.storage.getBytesInUse()
 
       return {
         isHealthy: true,
         customGesturesCount: customGestures.length,
-        learningDataEntries: Object.keys(learningData).length,
+
         cacheSize: this.cache.size,
         storage: { bytesInUse: storageUsage }
       }

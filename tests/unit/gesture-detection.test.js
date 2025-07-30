@@ -71,8 +71,8 @@ describe('ジェスチャー検出機能', () => {
       expect(Math.abs(deltaX)).toBeGreaterThan(Math.abs(deltaY))
       expect(deltaX > 0).toBe(true)
       
-      const direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
-      expect(direction).toBe('RIGHT')
+      const direction = deltaX > 0 ? '→' : '←'
+      expect(direction).toBe('→')
     })
     
     test('左方向のジェスチャーが検出される', () => {
@@ -87,8 +87,8 @@ describe('ジェスチャー検出機能', () => {
       expect(Math.abs(deltaX)).toBeGreaterThan(Math.abs(deltaY))
       expect(deltaX < 0).toBe(true)
       
-      const direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
-      expect(direction).toBe('LEFT')
+      const direction = deltaX > 0 ? '→' : '←'
+      expect(direction).toBe('←')
     })
     
     test('上方向のジェスチャーが検出される', () => {
@@ -103,8 +103,8 @@ describe('ジェスチャー検出機能', () => {
       expect(Math.abs(deltaY)).toBeGreaterThan(Math.abs(deltaX))
       expect(deltaY < 0).toBe(true)
       
-      const direction = deltaY > 0 ? 'DOWN' : 'UP'
-      expect(direction).toBe('UP')
+      const direction = deltaY > 0 ? '↓' : '↑'
+      expect(direction).toBe('↑')
     })
     
     test('下方向のジェスチャーが検出される', () => {
@@ -119,8 +119,8 @@ describe('ジェスチャー検出機能', () => {
       expect(Math.abs(deltaY)).toBeGreaterThan(Math.abs(deltaX))
       expect(deltaY > 0).toBe(true)
       
-      const direction = deltaY > 0 ? 'DOWN' : 'UP'
-      expect(direction).toBe('DOWN')
+      const direction = deltaY > 0 ? '↓' : '↑'
+      expect(direction).toBe('↓')
     })
     
     test('距離が短すぎる場合はジェスチャーとして認識されない', () => {
@@ -158,9 +158,9 @@ describe('ジェスチャー検出機能', () => {
         if (distance > 5) { // 十分な移動距離がある場合のみ
           let direction = ''
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+            direction = deltaX > 0 ? '→' : '←'
           } else {
-            direction = deltaY > 0 ? 'DOWN' : 'UP'
+            direction = deltaY > 0 ? '↓' : '↑'
           }
           directions.push(direction)
           if (debug) console.log('Direction detected:', direction)
@@ -278,13 +278,13 @@ describe('ジェスチャー検出機能', () => {
       // この軌跡は複合的で単純ジェスチャーではない
       expect(isSimpleGesturePath(complexTrail)).toBe(false)
       
-      // 最後の方向は'UP'だが、全体の軌跡が複合的なので
-      // handleSimpleGesture('UP')が呼ばれても実行されないことが期待される
-      const lastDirection = 'UP'
+      // 最後の方向は'↑'だが、全体の軌跡が複合的なので
+      // handleSimpleGesture('↑')が呼ばれても実行されないことが期待される
+      const lastDirection = '↑'
       
       // isSimpleGesturePath()がfalseを返すパターンでは
       // handleSimpleGestureでも実行されないことを確認
-      expect(lastDirection).toBe('UP') // 最後の方向は上
+      expect(lastDirection).toBe('↑') // 最後の方向は上
       expect(isSimpleGesturePath(complexTrail)).toBe(false) // しかし軌跡は複合的
     })
   })
@@ -319,15 +319,15 @@ describe('ジェスチャー検出機能', () => {
         if (distance > 20) {
           let direction = ''
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            direction = deltaX > 0 ? 'RIGHT' : 'LEFT'
+            direction = deltaX > 0 ? '→' : '←'
           } else {
-            direction = deltaY > 0 ? 'DOWN' : 'UP'
+            direction = deltaY > 0 ? '↓' : '↑'
           }
           directions.push(direction)
         }
       }
       
-      expect(directions).toEqual(['DOWN', 'RIGHT'])
+      expect(directions).toEqual(['↓', '→'])
     })
   })
   
@@ -440,14 +440,14 @@ describe('ジェスチャー検出機能', () => {
       
       // analyzeComplexGestureが利用可能な場合のテスト
       // 実際の実装では、このテストはジェスチャー分析ロジックをテストします
-      const expectedPattern = 'UPDOWNUP'
+      const expectedPattern = '↑↓↑'
       const mockResult = {
         type: 'default',
         action: 'super_refresh'
       }
       
       expect(mockResult.action).toBe('super_refresh')
-      expect(expectedPattern).toBe('UPDOWNUP')
+      expect(expectedPattern).toBe('↑↓↑')
     })
     
     test('←→パターンで前のタブ切り替えを検出', () => {
@@ -457,14 +457,14 @@ describe('ジェスチャー検出機能', () => {
       //   {x: 120, y: 100}  // 右 (40px右)
       // ]
       
-      const expectedPattern = 'LEFTRIGHT'
+      const expectedPattern = '←→'
       const mockResult = {
         type: 'default',
         action: 'prev_tab'
       }
       
       expect(mockResult.action).toBe('prev_tab')
-      expect(expectedPattern).toBe('LEFTRIGHT')
+      expect(expectedPattern).toBe('←→')
     })
     
     test('→←パターンで次のタブ切り替えを検出', () => {
@@ -474,14 +474,14 @@ describe('ジェスチャー検出機能', () => {
       //   {x: 80, y: 100}   // 左 (40px左)
       // ]
       
-      const expectedPattern = 'RIGHTLEFT'
+      const expectedPattern = '→←'
       const mockResult = {
         type: 'default',
         action: 'next_tab'
       }
       
       expect(mockResult.action).toBe('next_tab')
-      expect(expectedPattern).toBe('RIGHTLEFT')
+      expect(expectedPattern).toBe('→←')
     })
     
     test('3方向ジェスチャーの最小移動距離を満たす', () => {
