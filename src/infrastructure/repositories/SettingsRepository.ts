@@ -3,7 +3,7 @@
  * 設定データの永続化を担当するリポジトリ
  */
 
-import { Settings, DefaultGestureStates } from '../../domain/entities/Settings'
+import { Settings } from '../../domain/entities/Settings'
 import type { ChromeStorageAdapter } from '../adapters/ChromeStorageAdapter'
 
 // Type definitions
@@ -12,11 +12,6 @@ interface CacheEntry {
   timestamp: number
 }
 
-interface BackupData {
-  timestamp: string
-  version: string
-  settings: any
-}
 
 interface RepositoryStatus {
   isHealthy: boolean
@@ -56,21 +51,21 @@ export class SettingsRepository {
     // キャッシュチェック
     const cachedData = this.cache.get(this.settingsKey)
     if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-      return this.deserializeSettings(cachedData.data)
+      return Settings.fromJSON(cachedData.data)
     }
 
     try {
       const result = await this.storageAdapter.get(this.settingsKey)
       const settingsData = result[this.settingsKey]
-      
+
       if (settingsData) {
         // キャッシュに保存
         this.cache.set(this.settingsKey, {
           data: settingsData,
           timestamp: Date.now()
         })
-        
-        return this.deserializeSettings(settingsData)
+
+        return Settings.fromJSON(settingsData)
       } else {
         // デフォルト設定を返す
         return this.getDefaultSettings()
@@ -92,15 +87,15 @@ export class SettingsRepository {
         throw new Error('Invalid settings object')
       }
 
-      const serializedData = this.serializeSettings(settings)
+      const serializedData = settings.toJSON()
       await this.storageAdapter.set({ [this.settingsKey]: serializedData })
-      
+
       // キャッシュ更新
       this.cache.set(this.settingsKey, {
         data: serializedData,
         timestamp: Date.now()
       })
-      
+
     } catch (error) {
       console.error('Failed to save settings:', error)
       throw new SettingsRepositoryError('Failed to save settings', error)
@@ -114,7 +109,7 @@ export class SettingsRepository {
    */
   async updateSetting(key: string, value: any): Promise<Settings> {
     const settings = await this.getSettings()
-    
+
     // 設定値を更新（新しいSettingsインスタンスを作成）
     const updatedConfig = settings.toJSON()
     if (key in updatedConfig) {
@@ -203,31 +198,6 @@ export class SettingsRepository {
     return defaultSettings
   }
 
-  /**
-   * 設定データのバックアップを作成
-   */
-  async createBackup(): Promise<BackupData> {
-    const settings = await this.getSettings()
-    return {
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      settings: this.serializeSettings(settings)
-    }
-  }
-
-  /**
-   * バックアップから設定を復元
-   * @param backup - バックアップデータ
-   */
-  async restoreFromBackup(backup: BackupData): Promise<Settings> {
-    if (!backup.settings) {
-      throw new Error('Invalid backup data')
-    }
-    
-    const settings = this.deserializeSettings(backup.settings)
-    await this.saveSettings(settings)
-    return settings
-  }
 
   /**
    * 設定変更を監視
@@ -239,47 +209,18 @@ export class SettingsRepository {
       if (namespace === 'sync' && this.settingsKey in changes) {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey)
-        
+
         const typedChanges = changes as StorageChanges
         const changeRecord = typedChanges[this.settingsKey]
-        const newSettings = this.deserializeSettings(changeRecord.newValue)
-        const oldSettings = changeRecord.oldValue ? 
-          this.deserializeSettings(changeRecord.oldValue) : null
-        
+        const newSettings = Settings.fromJSON(changeRecord.newValue)
+        const oldSettings = changeRecord.oldValue ?
+          Settings.fromJSON(changeRecord.oldValue) : null
+
         callback(newSettings, oldSettings)
       }
     })
   }
 
-  /**
-   * 設定データをシリアライズ
-   */
-  private serializeSettings(settings: Settings): any {
-    return settings.toJSON()
-  }
-
-  /**
-   * 設定データをデシリアライズ
-   */
-  private deserializeSettings(data: any): Settings {
-    console.log('🔧 [Debug] SettingsRepository.deserializeSettings called with:', {
-      rawData: data,
-      debugSettings: data?.debugSettings,
-      debugLogLevel: data?.debugSettings?.logLevel,
-      debugLogLevelType: typeof data?.debugSettings?.logLevel
-    })
-    
-    const settings = Settings.fromJSON(data)
-    
-    console.log('🔧 [Debug] SettingsRepository.deserializeSettings result:', {
-      settingsEntity: settings,
-      debugSettings: settings.debugSettings,
-      debugLogLevel: settings.debugSettings?.logLevel,
-      debugLogLevelType: typeof settings.debugSettings?.logLevel
-    })
-    
-    return settings
-  }
 
   /**
    * デフォルト設定を取得
@@ -302,7 +243,7 @@ export class SettingsRepository {
     try {
       const settings = await this.getSettings()
       const isStorageAvailable = this.storageAdapter.isAvailable()
-      
+
       return {
         isHealthy: true,
         settingsLoaded: Boolean(settings),
@@ -328,38 +269,38 @@ export class SettingsRepository {
       errors: [],
       warnings: []
     }
-    
+
     try {
       const settings = await this.getSettings()
-      
+
       // 基本バリデーション
       if (!settings.isValid()) {
         validation.isValid = false
         validation.errors.push('Settings object is invalid')
       }
-      
+
       // 閾値範囲チェック
       if (settings.gestureThreshold < 5 || settings.gestureThreshold > 100) {
         validation.warnings.push('Gesture threshold is outside recommended range (5-100)')
       }
-      
+
       // 除外リストチェック
       const excludeList = settings.getExcludeList()
       if (excludeList.length > 20) {
         validation.warnings.push('Exclude list is very long (>20 items)')
       }
-      
+
       // 色設定チェック
       if (!settings.isValidColor(settings.strokeColor)) {
         validation.errors.push('Invalid stroke color format')
         validation.isValid = false
       }
-      
+
     } catch (error) {
       validation.isValid = false
       validation.errors.push(`Validation error: ${(error as Error).message}`)
     }
-    
+
     return validation
   }
 }

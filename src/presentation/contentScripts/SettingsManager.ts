@@ -3,30 +3,25 @@
  * Single Responsibility: アプリケーション設定の読み込みと管理
  */
 
-import type { AppSettings } from './types';
+import { Settings } from '../../domain/entities/Settings';
 import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
 import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
-import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
+import { SettingsRepository } from '../../infrastructure/repositories/SettingsRepository';
 
 export class SettingsManager {
   private settingsUseCase: SettingsManagementUseCase | null = null;
-  private settings: AppSettings;
+  private settings: Settings;
 
   constructor() {
-    this.settings = this.getDefaultSettings();
+    this.settings = new Settings();
   }
 
   /**
    * 設定初期化
    */
   async initialize(): Promise<void> {
-    try {
-      await this.initializeUseCases();
-      await this.loadSettings();
-    } catch (error) {
-      console.warn('Settings initialization failed, using fallback:', error);
-      await this.loadSettingsFallback();
-    }
+    await this.initializeUseCases();
+    await this.loadSettings();
   }
 
   /**
@@ -49,59 +44,10 @@ export class SettingsManager {
       throw new Error('SettingsUseCase not initialized');
     }
 
-    const loadedSettings = await this.settingsUseCase.getCurrentSettings();
-    this.settings = { ...this.settings, ...loadedSettings };
+    this.settings = await this.settingsUseCase.getCurrentSettings();
   }
 
-  /**
-   * フォールバック設定読み込み
-   */
-  private async loadSettingsFallback(): Promise<void> {
-    try {
-      const result = await chrome.storage.sync.get([
-        'enabled', 'strokeColor', 'strokeWidth', 'gestureThreshold', 
-        'excludeList', 'defaultGestureStates', 'debugSettings'
-      ]);
-      
-      this.settings = {
-        enabled: result.enabled !== false,
-        strokeColor: result.strokeColor || '#2196F3',
-        strokeWidth: result.strokeWidth || 3,
-        gestureThreshold: result.gestureThreshold || 15,
-        excludeList: result.excludeList || [],
-        defaultGestureStates: result.defaultGestureStates || {} as Record<string, boolean>,
-        debugSettings: result.debugSettings || {
-          enabled: false,
-          logLevel: 2,
-          showStatus: false,
-          statusPosition: 'top-right'
-        }
-      };
-    } catch (error) {
-      console.warn('Fallback settings load failed, using defaults:', error);
-      this.settings = this.getDefaultSettings();
-    }
-  }
 
-  /**
-   * デフォルト設定取得
-   */
-  private getDefaultSettings(): AppSettings {
-    return {
-      enabled: true,
-      strokeColor: '#2196F3',
-      strokeWidth: 3,
-      gestureThreshold: 15,
-      excludeList: [],
-      defaultGestureStates: {} as Record<string, boolean>,
-      debugSettings: {
-        enabled: false,
-        logLevel: 2,
-        showStatus: false,
-        statusPosition: 'top-right'
-      }
-    };
-  }
 
   /**
    * 除外サイトチェック
@@ -133,8 +79,8 @@ export class SettingsManager {
   /**
    * 現在の設定取得
    */
-  getSettings(): Readonly<AppSettings> {
-    return { ...this.settings };
+  getSettings(): Settings {
+    return this.settings;
   }
 
   /**

@@ -17,101 +17,7 @@
     onToggleGesture
   }: Props = $props();
 
-  // パターンキャッシュ
-  const patternCache = new Map<string, string>();
-
-  // パターンを矢印に変換
-  function convertPatternToArrows(pattern: any): string {
-    if (!pattern) {
-      return '';
-    }
-    
-    // キャッシュキーを生成
-    const cacheKey = JSON.stringify(pattern);
-    if (patternCache.has(cacheKey)) {
-      return patternCache.get(cacheKey)!;
-    }
-    
-    let result = '';
-    
-    // 既に矢印形式の場合はそのまま返す（デフォルトジェスチャー用）
-    if (typeof pattern === 'string' && /^[↑↓←→]+$/.test(pattern)) {
-      result = pattern;
-      patternCache.set(cacheKey, result);
-      return result;
-    }
-    
-    // 配列形式の場合
-    if (Array.isArray(pattern) || (typeof pattern === 'object' && pattern.length !== undefined)) {
-      try {
-        const directions = Array.from(pattern);
-        const converted = directions.map(dir => {
-          const dirStr = String(dir).toLowerCase();
-          switch (dirStr) {
-            case 'up': return '↑';
-            case 'down': return '↓';
-            case 'left': return '←';
-            case 'right': return '→';
-            default: 
-              console.warn('Unknown direction:', dirStr);
-              return dirStr;
-          }
-        });
-        result = converted.join('');
-        patternCache.set(cacheKey, result);
-        return result;
-      } catch (error) {
-        console.error('Pattern conversion error:', error, pattern);
-        result = String(pattern);
-        patternCache.set(cacheKey, result);
-        return result;
-      }
-    }
-    
-    // 文字列形式の場合
-    if (typeof pattern === 'string') {
-      try {
-        // 区切り文字が含まれているかチェック
-        if (pattern.includes('→') && !pattern.match(/^[↑↓←→]+$/)) {
-          // up→down→left→right のような形式（既に矢印形式でない場合のみ）
-          result = pattern
-            .split('→')
-            .map(dir => {
-              switch (dir.trim().toLowerCase()) {
-                case 'up': return '↑';
-                case 'down': return '↓';
-                case 'left': return '←';
-                case 'right': return '→';
-                default: return dir.trim();
-              }
-            })
-            .join('');
-        } else if (pattern.match(/^[↑↓←→]+$/)) {
-          // 既に矢印形式の場合はそのまま使用
-          result = pattern;
-        } else {
-          // その他の文字列形式を矢印に変換
-          result = pattern
-            .replace(/UP/gi, '↑')
-            .replace(/DOWN/gi, '↓')
-            .replace(/LEFT/gi, '←')
-            .replace(/RIGHT/gi, '→');
-        }
-        patternCache.set(cacheKey, result);
-        return result;
-      } catch (error) {
-        console.error('String pattern conversion error:', error, pattern);
-        result = pattern;
-        patternCache.set(cacheKey, result);
-        return result;
-      }
-    }
-    
-    // その他の場合
-    result = String(pattern);
-    patternCache.set(cacheKey, result);
-    return result;
-  }
+  // 🎯 矢印統一により変換処理が不要になりました！
 
   // フィルタされたジェスチャー一覧
   let filteredGestures = $derived(gestures.filter(gesture => {
@@ -163,7 +69,7 @@
         {#each filteredGestures as gesture (gesture.id)}
           <div class="all-gesture-item" class:disabled={!gesture.enabled}>
             <div class="gesture-visual">
-              <div class="gesture-pattern-large">{convertPatternToArrows(gesture.pattern)}</div>
+              <div class="gesture-pattern-large">{gesture.pattern}</div>
             </div>
             <div class="gesture-details">
               <div class="gesture-title">

@@ -18,11 +18,6 @@ interface Storage {
   getUsageStats?(): Promise<{ sync?: any }>;
 }
 
-interface BackupData {
-  timestamp: string;
-  version: string;
-  settings: any;
-}
 
 interface RepositoryStatus {
   isHealthy: boolean;
@@ -60,7 +55,8 @@ export class SettingsRepository {
     // キャッシュチェック
     const cachedData = this.cache.get(this.settingsKey);
     if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-      return this.deserializeSettings(cachedData.data);
+      const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
+      return SettingsClass.fromJSON(cachedData.data);
     }
 
     try {
@@ -74,7 +70,8 @@ export class SettingsRepository {
           timestamp: Date.now()
         });
 
-        return this.deserializeSettings(settingsData);
+        const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
+        return SettingsClass.fromJSON(settingsData);
       } else {
         // デフォルト設定を返す
         return this.getDefaultSettings();
@@ -96,7 +93,7 @@ export class SettingsRepository {
         throw new Error('Invalid settings object');
       }
 
-      const serializedData = this.serializeSettings(settings);
+      const serializedData = settings.toJSON();
       await this.storage.set({ [this.settingsKey]: serializedData });
 
       // キャッシュ更新
@@ -249,33 +246,6 @@ export class SettingsRepository {
     return defaultSettings;
   }
 
-  /**
-   * 設定データのバックアップを作成
-   * @returns バックアップデータ
-   */
-  async createBackup(): Promise<BackupData> {
-    const settings = await this.getSettings();
-    return {
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      settings: this.serializeSettings(settings)
-    };
-  }
-
-  /**
-   * バックアップから設定を復元
-   * @param backup - バックアップデータ
-   * @returns 復元された設定
-   */
-  async restoreFromBackup(backup: BackupData): Promise<Settings> {
-    if (!backup.settings) {
-      throw new Error('Invalid backup data');
-    }
-
-    const settings = this.deserializeSettings(backup.settings);
-    await this.saveSettings(settings);
-    return settings;
-  }
 
   /**
    * 設定変更を監視
@@ -288,34 +258,16 @@ export class SettingsRepository {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey);
 
-        const newSettings = this.deserializeSettings(changes[this.settingsKey].newValue);
+        const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
+        const newSettings = SettingsClass.fromJSON(changes[this.settingsKey].newValue);
         const oldSettings = changes[this.settingsKey].oldValue ?
-          this.deserializeSettings(changes[this.settingsKey].oldValue) : null;
+          SettingsClass.fromJSON(changes[this.settingsKey].oldValue) : null;
 
         callback(newSettings, oldSettings);
       }
     }, 'sync');
   }
 
-  /**
-   * 設定データをシリアライズ
-   * @param settings 設定エンティティ
-   * @returns シリアライズされたデータ
-   */
-  private serializeSettings(settings: Settings): any {
-    return settings.toJSON();
-  }
-
-  /**
-   * 設定データをデシリアライズ
-   * @param data シリアライズされたデータ
-   * @returns 設定エンティティ
-   */
-  private deserializeSettings(data: any): Settings {
-    // Settings クラスの動的インポート
-    const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-    return SettingsClass.fromJSON(data);
-  }
 
   /**
    * デフォルト設定を取得

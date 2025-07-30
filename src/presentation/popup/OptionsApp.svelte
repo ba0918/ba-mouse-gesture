@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+  import { DebugLogger, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
+  import { GesturePattern } from '../../domain/valueObjects/GesturePattern';
+  import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity';
   import type { GestureAction } from '../../domain/valueObjects/GestureAction';
   
   // UI用の型定義
@@ -96,38 +98,19 @@
           gestureThreshold = settings.gestureThreshold || 15;
           excludeList = settings.excludeList || [];
           
-          // デバッグ設定を読み込み（複数の可能性を考慮）
-          const debugSettings = settings.debugSettings || settings;
-          debugEnabled = settings.debugEnabled ?? debugSettings.debugEnabled ?? debugSettings.enabled ?? false;
-          let logLevelValue = settings.debugLogLevel ?? debugSettings.debugLogLevel ?? debugSettings.logLevel ?? 2;
-          debugShowStatus = settings.debugShowStatus ?? debugSettings.debugShowStatus ?? debugSettings.showStatus ?? false;
-          debugStatusPosition = settings.debugStatusPosition ?? debugSettings.debugStatusPosition ?? debugSettings.statusPosition ?? 'top-right';
+          // Clean Architecture準拠のデバッグ設定読み込み
+          const debugEntity = DebugSettingsEntity.fromPlainObject(settings.debugSettings || {});
+          debugEnabled = debugEntity.enabled;
+          debugLogLevel = debugEntity.logLevel.toString();
+          debugShowStatus = debugEntity.showStatus;
+          debugStatusPosition = debugEntity.statusPosition;
           
-          // デバッグログレベルの型確認と文字列化
-          if (typeof logLevelValue === 'string') {
-            const parsed = parseInt(logLevelValue, 10);
-            if (!isNaN(parsed) && parsed >= 0 && parsed <= 3) {
-              debugLogLevel = logLevelValue;
-            } else {
-              debugLogLevel = '2';
-            }
-          } else if (typeof logLevelValue === 'number') {
-            if (logLevelValue >= 0 && logLevelValue <= 3) {
-              debugLogLevel = logLevelValue.toString();
-            } else {
-              debugLogLevel = '2';
-            }
-          } else {
-            debugLogLevel = '2';
-          }
-          
-          logger?.debug('🔍 Debug log level after processing:', debugLogLevel, typeof debugLogLevel);
+          logger?.debug('🔍 Debug settings loaded via entity:', debugEntity.toString());
 
-          // DebugLoggerを初期化
-          const logLevel = typeof debugLogLevel === 'string' ? parseInt(debugLogLevel) : debugLogLevel;
+          // DebugLoggerを初期化（debugEntityから直接設定）
           const initialDebugSettings = {
-            logLevel: logLevel as 0 | 1 | 2 | 3,
-            shouldLog: (level: 0 | 1 | 2 | 3) => debugEnabled && level <= logLevel
+            logLevel: debugEntity.logLevel as LogLevel,
+            shouldLog: (level: LogLevel) => debugEntity.enabled && level <= debugEntity.logLevel
           };
           logger = new DebugLogger(initialDebugSettings);
           
@@ -152,7 +135,7 @@
             rawDebugLogLevel: settings.debugLogLevel,
             rawDebugShowStatus: settings.debugShowStatus,
             rawDebugStatusPosition: settings.debugStatusPosition,
-            debugSettingsObject: debugSettings,
+            debugSettingsObject: debugEntity.toPlainObject(),
             hasDebugSettings: 'debugSettings' in settings
           });
           
@@ -214,7 +197,7 @@
       const allGestures = await gestureListUseCase.getAllGestures();
       
       // カスタムジェスチャーのみをフィルタリング
-      const customGestureData = allGestures.filter(g => g.type === 'custom').map(g => ({
+      const customGestureData = allGestures.filter((g: UIGesture) => g.type === 'custom').map((g: UIGesture) => ({
         id: g.id,
         name: g.name,
         pattern: g.pattern, // 既に矢印形式に変換済み
@@ -339,8 +322,8 @@
       // DebugLoggerの設定も更新
       const logLevel = typeof debugLogLevel === 'string' ? parseInt(debugLogLevel) : debugLogLevel;
       const updatedDebugSettings = {
-        logLevel: logLevel as 0 | 1 | 2 | 3,
-        shouldLog: (level: 0 | 1 | 2 | 3) => debugEnabled && level <= logLevel
+        logLevel: logLevel as LogLevel,
+        shouldLog: (level: LogLevel) => debugEnabled && level <= logLevel
       };
       logger?.updateDebugSettings(updatedDebugSettings);
       
@@ -355,25 +338,6 @@
 
 
 
-  function convertArrowsToPatternArray(arrows: string): string[] {
-    if (!arrows || typeof arrows !== 'string') {
-      logger?.warn('Invalid arrows for pattern array conversion:', arrows);
-      return [];
-    }
-    
-    // 矢印文字列を個別の矢印に分割して配列に変換
-    return arrows.split('').map(arrow => {
-      switch (arrow) {
-        case '↑': return 'UP';
-        case '↓': return 'DOWN';
-        case '←': return 'LEFT';
-        case '→': return 'RIGHT';
-        default: 
-          logger?.warn('Unknown arrow character:', arrow);
-          return arrow;
-      }
-    }).filter(item => ['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(item));
-  }
 
 
 
@@ -381,14 +345,8 @@
   // カスタムジェスチャー用ハンドラー関数
   function handleAddDirection(direction: string) {
     currentPattern.push(direction);
-    // 矢印表記で表示 - 簡易変換
-    const arrowMap: Record<string, string> = {
-      'UP': '↑',
-      'DOWN': '↓', 
-      'LEFT': '←',
-      'RIGHT': '→'
-    };
-    gesturePatternDisplay = currentPattern.map(p => arrowMap[p] || p).join('');
+    // 既に矢印記法統一済みなので直接結合
+    gesturePatternDisplay = currentPattern.join('');
     // エラーをクリア
     clearCustomGestureError();
   }
@@ -430,12 +388,13 @@
       
       const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
       
-      // 矢印表記を方向文字列配列に変換
-      const patternArray = convertArrowsToPatternArray(gesturePatternDisplay);
-      logger?.debug('Pattern conversion:', {
+      // 統一された矢印表記を直接使用
+      const gesturePattern = GesturePattern.fromString(gesturePatternDisplay);
+      const patternArray = gesturePattern.toArray();
+      logger?.debug('Pattern creation:', {
         original: gesturePatternDisplay,
         currentPattern: currentPattern,
-        converted: patternArray
+        directionArray: patternArray
       });
       
       const gestureData = {

@@ -15,7 +15,7 @@ async function initializeGestureManager(): Promise<void> {
   try {
     // 既存のインスタンスがあれば解放
     if (gestureManager) {
-      gestureManager.dispose();
+      gestureManager.destroy();
     }
 
     // 新しいインスタンス作成と初期化
@@ -33,66 +33,6 @@ async function initializeGestureManager(): Promise<void> {
   }
 }
 
-/**
- * グローバル関数の公開 (後方互換性のため)
- */
-if (typeof window !== 'undefined') {
-  // デバッグ用関数
-  (window as any).clearExtensionStorage = async () => {
-    try {
-      await chrome.storage.sync.clear();
-      await chrome.storage.local.clear();
-      console.log('✅ Extension storage cleared');
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Failed to clear storage:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
-  };
-
-  (window as any).getStorageInfo = async () => {
-    try {
-      const syncData = await chrome.storage.sync.get(null);
-      const localData = await chrome.storage.local.get(null);
-      
-      const info = {
-        sync: {
-          keys: Object.keys(syncData),
-          bytesInUse: await chrome.storage.sync.getBytesInUse(),
-          data: syncData
-        },
-        local: {
-          keys: Object.keys(localData),
-          bytesInUse: await chrome.storage.local.getBytesInUse(),
-          data: localData
-        }
-      };
-      
-      console.log('📊 Storage info:', info);
-      return info;
-    } catch (error) {
-      console.error('❌ Failed to get storage info:', error);
-      return { error: error instanceof Error ? error.message : String(error) };
-    }
-  };
-
-  // 設定再読み込み関数
-  (window as any).reloadGestureSettings = async () => {
-    try {
-      if (gestureManager) {
-        await gestureManager.updateSettings({});
-        console.log('✅ Settings reloaded');
-        return { success: true };
-      } else {
-        console.warn('⚠️ Gesture manager not initialized');
-        return { success: false, error: 'Not initialized' };
-      }
-    } catch (error) {
-      console.error('❌ Failed to reload settings:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
-  };
-}
 
 // DOMContentLoaded時の初期化
 if (document.readyState === 'loading') {
@@ -112,5 +52,3 @@ new MutationObserver(() => {
     setTimeout(initializeGestureManager, 100);
   }
 }).observe(document, { subtree: true, childList: true });
-
-export { GestureManager };

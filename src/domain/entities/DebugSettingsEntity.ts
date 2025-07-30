@@ -6,10 +6,12 @@
  * popup-content script間の同期問題を解決
  */
 
+import type { LogLevel } from '../../infrastructure/adapters/DebugLogger';
+
 // 型定義
 interface DebugSettingsData {
   enabled?: boolean;
-  logLevel?: number;
+  logLevel?: LogLevel;
   showStatus?: boolean;
   statusPosition?: string;
   createdAt?: string | null;
@@ -49,7 +51,7 @@ export class DebugSettingsEntity {
   private static _defaultInstance: DebugSettingsEntity | null = null;
 
   public enabled: boolean;
-  public logLevel: number;
+  public logLevel: LogLevel;
   public showStatus: boolean;
   public statusPosition: string;
   public createdAt: string;
@@ -57,7 +59,7 @@ export class DebugSettingsEntity {
 
   constructor({
     enabled = false,
-    logLevel = 2, // INFO レベル
+    logLevel = 2 as LogLevel, // INFO レベル
     showStatus = false,
     statusPosition = 'top-right',
     createdAt = null,
@@ -105,8 +107,8 @@ export class DebugSettingsEntity {
   /**
    * ログレベルを設定
    */
-  setLogLevel(level: number): void {
-    const validLevels = [0, 1, 2, 3]; // ERROR, WARN, INFO, DEBUG
+  setLogLevel(level: LogLevel): void {
+    const validLevels: LogLevel[] = [0, 1, 2, 3]; // ERROR, WARN, INFO, DEBUG
     if (!validLevels.includes(level)) {
       throw new Error(`Invalid log level: ${level}. Must be 0-3`);
     }
@@ -152,7 +154,7 @@ export class DebugSettingsEntity {
   /**
    * 指定レベルのログを出力すべきかどうか
    */
-  shouldLog(level: number): boolean {
+  shouldLog(level: LogLevel): boolean {
     return this.enabled && level <= this.logLevel;
   }
 
@@ -207,8 +209,9 @@ export class DebugSettingsEntity {
     if (typeof this.enabled !== 'boolean') {
       throw new Error('enabled must be boolean');
     }
-    if (!Number.isInteger(this.logLevel) || this.logLevel < 0 || this.logLevel > 3) {
-      throw new Error('logLevel must be integer between 0-3');
+    const validLevels: LogLevel[] = [0, 1, 2, 3];
+    if (!validLevels.includes(this.logLevel)) {
+      throw new Error('logLevel must be a valid LogLevel (0-3)');
     }
     if (typeof this.showStatus !== 'boolean') {
       throw new Error('showStatus must be boolean');
@@ -334,7 +337,7 @@ export class DebugSettingsEntity {
       DebugSettingsEntity;
     return new DebugSettingsEntityClass({
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
-      logLevel: 2,
+      logLevel: 2 as LogLevel,
       showStatus: false, // 🎯 修正：デフォルトはfalse
       statusPosition: 'top-right'
     });
@@ -356,7 +359,7 @@ export class DebugSettingsEntity {
    * @param level - ログレベル (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG)
    * @returns ログを出力すべきかどうか
    */
-  static shouldLogStatic(level: number): boolean {
+  static shouldLogStatic(level: LogLevel): boolean {
     // Chrome Storage から現在のlogLevel設定を取得して判定
     try {
       if (typeof chrome !== 'undefined' && chrome.storage) {

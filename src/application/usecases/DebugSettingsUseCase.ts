@@ -5,6 +5,7 @@
  * 🎯 修正：統一されたストレージアクセスでpopup-content script同期問題を解決
  */
 
+import { LogLevel } from '../../infrastructure/adapters/DebugLogger.js';
 import { DebugSettingsEntity } from '../../domain/entities/DebugSettingsEntity.js';
 import { DebugStorageAdapter } from '../../infrastructure/adapters/DebugStorageAdapter.js';
 import { NoOpLogger } from '../../infrastructure/adapters/NoOpLogger.js';
@@ -60,21 +61,21 @@ export class DebugSettingsUseCase {
       this.storageAdapter = null;
     } else {
       // 統一されたストレージアダプターを使用
-      const DebugStorageAdapterClass = (typeof window !== 'undefined' && (window as any).DebugStorageAdapter) || 
+      const DebugStorageAdapterClass = (typeof window !== 'undefined' && (window as any).DebugStorageAdapter) ||
         DebugStorageAdapter;
-      
+
       if (!DebugStorageAdapterClass) {
         throw new Error('DebugStorageAdapter is not available');
       }
       this.storageAdapter = new DebugStorageAdapterClass(logger || new NoOpLogger());
     }
-    
+
     // NoOpLoggerクラスを動的にチェック
-    const NoOpLoggerClass = (typeof window !== 'undefined' && (window as any).NoOpLogger) || 
+    const NoOpLoggerClass = (typeof window !== 'undefined' && (window as any).NoOpLogger) ||
       NoOpLogger;
     this.logger = logger || new NoOpLoggerClass();
   }
-  
+
   /**
    * DebugLoggerを設定
    */
@@ -91,25 +92,25 @@ export class DebugSettingsUseCase {
   async getDebugSettings(): Promise<DebugSettingsEntity> {
     try {
       this.logger.info('DebugSettingsUseCase: Loading debug settings from unified storage');
-      
+
       if (!this.storageAdapter) {
         throw new Error('StorageAdapter is not available');
       }
-      
+
       // 統一されたストレージから設定を読み込み
       const settingsData = await this.storageAdapter.loadSettings();
-      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
         DebugSettingsEntity;
-      
+
       const entity = DebugSettingsEntityClass.fromPlainObject(settingsData);
-      
+
       this.logger.info('DebugSettingsUseCase: Loaded debug settings:', entity.getSyncInfo());
       return entity;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to load debug settings:', error);
       // フォールバックとしてデフォルト設定を返す
-      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
         DebugSettingsEntity;
       return DebugSettingsEntityClass.getDefault();
     }
@@ -134,30 +135,30 @@ export class DebugSettingsUseCase {
   async saveDebugSettings(debugSettings: DebugSettingsEntity | any): Promise<DebugSettingsEntity> {
     try {
       this.logger.info('DebugSettingsUseCase: Saving debug settings to unified storage');
-      
+
       if (!this.storageAdapter) {
         throw new Error('StorageAdapter is not available');
       }
-      
-      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+
+      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
         DebugSettingsEntity;
-      
+
       // エンティティの妥当性検証
       if (!(debugSettings instanceof DebugSettingsEntityClass)) {
         debugSettings = DebugSettingsEntityClass.fromPlainObject(debugSettings);
       }
       debugSettings.validate();
-      
+
       // 統一されたストレージに保存（popup/content script両方で同期）
       const savedSettings = await this.storageAdapter.saveSettings(debugSettings.toStorageFormat());
-      
+
       this.logger.info('DebugSettingsUseCase: Debug settings saved successfully:', savedSettings);
-      
+
       // 設定変更通知（コールバック実行）
       this.notifySettingsChanged(debugSettings);
-      
+
       return DebugSettingsEntityClass.fromPlainObject(savedSettings);
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to save debug settings:', error);
       throw new Error(`Failed to save debug settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -171,14 +172,14 @@ export class DebugSettingsUseCase {
     if (typeof callback !== 'function') {
       throw new Error('Callback function is required');
     }
-    
+
     if (!this.storageAdapter) {
       throw new Error('StorageAdapter is not available');
     }
-    
+
     // コールバックを登録
     this.syncCallbacks.add(callback);
-    
+
     // 初回のみストレージリスナーを開始
     if (!this.isListenerStarted) {
       this.storageAdapter.startChangeListener((changes: any) => {
@@ -186,14 +187,14 @@ export class DebugSettingsUseCase {
           old: changes.oldSettings,
           new: changes.newSettings
         });
-        
+
         try {
-          const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+          const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
             DebugSettingsEntity;
-          
+
           const newEntity = DebugSettingsEntityClass.fromPlainObject(changes.newSettings);
           const oldEntity = changes.oldSettings ? DebugSettingsEntityClass.fromPlainObject(changes.oldSettings) : null;
-          
+
           // 全ての登録されたコールバックを実行
           this.syncCallbacks.forEach(cb => {
             try {
@@ -202,12 +203,12 @@ export class DebugSettingsUseCase {
               this.logger.error('DebugSettingsUseCase: Callback failed:', error);
             }
           });
-          
+
         } catch (error) {
           this.logger.error('DebugSettingsUseCase: Failed to process settings change:', error);
         }
       });
-      
+
       this.isListenerStarted = true;
       this.logger.info('DebugSettingsUseCase: Sync listener started');
     }
@@ -222,7 +223,7 @@ export class DebugSettingsUseCase {
     } else {
       this.syncCallbacks.clear();
     }
-    
+
     // 全てのコールバックが削除された場合はストレージリスナーも停止
     if (this.syncCallbacks.size === 0 && this.storageAdapter) {
       this.storageAdapter.stopChangeListener();
@@ -238,12 +239,12 @@ export class DebugSettingsUseCase {
     try {
       const debugSettings = await this.getDebugSettings();
       const newState = debugSettings.toggleEnabled();
-      
+
       await this.saveDebugSettings(debugSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Debug enabled toggled:', newState);
       return newState;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to toggle debug enabled:', error);
       throw error;
@@ -257,12 +258,12 @@ export class DebugSettingsUseCase {
     try {
       const debugSettings = await this.getDebugSettings();
       const newState = debugSettings.toggleShowStatus();
-      
+
       await this.saveDebugSettings(debugSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Show status toggled:', newState);
       return newState;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to toggle show status:', error);
       throw error;
@@ -272,16 +273,16 @@ export class DebugSettingsUseCase {
   /**
    * ログレベルを更新
    */
-  async updateLogLevel(level: number): Promise<boolean> {
+  async updateLogLevel(level: LogLevel): Promise<boolean> {
     try {
       const debugSettings = await this.getDebugSettings();
       debugSettings.setLogLevel(level);
-      
+
       await this.saveDebugSettings(debugSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Log level updated:', level);
       return true;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to update log level:', error);
       throw error;
@@ -295,12 +296,12 @@ export class DebugSettingsUseCase {
     try {
       const debugSettings = await this.getDebugSettings();
       debugSettings.setStatusPosition(position);
-      
+
       await this.saveDebugSettings(debugSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Status position updated:', position);
       return true;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to update status position:', error);
       throw error;
@@ -314,12 +315,12 @@ export class DebugSettingsUseCase {
     try {
       const currentSettings = await this.getDebugSettings();
       const updatedSettings = currentSettings.updateSettings(newSettings);
-      
+
       await this.saveDebugSettings(updatedSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Multiple settings updated:', newSettings);
       return updatedSettings;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to update multiple settings:', error);
       throw error;
@@ -337,16 +338,16 @@ export class DebugSettingsUseCase {
           error: 'StorageAdapter is not available'
         };
       }
-      
+
       const currentState = await this.storageAdapter.getCurrentState();
-      
+
       if (!currentState) {
         return {
           isConsistent: false,
           error: 'Failed to get current state'
         };
       }
-      
+
       return {
         isConsistent: true,
         storageType: currentState.storageType,
@@ -354,7 +355,7 @@ export class DebugSettingsUseCase {
         timestamp: currentState.timestamp,
         listenerCount: currentState.listenerCount
       };
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to validate sync consistency:', error);
       return {
@@ -372,40 +373,40 @@ export class DebugSettingsUseCase {
       if (!this.storageAdapter) {
         return { hadLegacyData: false, error: 'StorageAdapter is not available' };
       }
-      
+
       const legacyCheck = await this.storageAdapter.checkLegacyData();
-      
+
       if (legacyCheck.hasLegacyData) {
         this.logger.warn('DebugSettingsUseCase: Legacy local storage data detected');
-        
-        const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+
+        const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
           DebugSettingsEntity;
-        
+
         // 現在の設定と旧データを比較
         const currentSettings = await this.getDebugSettings();
         const legacyEntity = DebugSettingsEntityClass.fromPlainObject(legacyCheck.legacyData);
-        
+
         const consistencyCheck = currentSettings.validateSyncConsistency(legacyEntity);
-        
+
         if (!consistencyCheck.isConsistent) {
           this.logger.warn('DebugSettingsUseCase: Inconsistency detected, cleaning up legacy data');
           await this.storageAdapter.cleanupLegacyData();
         }
-        
+
         return {
           hadLegacyData: true,
           wasInconsistent: !consistencyCheck.isConsistent,
           cleanedUp: !consistencyCheck.isConsistent
         };
       }
-      
+
       return { hadLegacyData: false };
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to check/migrate legacy data:', error);
-      return { 
-        hadLegacyData: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        hadLegacyData: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -416,28 +417,28 @@ export class DebugSettingsUseCase {
   async initializeDebugSettings(): Promise<DebugSettingsEntity> {
     try {
       this.logger.info('DebugSettingsUseCase: Initializing debug settings');
-      
+
       // 旧データの確認と移行
       await this.checkAndMigrateLegacyData();
-      
+
       const existingSettings = await this.getDebugSettings();
-      
+
       // 既に設定が存在する場合はそのまま使用
       if (existingSettings && existingSettings.enabled !== undefined) {
         this.logger.info('DebugSettingsUseCase: Using existing debug settings');
         return existingSettings;
       }
-      
-      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) || 
+
+      const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
         DebugSettingsEntity;
-      
+
       // デフォルト設定を保存
       const defaultSettings = DebugSettingsEntityClass.getDefault();
       const savedSettings = await this.saveDebugSettings(defaultSettings);
-      
+
       this.logger.info('DebugSettingsUseCase: Debug settings initialized with defaults');
       return savedSettings;
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to initialize debug settings:', error);
       throw error;
@@ -458,7 +459,7 @@ export class DebugSettingsUseCase {
     try {
       const settings = await this.getDebugSettings();
       const storageState = this.storageAdapter ? await this.storageAdapter.getCurrentState() : null;
-      
+
       return {
         useCase: 'DebugSettingsUseCase',
         settings: settings.getSyncInfo(),
@@ -469,7 +470,7 @@ export class DebugSettingsUseCase {
         },
         timestamp: new Date().toISOString()
       };
-      
+
     } catch (error) {
       this.logger.error('DebugSettingsUseCase: Failed to get debug info:', error);
       return {

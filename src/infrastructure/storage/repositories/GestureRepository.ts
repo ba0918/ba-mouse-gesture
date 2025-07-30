@@ -35,11 +35,6 @@ interface OptimizationResult {
   error?: string
 }
 
-interface BackupData {
-  timestamp: string
-  version: string
-  customGestures: any[]
-}
 
 interface RepositoryStatus {
   isHealthy: boolean
@@ -76,7 +71,7 @@ export class GestureRepository {
       const result = await this.storage.get(this.customGesturesKey)
       const gesturesData = result[this.customGesturesKey] || []
 
-      const gestures = gesturesData.map((data: any) => this.deserializeCustomGesture(data))
+      const gestures = gesturesData.map((data: any) => CustomGesture.fromJSON(data))
 
       // キャッシュに保存
       this.cache.set(this.customGesturesKey, {
@@ -123,7 +118,7 @@ export class GestureRepository {
         }
       }
 
-      const serializedData = gestures.map(gesture => this.serializeCustomGesture(gesture))
+      const serializedData = gestures.map(gesture => gesture.toJSON())
       await this.storage.set({ [this.customGesturesKey]: serializedData })
 
       // キャッシュ更新
@@ -293,36 +288,6 @@ export class GestureRepository {
     return result
   }
 
-  /**
-   * データのバックアップを作成
-   */
-  async createBackup(): Promise<BackupData> {
-    const customGestures = await this.getCustomGestures()
-
-    return {
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      customGestures: customGestures.map(g => this.serializeCustomGesture(g))
-    }
-  }
-
-  /**
-   * バックアップからデータを復元
-   * @param backup - バックアップデータ
-   */
-  async restoreFromBackup(backup: BackupData): Promise<void> {
-    if (!backup.customGestures) {
-      throw new Error('Invalid backup data')
-    }
-
-    if (backup.customGestures) {
-      const gestures = backup.customGestures.map((data: any) =>
-        this.deserializeCustomGesture(data))
-      await this.saveCustomGestures(gestures)
-    }
-
-
-  }
 
   /**
    * ジェスチャー変更を監視
@@ -348,19 +313,6 @@ export class GestureRepository {
     })
   }
 
-  /**
-   * カスタムジェスチャーをシリアライズ
-   */
-  private serializeCustomGesture(gesture: CustomGesture): any {
-    return gesture.toJSON()
-  }
-
-  /**
-   * カスタムジェスチャーをデシリアライズ
-   */
-  private deserializeCustomGesture(data: any): CustomGesture {
-    return CustomGesture.fromJSON(data)
-  }
 
   /**
    * キャッシュをクリア

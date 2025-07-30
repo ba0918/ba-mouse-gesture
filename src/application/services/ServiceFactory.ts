@@ -11,7 +11,6 @@ import { GestureRepository } from '../../infrastructure/storage/repositories/Ges
 // Application layer imports
 import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase';
 import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagementUseCase';
-import { GestureApplicationService } from './GestureApplicationService';
 
 // Domain layer imports
 import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
@@ -34,7 +33,6 @@ interface UseCaseServices {
 }
 
 interface ApplicationServices {
-  gestureApplicationService?: GestureApplicationService;
   systemApplicationService?: any;
 }
 
@@ -257,23 +255,6 @@ export class ServiceFactory {
    * Application Service層の初期化
    */
   private async _initializeApplicationServices(config: FactoryConfig): Promise<void> {
-    // Gesture Application Service
-    if (
-      this.repositories.gestureRepository &&
-      this.repositories.settingsRepository &&
-      this.infrastructure.chromeMessaging &&
-      this.infrastructure.chromeBrowser
-    ) {
-      this.applicationServices.gestureApplicationService = new GestureApplicationService(
-        this.repositories.gestureRepository,
-        this.repositories.settingsRepository,
-        this.infrastructure.chromeMessaging,
-        this.infrastructure.chromeBrowser
-      );
-      
-      // システム初期化
-      await this.applicationServices.gestureApplicationService.initialize();
-    }
     
     // System Application Service (スタブ実装)
     this.applicationServices.systemApplicationService = {

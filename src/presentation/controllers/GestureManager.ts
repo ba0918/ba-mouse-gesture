@@ -60,7 +60,7 @@ export class GestureManager {
   private messagingAdapter: SimpleMessagingAdapter | null = null;
   private canvasRenderer: CanvasRendererAdapter | null = null;
   private debugElement: HTMLElement | null = null;
-  
+
   private settings: Settings = {
     enabled: true,
     strokeColor: '#2196F3',
@@ -68,10 +68,10 @@ export class GestureManager {
     gestureThreshold: 15,
     excludeList: []
   };
-  
+
   private isInitialized: boolean = false;
 
-  constructor() {}
+  constructor() { }
 
   /**
    * 初期化
@@ -80,48 +80,48 @@ export class GestureManager {
   async initialize(): Promise<boolean> {
     try {
       console.log('🏗️ GestureManager: Initializing...');
-      
+
       // 設定を読み込み
       await this.loadSettings();
-      
+
       // 除外サイトチェック
       if (this.isExcludedSite()) {
         console.log('Site excluded, disabling gestures');
         return false;
       }
-      
+
       // Infrastructure層の初期化
-      const SimpleMessagingAdapterClass = (typeof window !== 'undefined' && (window as any).SimpleMessagingAdapter) || 
+      const SimpleMessagingAdapterClass = (typeof window !== 'undefined' && (window as any).SimpleMessagingAdapter) ||
         SimpleMessagingAdapter;
-      const CanvasRendererAdapterClass = (typeof window !== 'undefined' && (window as any).CanvasRendererAdapter) || 
+      const CanvasRendererAdapterClass = (typeof window !== 'undefined' && (window as any).CanvasRendererAdapter) ||
         CanvasRendererAdapter;
-      
+
       this.messagingAdapter = new SimpleMessagingAdapterClass();
       this.canvasRenderer = new CanvasRendererAdapterClass();
-      
+
       // Canvas初期化
       const canvasInitialized = this.canvasRenderer?.initializeCanvas();
       if (!canvasInitialized) {
         throw new Error('Canvas initialization failed');
       }
-      
+
       // Domain層の初期化
-      const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) || 
+      const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) ||
         SimpleGestureRecognizer;
       const gestureRecognizer = new SimpleGestureRecognizerClass(this.settings.gestureThreshold);
-      
+
       // Application層の初期化
-      const SimpleGestureUseCaseClass = (typeof window !== 'undefined' && (window as any).SimpleGestureUseCase) || 
+      const SimpleGestureUseCaseClass = (typeof window !== 'undefined' && (window as any).SimpleGestureUseCase) ||
         SimpleGestureUseCase;
       this.gestureUseCase = new SimpleGestureUseCaseClass(gestureRecognizer, this.messagingAdapter);
       this.gestureUseCase?.updateSettings(this.settings);
-      
+
       // Presentation層の初期化
-      const GestureEventHandlerClass = (typeof window !== 'undefined' && (window as any).GestureEventHandler) || 
+      const GestureEventHandlerClass = (typeof window !== 'undefined' && (window as any).GestureEventHandler) ||
         GestureEventHandler;
       this.eventHandler = new GestureEventHandlerClass();
       this.eventHandler?.updateSettings(this.settings);
-      
+
       // イベントハンドラーのコールバック設定
       const callbacks: GestureCallbacks = {
         onGestureStart: this.onGestureStart.bind(this),
@@ -129,22 +129,22 @@ export class GestureManager {
         onGestureEnd: this.onGestureEnd.bind(this),
         onContextMenu: this.onContextMenu.bind(this)
       };
-      
+
       this.eventHandler?.initialize(callbacks);
-      
+
       // メッセージリスナー設定
       this.setupMessageListener();
-      
+
       // 設定変更監視
       this.watchSettingsChanges();
-      
+
       // デバッグ表示初期化
       this.initializeDebugDisplay();
-      
+
       this.isInitialized = true;
       console.log('✅ GestureManager: Initialization complete');
       return true;
-      
+
     } catch (error) {
       console.error('❌ GestureManager: Initialization failed:', error);
       this.isInitialized = false;
@@ -158,13 +158,13 @@ export class GestureManager {
    */
   private onGestureStart(startPosition: Point): void {
     if (!this.settings.enabled || !this.canvasRenderer) return;
-    
+
     // Canvas描画スタイル更新
     this.canvasRenderer.updateStyle({
       color: this.settings.strokeColor,
       width: this.settings.strokeWidth
     });
-    
+
     console.log('Gesture started at:', startPosition);
   }
 
@@ -175,13 +175,13 @@ export class GestureManager {
    */
   private onGestureMove(currentPoint: Point, trail: Point[]): void {
     if (!this.settings.enabled || !this.canvasRenderer) return;
-    
+
     // 軌跡を描画
     const style: DrawStyle = {
       color: this.settings.strokeColor,
       width: this.settings.strokeWidth
     };
-    
+
     this.canvasRenderer.drawTrail(trail, style);
   }
 
@@ -192,15 +192,15 @@ export class GestureManager {
    */
   private async onGestureEnd(trail: Point[], totalDistance: number): Promise<void> {
     if (!this.settings.enabled || !this.canvasRenderer || !this.gestureUseCase) return;
-    
+
     try {
       // Canvas遅延クリア
       this.canvasRenderer.clearCanvasWithDelay(200);
-      
+
       // ジェスチャー認識・実行
       if (trail.length >= 2 && totalDistance >= this.settings.gestureThreshold) {
         const result = await this.gestureUseCase.executeGesture(trail);
-        
+
         if (result.success) {
           console.log('Gesture executed successfully:', result.gestureType, result.action);
           this.showDebugMessage(`✓ ${result.gestureType} → ${result.action}`);
@@ -209,7 +209,7 @@ export class GestureManager {
           this.showDebugMessage(`✗ ${result.error}`);
         }
       }
-      
+
     } catch (error) {
       console.error('Gesture end processing failed:', error);
     }
@@ -231,7 +231,7 @@ export class GestureManager {
       // Clean Architecture 対応: appSettings キーを使用
       const result = await chrome.storage.sync.get(['appSettings', 'settings']);
       let settingsData: any = null;
-      
+
       // 新しい構成 (Clean Architecture) を優先
       if (result.appSettings) {
         settingsData = result.appSettings;
@@ -241,7 +241,7 @@ export class GestureManager {
         settingsData = result.settings;
         console.log('Settings loaded from settings (legacy)');
       }
-      
+
       if (settingsData) {
         this.settings = {
           enabled: settingsData.enabled ?? true,
@@ -271,7 +271,7 @@ export class GestureManager {
   private isExcludedSite(): boolean {
     const currentUrl = window.location.href;
     const currentHost = window.location.hostname;
-    
+
     return this.settings.excludeList.some(pattern => {
       // 完全URL マッチ
       if (pattern.includes('://')) {
@@ -312,9 +312,9 @@ export class GestureManager {
       if (direction === 'top') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (direction === 'bottom') {
-        window.scrollTo({ 
-          top: document.documentElement.scrollHeight, 
-          behavior: 'smooth' 
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth'
         });
       }
     } catch (error) {
@@ -348,10 +348,10 @@ export class GestureManager {
    */
   private updateSettings(newSettings: Partial<Settings>): void {
     this.settings = { ...this.settings, ...newSettings };
-    
+
     // デバッグ表示の更新
     this.updateDebugDisplay();
-    
+
     // 各コンポーネントに設定を伝播
     if (this.eventHandler) {
       this.eventHandler.updateSettings(this.settings);
@@ -359,7 +359,7 @@ export class GestureManager {
     if (this.gestureUseCase) {
       this.gestureUseCase.updateSettings(this.settings);
     }
-    
+
     console.log('Settings updated:', this.settings);
   }
 
@@ -371,21 +371,21 @@ export class GestureManager {
       this.eventHandler.destroy();
       this.eventHandler = null;
     }
-    
+
     if (this.canvasRenderer) {
       this.canvasRenderer.removeCanvas();
       this.canvasRenderer = null;
     }
-    
+
     if (this.debugElement) {
       this.debugElement.remove();
       this.debugElement = null;
     }
-    
+
     this.gestureUseCase = null;
     this.messagingAdapter = null;
     this.isInitialized = false;
-    
+
     console.log('GestureManager destroyed');
   }
 
@@ -451,14 +451,14 @@ export class GestureManager {
     const logDiv = document.createElement('div');
     logDiv.textContent = `[${timestamp}] ${message}`;
     logDiv.style.marginBottom = '2px';
-    
+
     this.debugElement.appendChild(logDiv);
-    
+
     // 最大5件のメッセージを保持
     while (this.debugElement.children.length > 5) {
       this.debugElement.removeChild(this.debugElement.firstChild!);
     }
-    
+
     this.debugElement.scrollTop = this.debugElement.scrollHeight;
   }
 
@@ -471,7 +471,7 @@ export class GestureManager {
       this.debugElement.remove();
       this.debugElement = null;
     }
-    
+
     // 新しい設定で再初期化
     this.initializeDebugDisplay();
   }
@@ -493,9 +493,4 @@ export class GestureManager {
       className: 'GestureManager'
     };
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).GestureManager = GestureManager;
 }

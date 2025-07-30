@@ -3,8 +3,7 @@
  * 設定管理のビジネスロジックを統合するUseCaseクラス
  */
 
-import { Settings, DebugSettingsEntity } from '../../domain/entities';
-import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
+import { Settings } from '../../domain/entities';
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
 // Repository interfaces
@@ -16,17 +15,11 @@ interface SettingsRepository {
   updateGestureState(gestureId: string, enabled: boolean): Promise<Settings>
   addExcludeSite(pattern: string): Promise<Settings>
   removeExcludeSite(pattern: string): Promise<Settings>
-  updateDebugSettings(debugConfig: Record<string, any>): Promise<Settings>
+  updateDebugSettings(debugConfig: Record<string, unknown>): Promise<Settings>
   resetToDefaults(): Promise<Settings>
-  createBackup(): Promise<SettingsBackupData>
-  restoreFromBackup(backup: SettingsBackupData): Promise<Settings>
   validateSettings(): Promise<SettingsValidationResult>
   getRepositoryStatus(): Promise<Record<string, unknown>>
   onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void
-  storageAdapter?: {
-    get(keys: string | string[]): Promise<Record<string, unknown>>
-    set(data: Record<string, unknown>): Promise<void>
-  }
 }
 
 interface ChromeMessagingAdapter {
@@ -34,12 +27,6 @@ interface ChromeMessagingAdapter {
 }
 
 // Types for internal use
-interface SettingsBackupData {
-  timestamp: string
-  version: string
-  settings: Record<string, unknown>
-}
-
 interface SettingsValidationResult {
   isValid: boolean
   errors: string[]
@@ -93,9 +80,6 @@ export class SettingsManagementUseCase {
    */
   async updateStrokeSettings(color: string, width: number): Promise<Settings> {
     try {
-      // 入力値の検証
-      this.validateStrokeSettings(color, width)
-
       const result = await this.settingsRepository.updateStrokeSettings(color, width)
 
       // 設定変更通知
@@ -112,9 +96,6 @@ export class SettingsManagementUseCase {
    */
   async updateGestureThreshold(threshold: number): Promise<Settings> {
     try {
-      // 入力値の検証
-      this.validateThreshold(threshold)
-
       const result = await this.settingsRepository.updateThreshold(threshold)
 
       // 設定変更通知
@@ -138,10 +119,6 @@ export class SettingsManagementUseCase {
       
       this.logger.debug('FIXED - SettingsManagementUseCase with correct gesture ID:', { gestureId, enabled });
       
-      // ジェスチャーIDの検証（標準ジェスチャーのみ）
-      this.validateGestureId(gestureId)
-
-      // 根本原因修正後：マッピング不要、直接ジェスチャーIDを使用
       const result = await this.settingsRepository.updateGestureState(gestureId, enabled)
 
       // 設定変更通知
@@ -159,9 +136,6 @@ export class SettingsManagementUseCase {
    */
   async addExcludeSite(pattern: string): Promise<Settings> {
     try {
-      // パターンの検証
-      this.validateUrlPattern(pattern)
-
       const result = await this.settingsRepository.addExcludeSite(pattern)
 
       // 設定変更通知
@@ -192,46 +166,9 @@ export class SettingsManagementUseCase {
   /**
    * デバッグ設定を更新
    */
-  async updateDebugSettings(debugConfig: Record<string, any>): Promise<Settings> {
+  async updateDebugSettings(debugConfig: Record<string, unknown>): Promise<Settings> {
     try {
-      // デバッグ設定の検証
-      this.validateDebugSettings(debugConfig)
-
       const result = await this.settingsRepository.updateDebugSettings(debugConfig)
-
-      // DebugSettingsUseCaseへの同期（2つのシステム統合）
-      try {
-        const { DebugSettingsUseCase } = await import('./DebugSettingsUseCase.js');
-        const debugSettingsUseCase = new DebugSettingsUseCase();
-        
-        // SettingsからDebugSettingsEntityへの変換
-        let logLevel = typeof debugConfig.debugLogLevel === 'string' 
-          ? parseInt(debugConfig.debugLogLevel, 10) 
-          : (debugConfig.debugLogLevel ?? 2);
-        
-        // logLevelの範囲チェック（0-3）
-        if (isNaN(logLevel) || logLevel < 0 || logLevel > 3) {
-          this.logger.warn('Invalid logLevel value:', debugConfig.debugLogLevel, 'defaulting to 2');
-          logLevel = 2;
-        }
-        
-        const debugSettingsEntity = {
-          enabled: debugConfig.debugEnabled ?? false,
-          logLevel: logLevel,
-          showStatus: debugConfig.debugShowStatus ?? false,
-          statusPosition: debugConfig.debugStatusPosition ?? 'top-right'
-        };
-        
-        this.logger.info('Syncing debug settings:', {
-          original: debugConfig,
-          converted: debugSettingsEntity
-        });
-        
-        const savedEntity = await debugSettingsUseCase.saveDebugSettings(debugSettingsEntity);
-        this.logger.info('Debug settings synchronized to DebugSettingsUseCase:', savedEntity.getSyncInfo());
-      } catch (syncError) {
-        this.logger.warn('Failed to sync debug settings to DebugSettingsUseCase:', syncError);
-      }
 
       // 設定変更通知
       await this.notifySettingsChange('debug_settings_updated', debugConfig)
@@ -259,35 +196,6 @@ export class SettingsManagementUseCase {
     }
   }
 
-  /**
-   * 設定のバックアップを作成
-   */
-  async createSettingsBackup(): Promise<SettingsBackupData> {
-    try {
-      return await this.settingsRepository.createBackup()
-    } catch (error) {
-      throw new SettingsManagementError('Failed to create settings backup', error as Error)
-    }
-  }
-
-  /**
-   * バックアップから設定を復元
-   */
-  async restoreSettingsFromBackup(backup: SettingsBackupData): Promise<Settings> {
-    try {
-      // バックアップデータの検証
-      this.validateBackupData(backup)
-
-      const result = await this.settingsRepository.restoreFromBackup(backup)
-
-      // 設定変更通知
-      await this.notifySettingsChange('settings_restored', { timestamp: backup.timestamp })
-
-      return result
-    } catch (error) {
-      throw new SettingsManagementError('Failed to restore settings from backup', error as Error)
-    }
-  }
 
   /**
    * 設定の整合性チェック
@@ -343,221 +251,8 @@ export class SettingsManagementUseCase {
     }
   }
 
-  // ========================================
-  // 旧SettingsUseCase互換メソッド（統合後）
-  // ========================================
-
-  /**
-   * 設定を取得（旧SettingsUseCaseインターフェース互換）
-   */
-  async getSettings(): Promise<Record<string, unknown>> {
-    try {
-      const settings = await this.getCurrentSettings()
-      const settingsJSON = settings.toJSON()
-
-      return settingsJSON as unknown as Record<string, unknown>
-    } catch (error) {
-      this.logger.error('SettingsManagementUseCase: Failed to load settings:', error)
-      return this.getDefaultSettings()
-    }
-  }
-
-  /**
-   * 設定を保存（旧SettingsUseCaseインターフェース互換）
-   */
-  async saveSettings(settings: Record<string, unknown>): Promise<Record<string, unknown>> {
-    try {
-      // 設定の各フィールドをそれぞれ更新
-      if (settings.enabled !== undefined) {
-        await this.toggleExtension(settings.enabled as boolean)
-      }
-
-      if (settings.strokeColor !== undefined || settings.strokeWidth !== undefined) {
-        const currentSettings = await this.getCurrentSettings()
-        const color = (settings.strokeColor as string) || currentSettings.strokeColor
-        const width = (settings.strokeWidth as number) || currentSettings.strokeWidth
-        await this.updateStrokeSettings(color, width)
-      }
-
-      if (settings.gestureThreshold !== undefined) {
-        await this.updateGestureThreshold(settings.gestureThreshold as number)
-      }
-
-      if (settings.excludeList !== undefined) {
-        // 現在の除外リストをクリアして新しいものを設定
-        const currentSettings = await this.getCurrentSettings()
-        const currentList = currentSettings.getExcludeList()
-
-        // 既存のアイテムを削除
-        for (const item of currentList) {
-          await this.removeExcludeSite(item)
-        }
-
-        // 新しいアイテムを追加
-        for (const item of settings.excludeList as string[]) {
-          await this.addExcludeSite(item)
-        }
-      }
-
-      if (settings.defaultGestureStates !== undefined) {
-        // 各ジェスチャーの状態を更新
-        for (const [gestureId, enabled] of Object.entries(settings.defaultGestureStates as Record<string, boolean>)) {
-          await this.toggleGesture(gestureId, enabled)
-        }
-      }
-
-      this.logger.info('SettingsManagementUseCase: Settings saved successfully')
-
-      // バックグラウンドスクリプトに設定変更を通知
-      if (this.messagingAdapter) {
-        try {
-          await this.messagingAdapter.sendMessage({
-            type: 'SETTINGS_UPDATED',
-            settings: settings
-          }, { expectResponse: false })
-        } catch (error) {
-          this.logger.warn('Settings update notification failed:', error)
-        }
-      }
-
-      // 更新後の設定を返す
-      const updatedSettings = await this.getCurrentSettings()
-      return updatedSettings.toJSON() as unknown as Record<string, unknown>
-
-    } catch (error) {
-      this.logger.error('SettingsManagementUseCase: Failed to save settings:', error)
-      throw error
-    }
-  }
-
-  /**
-   * デフォルト設定を取得（旧SettingsUseCaseインターフェース互換）
-   */
-  getDefaultSettings(): Record<string, unknown> {
-    return {
-      enabled: true,
-      strokeColor: '#2196F3',
-      strokeWidth: 3,
-      gestureThreshold: 15,
-      excludeList: [],
-      defaultGestureStates: {
-        left: true,
-        right: true,
-        up: true,
-        down: true,
-        downright: true,
-        upright: true,
-        rightdown: true,
-        updown: true,
-        super_refresh: true,
-        prev_tab: true,
-        next_tab: true
-      }
-    }
-  }
-
-  /**
-   * Chrome Storage APIの統一インターフェース
-   */
-  async chromeStorageGet(keys: string | string[]): Promise<Record<string, unknown>> {
-    try {
-      if (this.settingsRepository?.storageAdapter) {
-        return await this.settingsRepository.storageAdapter.get(keys)
-      } else {
-        throw new Error('Storage adapter is not available')
-      }
-    } catch (error) {
-      this.logger.error('chromeStorageGet failed:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Chrome Storage APIの統一インターフェース
-   */
-  async chromeStorageSet(data: Record<string, unknown>): Promise<void> {
-    try {
-      if (this.settingsRepository?.storageAdapter) {
-        return await this.settingsRepository.storageAdapter.set(data)
-      } else {
-        throw new Error('Storage adapter is not available')
-      }
-    } catch (error) {
-      this.logger.error('chromeStorageSet failed:', error)
-      throw error
-    }
-  }
-
-  // ========================================
-  // Validation methods
-  // ========================================
-
-  private validateStrokeSettings(color: string, width: number): void {
-    const settingsInstance = new Settings()
-    if (!settingsInstance.isValidColor(color)) {
-      throw new Error('Invalid color format. Expected hex color like #FF0000')
-    }
-    if (!settingsInstance.isValidWidth(width)) {
-      throw new Error('Invalid width. Expected integer between 1 and 10')
-    }
-  }
-
-  private validateThreshold(threshold: number): void {
-    if (!Number.isInteger(threshold) || threshold < 5 || threshold > 100) {
-      throw new Error('Invalid threshold. Expected integer between 5 and 100')
-    }
-  }
-
-  private validateGestureId(gestureId: string): void {
-    // 統一定義から有効なジェスチャーIDを取得
-    const validGestureIds = DefaultGestureDefinitions.getValidGestureIds();
-
-    if (!validGestureIds.includes(gestureId)) {
-      this.logger.error('Invalid gesture ID for standard gesture:', {
-        receivedId: gestureId,
-        validIds: Array.from(validGestureIds),
-        isCustomId: gestureId.startsWith('custom_')
-      });
-      throw new Error(`Invalid standard gesture ID: ${gestureId}. Valid IDs: ${Array.from(validGestureIds).join(', ')}`);
-    }
-  }
 
 
-  private validateUrlPattern(pattern: string): void {
-    if (!pattern || typeof pattern !== 'string' || pattern.trim().length === 0) {
-      throw new Error('Invalid URL pattern. Pattern cannot be empty')
-    }
-
-    if (pattern.length > 200) {
-      throw new Error('URL pattern too long. Maximum 200 characters')
-    }
-  }
-
-  private validateDebugSettings(debugConfig: Record<string, any>): void {
-    if (!debugConfig || typeof debugConfig !== 'object') {
-      throw new Error('Invalid debug config. Expected object')
-    }
-
-    const validLogLevels = [0, 1, 2, 3]
-    if (debugConfig.logLevel !== undefined && !validLogLevels.includes(debugConfig.logLevel)) {
-      throw new Error('Invalid log level. Expected 0-3')
-    }
-
-    const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
-    if (debugConfig.statusPosition && !validPositions.includes(debugConfig.statusPosition)) {
-      throw new Error('Invalid status position')
-    }
-  }
-
-  private validateBackupData(backup: SettingsBackupData): void {
-    if (!backup || !backup.settings) {
-      throw new Error('Invalid backup data. Missing settings')
-    }
-
-    if (!backup.timestamp || !backup.version) {
-      throw new Error('Invalid backup data. Missing metadata')
-    }
-  }
 
   private countEnabledGestures(settings: Settings): number {
     return Object.values(settings.defaultGestureStates).filter(Boolean).length

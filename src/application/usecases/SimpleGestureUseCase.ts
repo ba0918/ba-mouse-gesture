@@ -55,9 +55,9 @@ export class SimpleGestureUseCase {
   private logger: DebugLogger;
 
   constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: MessagingService | null = null, logger?: DebugLogger) {
-    const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) || 
+    const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) ||
       SimpleGestureRecognizer;
-    
+
     this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizerClass();
     this.messagingService = messagingService;
     this.logger = logger || new DebugLogger(null);
@@ -77,18 +77,18 @@ export class SimpleGestureUseCase {
     try {
       // 設定チェック
       if (!this.settings.enabled) {
-        return { 
-          success: false, 
-          error: 'Gesture recognition is disabled' 
+        return {
+          success: false,
+          error: 'Gesture recognition is disabled'
         };
       }
 
       // ジェスチャー認識
       const gesturePattern = this.gestureRecognizer.recognizeGesture(trail);
       if (!gesturePattern) {
-        return { 
-          success: false, 
-          error: 'Gesture not recognized' 
+        return {
+          success: false,
+          error: 'Gesture not recognized'
         };
       }
 
@@ -97,7 +97,7 @@ export class SimpleGestureUseCase {
 
       // アクション実行
       const result = await this.executeAction(gestureString);
-      
+
       return {
         success: result.success,
         gestureType: gestureString,
@@ -139,10 +139,10 @@ export class SimpleGestureUseCase {
     try {
       // メッセージ作成
       const message = this.createActionMessage(gestureType);
-      
+
       // backgroundスクリプトにメッセージ送信
       const response = await this.messagingService.sendMessage(message);
-      
+
       return {
         success: response.success,
         action: response.action,
@@ -165,7 +165,7 @@ export class SimpleGestureUseCase {
   private createActionMessage(gestureType: string): ActionMessage {
     // 統一されたアクション名を取得
     const actionName = this.getActionNameFromGestureType(gestureType);
-    
+
     return {
       type: 'executeAction',
       action: actionName
@@ -179,7 +179,7 @@ export class SimpleGestureUseCase {
    */
   updateSettings(newSettings: Partial<Settings>): void {
     this.settings = { ...this.settings, ...newSettings };
-    
+
     // 認識閾値の更新
     if (newSettings.gestureThreshold) {
       this.gestureRecognizer.setThreshold(newSettings.gestureThreshold);
@@ -230,7 +230,7 @@ export class SimpleGestureUseCase {
 
     // ジェスチャータイプからジェスチャーIDを取得（UI側と一致）
     const gestureId = this.getGestureIdFromGestureType(gestureType);
-    
+
     // 設定があればそれを使用、なければデフォルトで有効
     return this.settings.defaultGestureStates[gestureId] !== false;
   }
@@ -243,7 +243,7 @@ export class SimpleGestureUseCase {
   private getGestureIdFromGestureType(gestureType: string): string {
     const gestureIdMapping: { [key: string]: string } = {
       '↑': 'up',
-      '↓': 'down', 
+      '↓': 'down',
       '←': 'left',
       '→': 'right',
       '↓→': 'downright',
@@ -254,7 +254,7 @@ export class SimpleGestureUseCase {
       '←→': 'prev_tab',
       '→←': 'next_tab'
     };
-    
+
     return gestureIdMapping[gestureType] || gestureType.toLowerCase();
   }
 
@@ -266,7 +266,7 @@ export class SimpleGestureUseCase {
   private getActionNameFromGestureType(gestureType: string): string {
     const gestureMapping: { [key: string]: string } = {
       '↑': 'scroll_top',
-      '↓': 'scroll_bottom', 
+      '↓': 'scroll_bottom',
       '←': 'back',
       '→': 'forward',
       '↓→': 'close_tab',
@@ -277,7 +277,7 @@ export class SimpleGestureUseCase {
       '←→': 'prev_tab',
       '→←': 'next_tab'
     };
-    
+
     return gestureMapping[gestureType] || gestureType;
   }
 
@@ -309,9 +309,4 @@ export class SimpleGestureUseCase {
       className: 'SimpleGestureUseCase'
     };
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).SimpleGestureUseCase = SimpleGestureUseCase;
 }
