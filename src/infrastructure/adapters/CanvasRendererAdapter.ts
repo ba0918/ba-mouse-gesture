@@ -1,7 +1,10 @@
 /**
  * CanvasRendererAdapter
  * Canvas描画のInfrastructure層実装
+ * RenderingServiceインターフェースの実装
  */
+
+import { RenderingService, Point, DrawStyle } from '../../application/interfaces/RenderingService'
 
 // Type definitions
 interface TrailPoint {
@@ -18,11 +21,6 @@ interface CanvasStyle {
   pointerEvents?: string
   zIndex?: string
   background?: string
-}
-
-interface DrawStyle {
-  color?: string
-  width?: number
 }
 
 interface CanvasSize {
@@ -46,7 +44,7 @@ interface DebugInfo extends CanvasInfo {
   className: string
 }
 
-export class CanvasRendererAdapter {
+export class CanvasRendererAdapter implements RenderingService {
   private canvas: HTMLCanvasElement | null = null
   private ctx: CanvasRenderingContext2D | null = null
   private readonly canvasId: string = 'mouse-gesture-trail'
@@ -54,11 +52,19 @@ export class CanvasRendererAdapter {
   private resizeHandler: (() => void) | null = null
 
   /**
-   * Canvasを初期化
+   * RenderingService実装: Canvasを初期化
+   * @returns 初期化成功可否
+   */
+  initializeCanvas(): boolean {
+    return this.initializeCanvasWithStyle({})
+  }
+
+  /**
+   * スタイル付きCanvas初期化（内部用）
    * @param style - スタイル設定
    * @returns 初期化成功可否
    */
-  initializeCanvas(style: CanvasStyle = {}): boolean {
+  private initializeCanvasWithStyle(style: CanvasStyle = {}): boolean {
     try {
       // 既存のcanvasがあれば削除
       this.removeCanvas()
@@ -133,11 +139,11 @@ export class CanvasRendererAdapter {
   }
 
   /**
-   * 軌跡を描画
+   * RenderingService実装: 軌跡を描画
    * @param trail - 軌跡データ
    * @param style - 描画スタイル
    */
-  drawTrail(trail: TrailPoint[], style: DrawStyle = {}): void {
+  drawTrail(trail: Point[], style: DrawStyle): void {
     if (!this.isInitialized || !this.ctx || !trail || trail.length < 2) {
       return
     }
@@ -278,8 +284,15 @@ export class CanvasRendererAdapter {
   }
 
   /**
-   * Canvasエレメントを取得
-   * @returns 
+   * RenderingService実装: Canvasエレメントを取得
+   */
+  getCanvasElement(): HTMLCanvasElement | null {
+    return this.canvas
+  }
+
+  /**
+   * Canvasエレメントを取得（互換性用）
+   * @deprecated getCanvasElement() を使用してください
    */
   getCanvas(): HTMLCanvasElement | null {
     return this.canvas

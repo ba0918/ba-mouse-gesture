@@ -1,7 +1,10 @@
 /**
  * SimpleMessagingAdapter
  * Chromeランタイムメッセージングのシンプルなラッパー
+ * MessagingServiceインターフェースの実装
  */
+
+import { MessagingService, ActionMessage, ActionResult } from '../../application/interfaces/MessagingService'
 
 // 型定義
 interface MessageResponse {
@@ -17,18 +20,31 @@ interface DebugInfo {
   className: string;
 }
 
-export class SimpleMessagingAdapter {
+export class SimpleMessagingAdapter implements MessagingService {
   private defaultTimeout: number = 5000;
+  private messageListener: ((message: unknown) => void) | null = null;
 
   constructor() { }
 
   /**
-   * backgroundスクリプトにメッセージを送信
+   * MessagingService実装: ActionMessageを送信
+   */
+  async sendMessage(message: ActionMessage): Promise<ActionResult> {
+    const response = await this.sendRawMessage(message, this.defaultTimeout)
+    return {
+      success: response.success,
+      action: response.action,
+      error: response.error
+    }
+  }
+
+  /**
+   * backgroundスクリプトにメッセージを送信（内部用）
    * @param message - 送信メッセージ
    * @param timeout - タイムアウト（ms）
    * @returns レスポンス
    */
-  sendMessage(message: any, timeout: number = this.defaultTimeout): Promise<MessageResponse> {
+  private sendRawMessage(message: unknown, timeout: number = this.defaultTimeout): Promise<MessageResponse> {
     return new Promise((resolve) => {
       if (!this.isAvailable()) {
         resolve({
@@ -111,14 +127,41 @@ export class SimpleMessagingAdapter {
   }
 
   /**
-   * メッセージリスナーを設定
-   * @param handler - メッセージハンドラー
+   * MessagingService実装: メッセージリスナーを追加
+   */
+  addMessageListener(callback: (message: unknown) => void): void {
+    this.messageListener = callback
+    
+    if (this.isAvailable() && chrome.runtime.onMessage) {
+      chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+        try {
+          if (this.messageListener) {
+            this.messageListener(message)
+          }
+        } catch (error) {
+          console.error('Message listener error:', error)
+        }
+      })
+    }
+  }
+
+  /**
+   * MessagingService実装: メッセージリスナーを削除
+   */
+  removeMessageListener(): void {
+    this.messageListener = null
+    // Chrome APIのリスナー削除は複雑なため、コールバックのみ無効化
+  }
+
+  /**
+   * 旧メッセージリスナー設定（互換性用）
+   * @deprecated addMessageListenerを使用してください
    */
   onMessage(
     handler: (
-      message: any,
+      message: unknown,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: any) => void
+      sendResponse: (response?: unknown) => void
     ) => boolean | void
   ): void {
     if (this.isAvailable() && chrome.runtime.onMessage) {

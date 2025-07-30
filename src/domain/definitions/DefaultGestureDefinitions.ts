@@ -65,7 +65,7 @@ export class DefaultGestureDefinitions {
       category: 'basic',
       description: 'ページの最下部にスクロール'
     },
-    
+
     // 複合ジェスチャー（組み合わせベース）
     {
       id: 'downright',
@@ -99,14 +99,14 @@ export class DefaultGestureDefinitions {
       category: 'page',
       description: 'ページを更新'
     },
-    
+
     // Phase 10 新機能（高度な機能）
     {
       id: 'super_refresh',
       name: 'スーパーリロード（キャッシュクリア付き）',
       pattern: '↑↓↑',
       action: 'super_refresh',
-      category: 'page', 
+      category: 'page',
       description: 'キャッシュクリア付きリロード'
     },
     {
@@ -204,27 +204,5 @@ export class DefaultGestureDefinitions {
       mapping[def.action] = def.name;
     });
     return mapping;
-  }
-
-  /**
-   * ジェスチャー統計情報を取得
-   */
-  static getStatistics(): {
-    total: number;
-    byCategory: Record<string, number>;
-    basicGestures: number;
-    complexGestures: number;
-  } {
-    const byCategory: Record<string, number> = {};
-    this.GESTURE_DEFINITIONS.forEach(def => {
-      byCategory[def.category] = (byCategory[def.category] || 0) + 1;
-    });
-
-    return {
-      total: this.GESTURE_DEFINITIONS.length,
-      byCategory,
-      basicGestures: this.GESTURE_DEFINITIONS.filter(def => def.category === 'basic').length,
-      complexGestures: this.GESTURE_DEFINITIONS.filter(def => def.category !== 'basic').length
-    };
   }
 }

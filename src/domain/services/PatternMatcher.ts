@@ -1,390 +1,58 @@
 /**
  * PatternMatcher ドメインサービス
- * パターンマッチングの高度なアルゴリズムを提供
+ * 旧互換性インターフェース - 新しいPatternMatcherCoordinatorにデリゲート
+ * 
+ * @deprecated 新しいコードではPatternMatcherCoordinatorを直接使用してください
  */
 
+import { PatternMatcherCoordinator, MatchingStrategyType } from './PatternMatcherCoordinator'
 import { Threshold } from '../valueObjects/Threshold'
 import { GesturePattern } from '../valueObjects/GesturePattern'
 
-export type MatchingStrategy = 'exact' | 'levenshtein' | 'lcs' | 'fuzzy' | 'adaptive'
+// 旧コードとの互換性のため、型とクラスを再エクスポート
+export { MatchResult, BestMatchResult } from '../strategies/MatchResult'
+export type MatchingStrategy = MatchingStrategyType
 
-interface DirectionTrend {
-  up: number
-  down: number
-  left: number
-  right: number
-}
-
-interface MatchingFunction {
-  (input: GesturePattern, target: GesturePattern): MatchResult
-}
-
+/**
+ * PatternMatcher - 互換性ラッパークラス
+ * 389行のGod Objectから、Strategy Patternベースの小さなデリゲートクラスに改善
+ */
 export class PatternMatcher {
-  private threshold: Threshold
-  private matchingStrategies: Map<string, MatchingFunction>
+  private coordinator: PatternMatcherCoordinator
 
   constructor(threshold?: Threshold) {
-    this.threshold = threshold || Threshold.getDefault()
-    this.matchingStrategies = new Map()
-    this.initializeStrategies()
-  }
-
-  /**
-   * マッチング戦略を初期化
-   */
-  private initializeStrategies(): void {
-    this.matchingStrategies.set('exact', this.exactMatch.bind(this))
-    this.matchingStrategies.set('levenshtein', this.levenshteinMatch.bind(this))
-    this.matchingStrategies.set('lcs', this.lcsMatch.bind(this))
-    this.matchingStrategies.set('fuzzy', this.fuzzyMatch.bind(this))
-    this.matchingStrategies.set('adaptive', this.adaptiveMatch.bind(this))
+    this.coordinator = new PatternMatcherCoordinator(threshold)
   }
 
   /**
    * パターンマッチングを実行
+   * @deprecated PatternMatcherCoordinator.match() を使用してください
    */
-  match(inputPattern: GesturePattern, targetPattern: GesturePattern, strategy: MatchingStrategy = 'adaptive'): MatchResult {
-    if (!inputPattern || !targetPattern || 
-        inputPattern.isEmpty() || targetPattern.isEmpty()) {
-      return new MatchResult(0, false, 'empty_pattern')
-    }
-
-    const matchFunction = this.matchingStrategies.get(strategy)
-    if (!matchFunction) {
-      throw new Error(`Unknown matching strategy: ${strategy}`)
-    }
-
-    const result = matchFunction(inputPattern, targetPattern)
-    result.strategy = strategy
-    result.threshold = this.threshold.getMatchThreshold()
-    
-    return result
-  }
-
-  /**
-   * 完全一致マッチング
-   */
-  private exactMatch(input: GesturePattern, target: GesturePattern): MatchResult {
-    const isExact = input.exactMatch(target)
-    return new MatchResult(
-      isExact ? 1.0 : 0.0,
-      isExact,
-      'exact_match'
-    )
-  }
-
-  /**
-   * レーベンシュタイン距離ベースマッチング
-   */
-  private levenshteinMatch(input: GesturePattern, target: GesturePattern): MatchResult {
-    const similarity = input.calculateSimilarity(target)
-    const isMatch = this.threshold.isMatch(similarity)
-    
-    return new MatchResult(
-      similarity,
-      isMatch,
-      'levenshtein_distance',
-      { distance: input.levenshteinDistance(target) }
-    )
-  }
-
-  /**
-   * 最長共通部分列ベースマッチング
-   */
-  private lcsMatch(input: GesturePattern, target: GesturePattern): MatchResult {
-    const lcs = input.longestCommonSubsequence(target)
-    const maxLength = Math.max(input.getLength(), target.getLength())
-    const similarity = maxLength > 0 ? lcs.getLength() / maxLength : 0
-    
-    const isMatch = this.threshold.isMatch(similarity)
-    
-    return new MatchResult(
-      similarity,
-      isMatch,
-      'lcs_matching',
-      { 
-        lcsLength: lcs.getLength(),
-        lcsPattern: lcs.toString()
-      }
-    )
-  }
-
-  /**
-   * ファジーマッチング（部分マッチを許容）
-   */
-  private fuzzyMatch(input: GesturePattern, target: GesturePattern): MatchResult {
-    // 複数の手法を組み合わせ
-    const levenshteinResult = this.levenshteinMatch(input, target)
-    const lcsResult = this.lcsMatch(input, target)
-    
-    // 重み付き平均
-    const combinedSimilarity = (levenshteinResult.similarity * 0.6) + 
-                              (lcsResult.similarity * 0.4)
-    
-    // 部分マッチングも考慮
-    const partialSimilarity = this.calculatePartialMatch(input, target)
-    const finalSimilarity = Math.max(combinedSimilarity, partialSimilarity * 0.8)
-    
-    const isMatch = this.threshold.isMatch(finalSimilarity)
-    
-    return new MatchResult(
-      finalSimilarity,
-      isMatch,
-      'fuzzy_matching',
-      {
-        levenshtein: levenshteinResult.similarity,
-        lcs: lcsResult.similarity,
-        partial: partialSimilarity
-      }
-    )
-  }
-
-  /**
-   * 適応的マッチング（コンテキストを考慮）
-   */
-  private adaptiveMatch(input: GesturePattern, target: GesturePattern): MatchResult {
-    // パターンの特徴に基づいて最適な手法を選択
-    const inputComplexity = input.getComplexity()
-    const targetComplexity = target.getComplexity()
-    const complexityDiff = Math.abs(inputComplexity - targetComplexity)
-    
-    let result: MatchResult
-    
-    if (complexityDiff === 0 && inputComplexity <= 2) {
-      // シンプルなパターンは完全一致を重視
-      result = this.exactMatch(input, target)
-      if (!result.isMatch) {
-        result = this.levenshteinMatch(input, target)
-      }
-    } else if (complexityDiff <= 1) {
-      // 複雑度が近い場合はレーベンシュタイン距離
-      result = this.levenshteinMatch(input, target)
-    } else {
-      // 複雑度が大きく異なる場合はファジーマッチング
-      result = this.fuzzyMatch(input, target)
-    }
-    
-    // 適応的調整
-    result = this.applyAdaptiveAdjustment(result, input, target)
-    result.algorithm = 'adaptive'
-    
-    return result
-  }
-
-  /**
-   * 部分マッチングの計算
-   */
-  private calculatePartialMatch(input: GesturePattern, target: GesturePattern): number {
-    const inputDirs = input.getDirections()
-    const targetDirs = target.getDirections()
-    
-    let maxPartialSimilarity = 0
-    
-    // スライディングウィンドウで部分マッチングを計算
-    for (let i = 0; i <= inputDirs.length - targetDirs.length; i++) {
-      const subInput = new GesturePattern(inputDirs.slice(i, i + targetDirs.length))
-      const similarity = subInput.calculateSimilarity(target)
-      maxPartialSimilarity = Math.max(maxPartialSimilarity, similarity)
-    }
-    
-    // 逆方向もチェック
-    for (let i = 0; i <= targetDirs.length - inputDirs.length; i++) {
-      const subTarget = new GesturePattern(targetDirs.slice(i, i + inputDirs.length))
-      const similarity = input.calculateSimilarity(subTarget)
-      maxPartialSimilarity = Math.max(maxPartialSimilarity, similarity)
-    }
-    
-    return maxPartialSimilarity
-  }
-
-  /**
-   * 適応的調整を適用
-   */
-  private applyAdaptiveAdjustment(result: MatchResult, input: GesturePattern, target: GesturePattern): MatchResult {
-    let adjustedSimilarity = result.similarity
-    
-    // 長さの違いによる調整
-    const lengthRatio = Math.min(input.getLength(), target.getLength()) / 
-                       Math.max(input.getLength(), target.getLength())
-    if (lengthRatio < 0.5) {
-      adjustedSimilarity *= 0.8 // 長さが大きく異なる場合はペナルティ
-    }
-    
-    // パターンの方向性による調整
-    const directionConsistency = this.calculateDirectionConsistency(input, target)
-    adjustedSimilarity = (adjustedSimilarity * 0.8) + (directionConsistency * 0.2)
-    
-    const adjustedResult = new MatchResult(
-      adjustedSimilarity,
-      this.threshold.isMatch(adjustedSimilarity),
-      result.algorithm,
-      {
-        ...result.metadata,
-        originalSimilarity: result.similarity,
-        lengthRatio: lengthRatio,
-        directionConsistency: directionConsistency
-      }
-    )
-    
-    return adjustedResult
-  }
-
-  /**
-   * 方向の一貫性を計算
-   */
-  private calculateDirectionConsistency(input: GesturePattern, target: GesturePattern): number {
-    const inputDirs = input.getDirections()
-    const targetDirs = target.getDirections()
-    
-    // 最初と最後の方向が同じかチェック
-    let consistency = 0
-    
-    if (inputDirs.length > 0 && targetDirs.length > 0) {
-      if (inputDirs[0] === targetDirs[0]) consistency += 0.3
-      if (inputDirs[inputDirs.length - 1] === targetDirs[targetDirs.length - 1]) {
-        consistency += 0.3
-      }
-    }
-    
-    // 全体的な方向の傾向をチェック
-    const inputTrend = this.calculateDirectionTrend(inputDirs)
-    const targetTrend = this.calculateDirectionTrend(targetDirs)
-    
-    const trendSimilarity = this.compareTrends(inputTrend, targetTrend)
-    consistency += trendSimilarity * 0.4
-    
-    return Math.min(1.0, consistency)
-  }
-
-  /**
-   * 方向の傾向を計算
-   */
-  private calculateDirectionTrend(directions: string[]): DirectionTrend {
-    const counts = { up: 0, down: 0, left: 0, right: 0 }
-    directions.forEach(dir => {
-      if (dir in counts) {
-        counts[dir as keyof typeof counts]++
-      }
-    })
-    
-    const total = directions.length
-    return {
-      up: counts.up / total,
-      down: counts.down / total,
-      left: counts.left / total,
-      right: counts.right / total
-    }
-  }
-
-  /**
-   * 傾向の類似度を比較
-   */
-  private compareTrends(trend1: DirectionTrend, trend2: DirectionTrend): number {
-    const directions: (keyof DirectionTrend)[] = ['up', 'down', 'left', 'right']
-    let similarity = 0
-    
-    directions.forEach(dir => {
-      similarity += 1 - Math.abs(trend1[dir] - trend2[dir])
-    })
-    
-    return similarity / directions.length
+  match(inputPattern: GesturePattern, targetPattern: GesturePattern, strategy: MatchingStrategy = 'adaptive') {
+    return this.coordinator.match(inputPattern, targetPattern, strategy)
   }
 
   /**
    * 最良マッチを検索
+   * @deprecated PatternMatcherCoordinator.findBestMatch() を使用してください
    */
-  findBestMatch(input: GesturePattern, candidates: GesturePattern[], strategy: MatchingStrategy = 'adaptive'): BestMatchResult {
-    if (!candidates || candidates.length === 0) {
-      return new BestMatchResult(null, null, -1)
-    }
-
-    let bestResult: MatchResult | null = null
-    let bestIndex = -1
-    let bestSimilarity = 0
-
-    candidates.forEach((candidate, index) => {
-      const result = this.match(input, candidate, strategy)
-      
-      if (result.similarity > bestSimilarity) {
-        bestResult = result
-        bestIndex = index
-        bestSimilarity = result.similarity
-      }
-    })
-
-    return new BestMatchResult(bestResult, candidates[bestIndex], bestIndex)
+  findBestMatch(input: GesturePattern, candidates: GesturePattern[], strategy: MatchingStrategy = 'adaptive') {
+    return this.coordinator.findBestMatch(input, candidates, strategy)
   }
 
   /**
-   * パターン間の類似度を計算（シンプルなインターフェース）
+   * パターン間の類似度を計算
+   * @deprecated PatternMatcherCoordinator.calculateSimilarity() を使用してください
    */
   calculateSimilarity(pattern1: GesturePattern, pattern2: GesturePattern, strategy: MatchingStrategy = 'adaptive'): number {
-    const result = this.match(pattern1, pattern2, strategy)
-    return result.similarity
+    return this.coordinator.calculateSimilarity(pattern1, pattern2, strategy)
   }
 
   /**
    * 閾値を更新
+   * @deprecated PatternMatcherCoordinator.updateThreshold() を使用してください
    */
   updateThreshold(newThreshold: Threshold): void {
-    this.threshold = newThreshold
-  }
-}
-
-/**
- * マッチング結果
- */
-export class MatchResult {
-  public strategy?: MatchingStrategy
-  public threshold?: number
-
-  constructor(
-    public similarity: number,
-    public isMatch: boolean,
-    public algorithm: string,
-    public metadata: Record<string, unknown> = {}
-  ) {
-    this.timestamp = new Date().toISOString()
-  }
-
-  public readonly timestamp: string
-
-  /**
-   * 信頼度を取得
-   */
-  getConfidence(): number {
-    return this.isMatch ? this.similarity : 0
-  }
-
-  /**
-   * マッチが成功したかチェック
-   */
-  isSuccess(): boolean {
-    return this.isMatch
-  }
-}
-
-/**
- * 最良マッチ結果
- */
-export class BestMatchResult {
-  constructor(
-    public matchResult: MatchResult | null,
-    public pattern: GesturePattern | null,
-    public index: number
-  ) {}
-
-  /**
-   * マッチが見つかったかチェック
-   */
-  hasMatch(): boolean {
-    return this.matchResult !== null && this.matchResult.isMatch
-  }
-
-  /**
-   * 類似度を取得
-   */
-  getSimilarity(): number {
-    return this.matchResult ? this.matchResult.similarity : 0
+    this.coordinator.updateThreshold(newThreshold)
   }
 }
