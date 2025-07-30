@@ -5,7 +5,6 @@
  */
 
 import { GestureAction } from '../../domain/entities'
-import { Point } from '../../domain/valueObjects'
 
 // Raw point interface for mouse tracking
 export interface RawPoint {

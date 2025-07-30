@@ -4,5 +4,3 @@
  */
 
 export * from './IGestureService'
-export * from './ISettingsService'
-export * from './ISystemService'

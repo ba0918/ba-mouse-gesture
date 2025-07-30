@@ -6,6 +6,7 @@
 import { CustomGesture, type GestureAction } from '../../domain/entities'
 import { GesturePattern, Point, Threshold } from '../../domain/valueObjects'
 import { PatternMatcher } from '../../domain/services/PatternMatcher'
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger'
 
 // Repository interfaces
 interface GestureRepository {
@@ -64,12 +65,15 @@ interface GestureCreationData {
 export class CustomGestureManagementUseCase {
   private patternMatcher: PatternMatcher
   private isInitialized: boolean = false
+  private logger: DebugLogger
 
   constructor(
     private gestureRepository: GestureRepository,
-    private settingsRepository: SettingsRepository
+    private settingsRepository: SettingsRepository,
+    logger?: DebugLogger
   ) {
     this.patternMatcher = new PatternMatcher()
+    this.logger = logger || new DebugLogger(null)
   }
 
   /**
@@ -148,7 +152,7 @@ export class CustomGestureManagementUseCase {
 
       if (pattern.isEmpty()) {
         const errorMessage = 'Invalid gesture pattern. Insufficient movement detected'
-        console.error('🔧 [Debug] Pattern validation failed:', errorMessage)
+        this.logger.debug('Pattern validation failed:', errorMessage)
         throw new Error(errorMessage)
       }
 
@@ -197,7 +201,7 @@ export class CustomGestureManagementUseCase {
       try {
         gesturePattern = GesturePattern.fromArray(pattern)
       } catch (patternError) {
-        console.error('❌ Failed to create GesturePattern:', patternError)
+        this.logger.error('Failed to create GesturePattern:', patternError)
         throw new Error(`Failed to create gesture pattern: ${(patternError as Error).message}`)
       }
 
@@ -222,9 +226,9 @@ export class CustomGestureManagementUseCase {
       return customGesture
 
     } catch (error) {
-      console.error('CustomGestureManagementUseCase.addCustomGesture: Error details:', error)
-      console.error('CustomGestureManagementUseCase.addCustomGesture: Stack trace:', (error as Error).stack)
-      console.error('CustomGestureManagementUseCase.addCustomGesture: Input data:', { name, pattern, action, description })
+      this.logger.error('CustomGestureManagementUseCase.addCustomGesture: Error details:', error)
+      this.logger.error('CustomGestureManagementUseCase.addCustomGesture: Stack trace:', (error as Error).stack)
+      this.logger.error('CustomGestureManagementUseCase.addCustomGesture: Input data:', { name, pattern, action, description })
       throw new CustomGestureManagementError(`Failed to add custom gesture: ${(error as Error).message}`, error as Error)
     }
   }
@@ -263,7 +267,7 @@ export class CustomGestureManagementUseCase {
       return remainingGestures
 
     } catch (error) {
-      console.error('🔧 [Debug] deleteCustomGesture failed:', error)
+      this.logger.debug('deleteCustomGesture failed:', error)
       throw new CustomGestureManagementError('Failed to delete custom gesture', error as Error)
     }
   }
@@ -416,7 +420,7 @@ export class CustomGestureManagementUseCase {
       const customGestures = await this.getAllCustomGestures()
       return customGestures.map(gesture => gesture.toJSON ? gesture.toJSON() : gesture as unknown as Record<string, unknown>)
     } catch (error) {
-      console.error('❌ CustomGestureManagementUseCase: Failed to load custom gestures:', error)
+      this.logger.error('CustomGestureManagementUseCase: Failed to load custom gestures:', error)
       return []
     }
   }
@@ -444,14 +448,14 @@ export class CustomGestureManagementUseCase {
           })
           savedGestures.push(savedGesture.toJSON ? savedGesture.toJSON() : savedGesture as unknown as Record<string, unknown>)
         } catch (gestureError) {
-          console.warn('Failed to save individual gesture:', gestureData.name, gestureError)
+          this.logger.warn('Failed to save individual gesture:', gestureData.name, gestureError)
         }
       }
 
       return savedGestures
 
     } catch (error) {
-      console.error('❌ CustomGestureManagementUseCase: Failed to save custom gestures:', error)
+      this.logger.error('CustomGestureManagementUseCase: Failed to save custom gestures:', error)
       throw error
     }
   }
@@ -470,7 +474,7 @@ export class CustomGestureManagementUseCase {
       return []
 
     } catch (error) {
-      console.error('❌ CustomGestureManagementUseCase: Failed to reset custom gestures:', error)
+      this.logger.error('CustomGestureManagementUseCase: Failed to reset custom gestures:', error)
       throw error
     }
   }
@@ -585,7 +589,7 @@ export class CustomGestureManagementUseCase {
     
     if (duplicate) {
       const errorMessage = `Gesture name "${name}" already exists`
-      console.error('🔧 [Debug] Duplicate name error:', errorMessage)
+      this.logger.debug('Duplicate name error:', errorMessage)
       throw new Error(errorMessage)
     }
   }

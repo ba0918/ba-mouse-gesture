@@ -158,8 +158,17 @@ export class GestureEventHandler {
       this.callbacks.onGestureEnd(trail, totalDistance);
     }
     
-    // 状態リセット
+    // preventContextMenuフラグを保持して遅延リセット
+    const shouldPreventContext = this.gestureState.preventContextMenu;
     this.resetGestureState();
+    
+    // コンテキストメニューイベント処理のために短時間フラグを保持
+    if (shouldPreventContext) {
+      this.gestureState.preventContextMenu = true;
+      setTimeout(() => {
+        this.gestureState.preventContextMenu = false;
+      }, 50); // 50ms後にリセット
+    }
   }
 
   /**
@@ -169,6 +178,7 @@ export class GestureEventHandler {
     if (this.gestureState.preventContextMenu) {
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       
       // コールバック実行
       if (this.callbacks.onContextMenu) {

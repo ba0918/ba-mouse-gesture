@@ -5,6 +5,7 @@
 
 import { Settings, DebugSettings } from '../../domain/entities';
 import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
 // Repository interfaces
 interface SettingsRepository {
@@ -54,8 +55,11 @@ interface SettingsChangeData {
 
 export class SettingsManagementUseCase {
   private messagingAdapter?: ChromeMessagingAdapter
+  private logger: DebugLogger
 
-  constructor(private settingsRepository: SettingsRepository) {}
+  constructor(private settingsRepository: SettingsRepository, logger?: DebugLogger) {
+    this.logger = logger || new DebugLogger(null)
+  }
 
   /**
    * 現在の設定を取得
@@ -132,9 +136,7 @@ export class SettingsManagementUseCase {
         throw new Error(`This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`)
       }
       
-      console.log('✅ FIXED - SettingsManagementUseCase with correct gesture ID:');
-      console.log('  gestureId:', gestureId, '(should be gesture ID like "left", "right")');
-      console.log('  enabled:', enabled);
+      this.logger.debug('FIXED - SettingsManagementUseCase with correct gesture ID:', { gestureId, enabled });
       
       // ジェスチャーIDの検証（標準ジェスチャーのみ）
       this.validateGestureId(gestureId)
@@ -147,7 +149,7 @@ export class SettingsManagementUseCase {
 
       return result
     } catch (error) {
-      console.error('❌ SettingsManagementUseCase.toggleGesture failed:', error);
+      this.logger.error('SettingsManagementUseCase.toggleGesture failed:', error);
       throw new SettingsManagementError('Failed to toggle gesture', error as Error)
     }
   }
@@ -209,7 +211,7 @@ export class SettingsManagementUseCase {
         
         // logLevelの範囲チェック（0-3）
         if (isNaN(logLevel) || logLevel < 0 || logLevel > 3) {
-          console.warn('⚠️ Invalid logLevel value:', debugConfig.debugLogLevel, 'defaulting to 2');
+          this.logger.warn('Invalid logLevel value:', debugConfig.debugLogLevel, 'defaulting to 2');
           logLevel = 2;
         }
         
@@ -220,15 +222,15 @@ export class SettingsManagementUseCase {
           statusPosition: debugConfig.debugStatusPosition ?? 'top-right'
         };
         
-        console.log('🔄 Syncing debug settings:', {
+        this.logger.info('Syncing debug settings:', {
           original: debugConfig,
           converted: debugSettingsEntity
         });
         
         const savedEntity = await debugSettingsUseCase.saveDebugSettings(debugSettingsEntity);
-        console.log('✅ Debug settings synchronized to DebugSettingsUseCase:', savedEntity.getSyncInfo());
+        this.logger.info('Debug settings synchronized to DebugSettingsUseCase:', savedEntity.getSyncInfo());
       } catch (syncError) {
-        console.warn('⚠️ Failed to sync debug settings to DebugSettingsUseCase:', syncError);
+        this.logger.warn('Failed to sync debug settings to DebugSettingsUseCase:', syncError);
       }
 
       // 設定変更通知
@@ -236,7 +238,7 @@ export class SettingsManagementUseCase {
 
       return result
     } catch (error) {
-      console.error('❌ SettingsManagementUseCase.updateDebugSettings error:', error)
+      this.logger.error('SettingsManagementUseCase.updateDebugSettings error:', error)
       throw new SettingsManagementError('Failed to update debug settings', error as Error)
     }
   }
@@ -336,7 +338,7 @@ export class SettingsManagementUseCase {
         })
       })
     } catch (error) {
-      console.error('Failed to watch settings changes:', error)
+      this.logger.error('Failed to watch settings changes:', error)
       return () => { } // 空の停止関数を返す
     }
   }
@@ -355,7 +357,7 @@ export class SettingsManagementUseCase {
 
       return settingsJSON as unknown as Record<string, unknown>
     } catch (error) {
-      console.error('❌ SettingsManagementUseCase: Failed to load settings:', error)
+      this.logger.error('SettingsManagementUseCase: Failed to load settings:', error)
       return this.getDefaultSettings()
     }
   }
@@ -404,7 +406,7 @@ export class SettingsManagementUseCase {
         }
       }
 
-      console.log('✅ SettingsManagementUseCase: Settings saved successfully')
+      this.logger.info('SettingsManagementUseCase: Settings saved successfully')
 
       // バックグラウンドスクリプトに設定変更を通知
       if (this.messagingAdapter) {
@@ -414,7 +416,7 @@ export class SettingsManagementUseCase {
             settings: settings
           }, { expectResponse: false })
         } catch (error) {
-          console.log('Settings update notification failed:', error)
+          this.logger.warn('Settings update notification failed:', error)
         }
       }
 
@@ -423,7 +425,7 @@ export class SettingsManagementUseCase {
       return updatedSettings.toJSON() as unknown as Record<string, unknown>
 
     } catch (error) {
-      console.error('❌ SettingsManagementUseCase: Failed to save settings:', error)
+      this.logger.error('SettingsManagementUseCase: Failed to save settings:', error)
       throw error
     }
   }
@@ -465,7 +467,7 @@ export class SettingsManagementUseCase {
         throw new Error('Storage adapter is not available')
       }
     } catch (error) {
-      console.error('chromeStorageGet failed:', error)
+      this.logger.error('chromeStorageGet failed:', error)
       throw error
     }
   }
@@ -481,7 +483,7 @@ export class SettingsManagementUseCase {
         throw new Error('Storage adapter is not available')
       }
     } catch (error) {
-      console.error('chromeStorageSet failed:', error)
+      this.logger.error('chromeStorageSet failed:', error)
       throw error
     }
   }
@@ -511,7 +513,7 @@ export class SettingsManagementUseCase {
     const validGestureIds = DefaultGestureDefinitions.getValidGestureIds();
 
     if (!validGestureIds.includes(gestureId)) {
-      console.error('❌ Invalid gesture ID for standard gesture:', {
+      this.logger.error('Invalid gesture ID for standard gesture:', {
         receivedId: gestureId,
         validIds: Array.from(validGestureIds),
         isCustomId: gestureId.startsWith('custom_')
@@ -570,11 +572,11 @@ export class SettingsManagementUseCase {
           data: data,
           timestamp: new Date().toISOString()
         }, { expectResponse: false }).catch(error => {
-          console.log('Settings change notification failed:', error)
+          this.logger.warn('Settings change notification failed:', error)
         })
       }
     } catch (error) {
-      console.error('Failed to notify settings change:', error)
+      this.logger.error('Failed to notify settings change:', error)
     }
   }
 }

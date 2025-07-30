@@ -12,6 +12,7 @@ import { Gesture, GestureAction } from '../../domain/entities/Gesture'
 import { CustomGesture } from '../../domain/entities/CustomGesture'
 import { Settings } from '../../domain/entities/Settings'
 import { Threshold } from '../../domain/valueObjects/Threshold'
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger'
 
 // Type definitions
 interface RawPoint {
@@ -57,10 +58,12 @@ export class GestureRecognitionUseCase {
   private gestureRecognizer: GestureRecognizer | null = null
   private patternMatcher: PatternMatcher | null = null
   private isInitialized: boolean = false
+  private logger: DebugLogger
 
-  constructor(settingsRepository: SettingsRepository, gestureRepository: GestureRepository) {
+  constructor(settingsRepository: SettingsRepository, gestureRepository: GestureRepository, logger?: DebugLogger) {
     this.settingsRepository = settingsRepository
     this.gestureRepository = gestureRepository
+    this.logger = logger || new DebugLogger(null)
   }
 
   /**
@@ -161,7 +164,7 @@ export class GestureRecognitionUseCase {
       return true
     } catch (error) {
       // エラー時はデフォルトで有効
-      console.error('Failed to check gesture enabled status:', error)
+      this.logger.error('Failed to check gesture enabled status:', error)
       return true
     }
   }
@@ -182,7 +185,7 @@ export class GestureRecognitionUseCase {
       
       return settings.isGestureEnabled(typedGestureId)
     } catch (error) {
-      console.error('Failed to check specific gesture enabled status:', error)
+      this.logger.error('Failed to check specific gesture enabled status:', error)
       return true
     }
   }
@@ -239,7 +242,7 @@ export class GestureRecognitionUseCase {
       }
       
     } catch (error) {
-      console.error('Failed to adapt recognition threshold:', error)
+      this.logger.error('Failed to adapt recognition threshold:', error)
     }
   }
 

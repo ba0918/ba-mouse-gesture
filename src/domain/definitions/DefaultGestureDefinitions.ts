@@ -101,7 +101,7 @@ export class DefaultGestureDefinitions {
     // Phase 10 新機能（高度な機能）
     {
       id: 'super_refresh',
-      name: 'スーパーリロード',
+      name: 'スーパーリロード（キャッシュクリア付き）',
       pattern: '↑↓↑',
       action: 'super_refresh',
       category: 'page', 
@@ -109,7 +109,7 @@ export class DefaultGestureDefinitions {
     },
     {
       id: 'prev_tab',
-      name: '前のタブ',
+      name: '前のタブに切り替え',
       pattern: '←→',
       action: 'prev_tab',
       category: 'tab',
@@ -117,7 +117,7 @@ export class DefaultGestureDefinitions {
     },
     {
       id: 'next_tab',
-      name: '次のタブ',
+      name: '次のタブに切り替え',
       pattern: '→←',
       action: 'next_tab',
       category: 'tab',
@@ -199,7 +199,7 @@ export class DefaultGestureDefinitions {
   static getActionDisplayNames(): Record<string, string> {
     const mapping: Record<string, string> = {};
     this.GESTURE_DEFINITIONS.forEach(def => {
-      mapping[def.action] = def.description;
+      mapping[def.action] = def.name;
     });
     return mapping;
   }

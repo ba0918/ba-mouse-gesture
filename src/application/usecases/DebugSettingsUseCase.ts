@@ -374,7 +374,7 @@ export class DebugSettingsUseCase {
       };
       
     } catch (error) {
-      console.error('❌ DebugSettingsUseCase: Failed to validate sync consistency:', error);
+      this.logWithLevel(0, 'DebugSettingsUseCase: Failed to validate sync consistency:', error);
       return {
         isConsistent: false,
         error: error instanceof Error ? error.message : 'Unknown error'

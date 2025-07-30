@@ -4,6 +4,7 @@
  */
 
 import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
 // 型定義
 interface Point {
@@ -50,13 +51,15 @@ export class SimpleGestureUseCase {
   private gestureRecognizer: SimpleGestureRecognizer;
   private messagingService: MessagingService | null;
   private settings: Settings;
+  private logger: DebugLogger;
 
-  constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: MessagingService | null = null) {
+  constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: MessagingService | null = null, logger?: DebugLogger) {
     const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) || 
       SimpleGestureRecognizer;
     
     this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizerClass();
     this.messagingService = messagingService;
+    this.logger = logger || new DebugLogger(null);
     this.settings = {
       enabled: true,
       gestureThreshold: 15
@@ -87,7 +90,7 @@ export class SimpleGestureUseCase {
         };
       }
 
-      console.log('Recognized gesture:', gestureType);
+      this.logger.info('Recognized gesture:', gestureType);
 
       // アクション実行
       const result = await this.executeAction(gestureType);
@@ -100,7 +103,7 @@ export class SimpleGestureUseCase {
       };
 
     } catch (error) {
-      console.error('Gesture execution failed:', error);
+      this.logger.error('Gesture execution failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

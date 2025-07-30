@@ -8,6 +8,7 @@ import { Settings } from '../../domain/entities/Settings.js';
 import { DefaultGestureDefinitions, GestureListItem } from '../../domain/definitions/DefaultGestureDefinitions.js';
 import { GesturePattern } from '../../domain/valueObjects/GesturePattern.js';
 import { GesturePatternFormatter } from '../../presentation/controllers/GesturePatternFormatter.js';
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 
 interface GestureRepository {
   getCustomGestures(): Promise<CustomGesture[]>;
@@ -21,12 +22,15 @@ interface SettingsRepository {
 
 export class GestureListUseCase {
   private patternFormatter: GesturePatternFormatter;
+  private logger: DebugLogger;
 
   constructor(
     private gestureRepository: GestureRepository,
-    private settingsRepository: SettingsRepository
+    private settingsRepository: SettingsRepository,
+    logger?: DebugLogger
   ) {
     this.patternFormatter = new GesturePatternFormatter();
+    this.logger = logger || new DebugLogger(null);
   }
 
   /**
@@ -40,7 +44,7 @@ export class GestureListUseCase {
       // カスタムジェスチャーを取得
       const customGestures = await this.gestureRepository.getCustomGestures();
 
-      console.log('🔍 Debug - Custom gestures raw data:', customGestures.map(g => ({
+      this.logger.debug('Custom gestures raw data:', customGestures.map(g => ({
         id: g.id,
         name: g.name,
         pattern: g.pattern,
@@ -57,11 +61,11 @@ export class GestureListUseCase {
             // 統一パターン変換メソッドを使用（ドメイン層）
             cleanPattern = GesturePattern.normalizePattern(g.pattern);
           } catch (error) {
-            console.error('🚨 Pattern conversion error for gesture:', g.id, error);
+            this.logger.error('Pattern conversion error for gesture:', g.id, error);
             cleanPattern = '?';
           }
 
-          console.log('✅ UNIFIED - Pattern normalized:', {
+          this.logger.debug('UNIFIED - Pattern normalized:', {
             gestureId: g.id,
             originalPattern: g.pattern,
             normalizedPattern: cleanPattern
@@ -81,20 +85,20 @@ export class GestureListUseCase {
             enabled: g.enabled
           };
           
-          console.log('🔍 Debug - Custom gesture item created:', gestureItem);
+          this.logger.debug('Custom gesture item created:', gestureItem);
           return gestureItem;
         })
       ];
 
-      console.log('✅ FIXED - All gestures with correct ID/action mapping:');
-      allGestures.slice(0, 3).forEach((gesture, index) => {
-        console.log(`  [${index}] id: "${gesture.id}", action: "${gesture.action}", enabled: ${gesture.enabled}`);
-      });
+      this.logger.debug('FIXED - All gestures with correct ID/action mapping:', 
+        allGestures.slice(0, 3).map((gesture, index) => 
+          `[${index}] id: "${gesture.id}", action: "${gesture.action}", enabled: ${gesture.enabled}`
+        ));
       
       return allGestures;
 
     } catch (error) {
-      console.error('🚨 GestureListUseCase: Failed to load gestures:', error);
+      this.logger.error('GestureListUseCase: Failed to load gestures:', error);
       throw new Error(`Failed to load gesture list: ${(error as Error).message}`);
     }
   }
@@ -106,15 +110,15 @@ export class GestureListUseCase {
     const settings = await this.settingsRepository.getSettings();
     const gestureStates = settings.defaultGestureStates;
     
-    console.log('🔍 Debug - Default gesture states loaded:', gestureStates);
+    this.logger.debug('Default gesture states loaded:', gestureStates);
 
     // 統一定義から状態付きジェスチャーリストを生成
     const defaultGestures = DefaultGestureDefinitions.createGestureListItems(gestureStates as unknown as Record<string, boolean>);
     
-    console.log('✅ UNIFIED - Default gestures from central definition:');
-    defaultGestures.slice(0, 3).forEach((gesture, index) => {
-      console.log(`  [${index}] id: "${gesture.id}", action: "${gesture.action}", enabled: ${gesture.enabled}`);
-    });
+    this.logger.debug('UNIFIED - Default gestures from central definition:', 
+      defaultGestures.slice(0, 3).map((gesture, index) => 
+        `[${index}] id: "${gesture.id}", action: "${gesture.action}", enabled: ${gesture.enabled}`
+      ));
     
     return defaultGestures;
   }

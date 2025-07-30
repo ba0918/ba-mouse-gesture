@@ -9,7 +9,6 @@ import { CustomGestureManagementUseCase } from '../usecases/CustomGestureManagem
 import { SettingsManagementUseCase } from '../usecases/SettingsManagementUseCase.js';
 import { Gesture } from '../../domain/entities/Gesture.js';
 import { CustomGesture } from '../../domain/entities/CustomGesture.js';
-import { Settings } from '../../domain/entities/Settings.js';
 import { RawPoint } from '../interfaces/IGestureService.js';
 import { GestureAction } from '../../domain/entities/index.js';
 import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js';

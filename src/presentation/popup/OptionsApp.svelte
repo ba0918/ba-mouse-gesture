@@ -1,6 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+  import type { GestureAction } from '../../domain/valueObjects/GestureAction';
+  
+  // UI用の型定義
+  interface UIGesture {
+    id: string;
+    name: string;
+    pattern: string;
+    action: GestureAction;
+    description: string;
+    enabled: boolean;
+    type?: 'default' | 'custom';
+  }
+  
+  interface UICustomGesture extends UIGesture {
+    type: 'custom';
+  }
   
   // コンポーネントのインポート
   import OptionsBasicSettings from './components/OptionsBasicSettings.svelte';
@@ -35,8 +51,8 @@
   let debugStatusPosition = $state('top-right');
   
   // ジェスチャー関連
-  let gestures = $state<any[]>([]);
-  let customGestures = $state<any[]>([]);
+  let gestures = $state<UIGesture[]>([]);
+  let customGestures = $state<UICustomGesture[]>([]);
   let gestureSearch = $state('');
   let gestureFilter = $state('all');
   
@@ -62,8 +78,6 @@
 
   async function initializeSettings() {
     try {
-      console.log('🔄 Settings initialization started');
-      
       // ServiceFactoryが初期化されるまで待機（最大10秒）
       let attempts = 0;
       const maxAttempts = 100; // 10秒
@@ -71,7 +85,6 @@
       while (attempts < maxAttempts) {
         const serviceFactory = (window as any).ServiceFactory;
         if (serviceFactory) {
-          console.log('✅ ServiceFactory found, loading settings...');
           
           const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
           const settings = await settingsManagementUseCase.getCurrentSettings();
@@ -108,7 +121,7 @@
             debugLogLevel = '2';
           }
           
-          console.log('🔍 Debug log level after processing:', debugLogLevel, typeof debugLogLevel);
+          logger?.debug('🔍 Debug log level after processing:', debugLogLevel, typeof debugLogLevel);
 
           // DebugLoggerを初期化
           const logLevel = typeof debugLogLevel === 'string' ? parseInt(debugLogLevel) : debugLogLevel;
@@ -118,6 +131,8 @@
           };
           logger = new DebugLogger(initialDebugSettings);
           
+          logger?.info('🔄 Settings initialization started');
+          logger?.info('✅ ServiceFactory found, loading settings...');
           logger?.info('Raw settings loaded from storage:', settings);
           logger?.debug('Debug settings properties in raw data:', {
             hasDebugEnabled: 'debugEnabled' in settings,
@@ -145,7 +160,7 @@
           await loadGestures();
           await loadCustomGestures();
           
-          console.log('✅ Settings loaded successfully');
+          logger?.info('✅ Settings loaded successfully');
           isLoading = false;
           return;
         }
@@ -153,14 +168,14 @@
         // 100ms待機して再試行
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
-        console.log(`⏳ Waiting for ServiceFactory... (${attempts}/${maxAttempts})`);
+      // 初期化段階のログは必要最小限にする
       }
       
       // タイムアウト
       throw new Error('ServiceFactory initialization timeout');
       
     } catch (error) {
-      console.error('❌ Settings initialization failed:', error);
+      logger?.error('❌ Settings initialization failed:', error);
       showSaveStatus('設定の読み込みに失敗しました', 'error');
       isLoading = false;
     }
@@ -168,27 +183,20 @@
 
   async function loadGestures() {
     try {
-      console.log('🔍 DEBUG: loadGestures() called');
       const serviceFactory = (window as any).ServiceFactory;
       if (!serviceFactory) {
-        console.warn('ServiceFactory not available for loadGestures');
+        logger?.warn('ServiceFactory not available for loadGestures');
         return;
       }
       
-      console.log('🔍 DEBUG: Creating GestureListUseCase');
       const gestureListUseCase = serviceFactory.createGestureListUseCase();
-      console.log('🔍 DEBUG: Calling getAllGestures()');
       const loadedGestures = await gestureListUseCase.getAllGestures();
-      console.log('🔍 DEBUG: getAllGestures() returned:', loadedGestures ? loadedGestures.length : 'null', 'items');
       
       // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
       gestures = [...(loadedGestures || [])];
-      console.log('✅ FIXED - Gestures loaded with correct ID/action mapping:', gestures.length);
-      gestures.slice(0, 3).forEach((g: any, i: number) => {
-        console.log(`  [${i}] id: "${g.id}", action: "${g.action}", enabled: ${g.enabled}`);
-      });
+      logger?.info('✅ Gestures loaded:', gestures.length);
     } catch (error) {
-      console.error('❌ ジェスチャー読み込みエラー:', error);
+      logger?.error('❌ ジェスチャー読み込みエラー:', error);
       gestures = [];
     }
   }
@@ -197,7 +205,7 @@
     try {
       const serviceFactory = (window as any).ServiceFactory;
       if (!serviceFactory) {
-        console.warn('ServiceFactory not available for loadCustomGestures');
+        logger?.warn('ServiceFactory not available for loadCustomGestures');
         return;
       }
       
@@ -217,9 +225,9 @@
       
       // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
       customGestures = [...customGestureData];
-      console.log('✅ Custom gestures loaded:', customGestures.length);
-      console.log('📊 Custom gesture data structure:', customGestures.slice(0, 2));
-      console.log('🔍 Custom gesture full data:', customGestures.map(g => ({
+      logger?.info('✅ Custom gestures loaded:', customGestures.length);
+      logger?.debug('📊 Custom gesture data structure:', customGestures.slice(0, 2));
+      logger?.debug('🔍 Custom gesture full data:', customGestures.map(g => ({
         id: g.id,
         name: g.name,
         action: g.action,
@@ -228,7 +236,7 @@
         enabled: g.enabled
       })));
     } catch (error) {
-      console.error('❌ カスタムジェスチャー読み込みエラー:', error);
+      logger?.error('❌ カスタムジェスチャー読み込みエラー:', error);
       customGestures = [];
     }
   }
@@ -250,36 +258,36 @@
       await settingsManagementUseCase.toggleExtension(enabled);
       showSaveStatus(`マウスジェスチャーを${enabled ? '有効' : '無効'}にしました`);
     } catch (error) {
-      console.error('設定保存エラー:', error);
+      logger?.error('設定保存エラー:', error);
       showSaveStatus('設定の保存に失敗しました', 'error');
     }
   }
 
   async function handleTrackSettingsChange() {
     try {
-      console.log('🔄 Track settings change triggered:', { strokeColor, strokeWidth, gestureThreshold });
+      logger?.debug('🔄 Track settings change triggered:', { strokeColor, strokeWidth, gestureThreshold });
       
       const serviceFactory = (window as any).ServiceFactory;
       if (!serviceFactory) {
-        console.warn('ServiceFactory not available for track settings');
+        logger?.warn('ServiceFactory not available for track settings');
         return;
       }
       
       const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
       
-      console.log('💾 Saving track settings individually...');
+      logger?.debug('💾 Saving track settings individually...');
       
       // 既存のメソッドを使用して個別に保存
       await settingsManagementUseCase.updateStrokeSettings(strokeColor, strokeWidth);
-      console.log('✅ Stroke settings saved:', { strokeColor, strokeWidth });
+      logger?.debug('✅ Stroke settings saved:', { strokeColor, strokeWidth });
       
       await settingsManagementUseCase.updateGestureThreshold(gestureThreshold);
-      console.log('✅ Gesture threshold saved:', gestureThreshold);
+      logger?.debug('✅ Gesture threshold saved:', gestureThreshold);
       
-      console.log('✅ All track settings saved successfully');
+      logger?.info('✅ All track settings saved successfully');
       showSaveStatus('軌跡設定を保存しました');
     } catch (error) {
-      console.error('❌ 軌跡設定保存エラー:', error);
+      logger?.error('❌ 軌跡設定保存エラー:', error);
       showSaveStatus('軌跡設定の保存に失敗しました', 'error');
     }
   }
@@ -296,7 +304,7 @@
       newExcludeUrl = '';
       showSaveStatus('除外サイトを追加しました');
     } catch (error) {
-      console.error('除外サイト追加エラー:', error);
+      logger?.error('除外サイト追加エラー:', error);
       showSaveStatus('除外サイトの追加に失敗しました', 'error');
     }
   }
@@ -309,7 +317,7 @@
       excludeList = excludeList.filter(item => item !== url);
       showSaveStatus('除外サイトを削除しました');
     } catch (error) {
-      console.error('除外サイト削除エラー:', error);
+      logger?.error('除外サイト削除エラー:', error);
       showSaveStatus('除外サイトの削除に失敗しました', 'error');
     }
   }
@@ -346,22 +354,10 @@
 
 
 
-  function convertArrowsToPattern(arrows: string): string {
-    if (!arrows || typeof arrows !== 'string') {
-      console.warn('Invalid arrows for conversion:', arrows);
-      return '';
-    }
-    
-    return arrows
-      .replace(/↑/g, 'UP')
-      .replace(/↓/g, 'DOWN')
-      .replace(/←/g, 'LEFT')
-      .replace(/→/g, 'RIGHT');
-  }
 
   function convertArrowsToPatternArray(arrows: string): string[] {
     if (!arrows || typeof arrows !== 'string') {
-      console.warn('Invalid arrows for pattern array conversion:', arrows);
+      logger?.warn('Invalid arrows for pattern array conversion:', arrows);
       return [];
     }
     
@@ -373,7 +369,7 @@
         case '←': return 'LEFT';
         case '→': return 'RIGHT';
         default: 
-          console.warn('Unknown arrow character:', arrow);
+          logger?.warn('Unknown arrow character:', arrow);
           return arrow;
       }
     }).filter(item => ['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(item));
@@ -499,11 +495,11 @@
   async function toggleGesture(gestureId: string, enabled: boolean) {
     // 既に処理中の場合は既存のPromiseを返す
     if (togglePromises.has(gestureId)) {
-      console.log('🚫 Already toggling gesture, returning existing promise:', gestureId);
+      logger?.debug('🚫 Already toggling gesture, returning existing promise:', gestureId);
       return togglePromises.get(gestureId);
     }
     
-    console.log('🔄 Starting toggle gesture:', gestureId, 'enabled:', enabled);
+    logger?.debug('🔄 Starting toggle gesture:', gestureId, 'enabled:', enabled);
     
     // 新しいPromiseを作成してマップに保存
     const togglePromise = performToggle(gestureId, enabled);
@@ -514,7 +510,7 @@
     } finally {
       // 処理完了後にPromiseを削除
       togglePromises.delete(gestureId);
-      console.log('🧹 Toggle promise completed for:', gestureId);
+      logger?.debug('🧹 Toggle promise completed for:', gestureId);
     }
   }
   
@@ -523,7 +519,7 @@
     try {
       const serviceFactory = (window as any).ServiceFactory;
       if (!serviceFactory) {
-        console.warn('ServiceFactory not available');
+        logger?.warn('ServiceFactory not available');
         showSaveStatus('設定の更新に失敗しました', 'error');
         return;
       }
@@ -532,16 +528,16 @@
       // カスタムジェスチャーは必ず custom_ で始まるIDを持つ
       const isCustomGesture = gestureId.startsWith('custom_');
       
-      console.log('✅ FIXED - OptionsApp received correct gesture ID:', gestureId, 'enabled:', enabled);
+      logger?.debug('✅ Toggle gesture:', gestureId, 'enabled:', enabled);
       
       if (isCustomGesture) {
         const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
         await customGestureUseCase.toggleCustomGesture(gestureId, enabled);
-        console.log('✅ Custom gesture saved');
+        logger?.debug('✅ Custom gesture saved');
       } else {
         const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
         await settingsManagementUseCase.toggleGesture(gestureId, enabled);
-        console.log('✅ Default gesture saved');
+        logger?.debug('✅ Default gesture saved');
       }
       
       // 両方のリストを同期更新
@@ -553,7 +549,7 @@
       showSaveStatus(`ジェスチャー「${gestureId}」を${enabled ? '有効' : '無効'}にしました`);
       
     } catch (error) {
-      console.error('❌ Toggle gesture error:', error);
+      logger?.error('❌ Toggle gesture error:', error);
       showSaveStatus('ジェスチャーの設定変更に失敗しました', 'error');
     }
   }

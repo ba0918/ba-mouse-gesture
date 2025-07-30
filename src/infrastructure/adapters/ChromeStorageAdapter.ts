@@ -70,16 +70,16 @@ export class ChromeStorageAdapter {
   /**
    * データを取得（chrome.storage.sync）
    */
-  async get(keys: string | string[] | null = null): Promise<StorageData> {
+  async get(key: string): Promise<Record<string, any>> {
     if (!this.storage?.sync) {
       throw new Error('Chrome storage.sync not available')
     }
 
     try {
-      this.logWithLevel(2, 'ChromeStorageAdapter: Getting data from sync storage:', keys)
+      this.logWithLevel(2, 'ChromeStorageAdapter: Getting data from sync storage:', key)
       
-      const result = await new Promise<StorageData>((resolve, reject) => {
-        this.storage!.sync.get(keys, (result) => {
+      const result = await new Promise<Record<string, any>>((resolve, reject) => {
+        this.storage!.sync.get(key, (result) => {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message))
           } else {
@@ -100,7 +100,7 @@ export class ChromeStorageAdapter {
   /**
    * データを保存（chrome.storage.sync）
    */
-  async set(data: StorageData): Promise<boolean> {
+  async set(data: StorageData): Promise<void> {
     if (!this.storage?.sync) {
       throw new Error('Chrome storage.sync not available')
     }
@@ -119,7 +119,6 @@ export class ChromeStorageAdapter {
       })
       
       this.logWithLevel(2, 'ChromeStorageAdapter: Data saved successfully')
-      return true
       
     } catch (error) {
       this.logWithLevel(0, 'ChromeStorageAdapter: Failed to set data:', error)
@@ -335,6 +334,17 @@ export class ChromeStorageAdapter {
 
     this.storage.onChanged.removeListener(callback)
     this.logWithLevel(2, 'ChromeStorageAdapter: Change listener removed')
+  }
+
+  /**
+   * Storageインターフェース用のonChangedメソッド
+   */
+  onChanged(callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void, namespace: string): () => void {
+    return this.addChangeListener((changes, areaName) => {
+      if (areaName === namespace || namespace === 'both') {
+        callback(changes, areaName)
+      }
+    })
   }
 }
 

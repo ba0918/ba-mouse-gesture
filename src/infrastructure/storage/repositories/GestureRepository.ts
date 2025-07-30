@@ -152,7 +152,7 @@ export class GestureRepository {
    * カスタムジェスチャーを追加
    * @param gesture - 追加するジェスチャー
    */
-  async addCustomGesture(gesture: CustomGesture): Promise<CustomGesture[]> {
+  async addCustomGesture(gesture: CustomGesture): Promise<void> {
     
     const gestures = await this.getCustomGestures()
 
@@ -168,8 +168,6 @@ export class GestureRepository {
     gestures.push(gesture)
     
     await this.saveCustomGestures(gestures)
-    
-    return gestures
   }
 
   /**
@@ -311,7 +309,7 @@ export class GestureRepository {
   /**
    * ジェスチャーパフォーマンス統計を取得
    */
-  async getPerformanceStats(): Promise<PerformanceStats> {
+  async getPerformanceStats(): Promise<Record<string, unknown>> {
     const customGestures = await this.getCustomGestures()
     const learningData = await this.getLearningData()
 
@@ -347,7 +345,7 @@ export class GestureRepository {
       .sort((a, b) => (b.successRate * b.totalUsage) - (a.successRate * a.totalUsage))
       .slice(0, 5)
 
-    return stats
+    return stats as Record<string, unknown>
   }
 
   /**
