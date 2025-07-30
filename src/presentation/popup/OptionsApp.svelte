@@ -308,10 +308,10 @@
   async function handleDebugSettingsChange() {
     try {
       const debugConfig = {
-        debugEnabled,
-        debugLogLevel: parseInt(debugLogLevel, 10), // 文字列を数値に変換
-        debugShowStatus,
-        debugStatusPosition
+        enabled: debugEnabled,
+        logLevel: parseInt(debugLogLevel, 10), // 文字列を数値に変換
+        showStatus: debugShowStatus,
+        statusPosition: debugStatusPosition
       };
       logger?.debug('Saving debug settings:', debugConfig);
       
