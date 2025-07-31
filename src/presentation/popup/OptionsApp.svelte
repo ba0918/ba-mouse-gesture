@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { DebugSettings } from "../../domain/entities/DebugSettings";
-import type { GestureAction } from "../../domain/valueObjects/GestureAction";
+import { ActionName } from "../../domain/types";
 import { GesturePattern } from "../../domain/valueObjects/GesturePattern";
 import {
   DebugLogger,
@@ -13,7 +13,7 @@ interface UIGesture {
   id: string;
   name: string;
   pattern: string;
-  action: GestureAction;
+  action: ActionName;
   description: string;
   enabled: boolean;
   type?: "default" | "custom";
