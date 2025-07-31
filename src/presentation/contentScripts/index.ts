@@ -3,10 +3,10 @@
  * GestureManagerベースの実装（Clean Architecture準拠）
  */
 
-import { CanvasRendererAdapter } from "../../infrastructure/adapters/CanvasRendererAdapter";
-import { ChromeMessagingAdapter } from "../../infrastructure/adapters/ChromeMessagingAdapter";
-import { ChromeSettingsAdapter } from "../../infrastructure/adapters/ChromeSettingsAdapter";
-import { GestureManager } from "../controllers/GestureManager";
+import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter';
+import { ChromeMessagingAdapter } from '../../infrastructure/adapters/ChromeMessagingAdapter';
+import { ChromeSettingsAdapter } from '../../infrastructure/adapters/ChromeSettingsAdapter';
+import { GestureManager } from '../controllers/GestureManager';
 
 // グローバルインスタンス
 let gestureManager: GestureManager | null = null;
@@ -27,27 +27,23 @@ async function initializeGestureManager(): Promise<void> {
     const settingsService = new ChromeSettingsAdapter();
 
     // Clean Architecture準拠でGestureManagerを初期化
-    gestureManager = new GestureManager(
-      messagingService,
-      renderingService,
-      settingsService,
-    );
+    gestureManager = new GestureManager(messagingService, renderingService, settingsService);
 
     const initialized = await gestureManager.initialize();
 
     if (initialized) {
-      console.log("✅ GestureManager initialized successfully");
+      console.log('✅ GestureManager initialized successfully');
     } else {
-      console.log("⚠️ GestureManager initialization skipped (excluded site or disabled)");
+      console.log('⚠️ GestureManager initialization skipped (excluded site or disabled)');
     }
   } catch (error) {
-    console.error("❌ GestureManager initialization failed:", error);
+    console.error('❌ GestureManager initialization failed:', error);
   }
 }
 
 // DOMContentLoaded時の初期化
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeGestureManager);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeGestureManager);
 } else {
   // 既にDOMが読み込まれている場合
   initializeGestureManager();

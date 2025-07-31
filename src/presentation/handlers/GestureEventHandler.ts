@@ -82,16 +82,16 @@ export class GestureEventHandler {
     };
 
     // マウスイベントリスナーを設定
-    document.addEventListener("mousedown", this.onMouseDown.bind(this), true);
-    document.addEventListener("mousemove", this.onMouseMove.bind(this), true);
-    document.addEventListener("mouseup", this.onMouseUp.bind(this), true);
-    document.addEventListener("contextmenu", this.onContextMenu.bind(this), true);
+    document.addEventListener('mousedown', this.onMouseDown.bind(this), true);
+    document.addEventListener('mousemove', this.onMouseMove.bind(this), true);
+    document.addEventListener('mouseup', this.onMouseUp.bind(this), true);
+    document.addEventListener('contextmenu', this.onContextMenu.bind(this), true);
 
     // ウィンドウリサイズ対応
-    window.addEventListener("resize", this.onWindowResize.bind(this));
+    window.addEventListener('resize', this.onWindowResize.bind(this));
 
     this.isInitialized = true;
-    console.log("GestureEventHandler initialized");
+    console.log('GestureEventHandler initialized');
   }
 
   /**
@@ -106,11 +106,13 @@ export class GestureEventHandler {
       y: e.clientY,
       timestamp: Date.now(),
     };
-    this.gestureState.trail = [{
-      x: e.clientX,
-      y: e.clientY,
-      timestamp: Date.now(),
-    }];
+    this.gestureState.trail = [
+      {
+        x: e.clientX,
+        y: e.clientY,
+        timestamp: Date.now(),
+      },
+    ];
     this.gestureState.preventContextMenu = false;
 
     // コールバック実行
@@ -259,15 +261,15 @@ export class GestureEventHandler {
    */
   destroy(): void {
     if (this.isInitialized) {
-      document.removeEventListener("mousedown", this.onMouseDown, true);
-      document.removeEventListener("mousemove", this.onMouseMove, true);
-      document.removeEventListener("mouseup", this.onMouseUp, true);
-      document.removeEventListener("contextmenu", this.onContextMenu, true);
-      window.removeEventListener("resize", this.onWindowResize);
+      document.removeEventListener('mousedown', this.onMouseDown, true);
+      document.removeEventListener('mousemove', this.onMouseMove, true);
+      document.removeEventListener('mouseup', this.onMouseUp, true);
+      document.removeEventListener('contextmenu', this.onContextMenu, true);
+      window.removeEventListener('resize', this.onWindowResize);
 
       this.resetGestureState();
       this.isInitialized = false;
-      console.log("GestureEventHandler destroyed");
+      console.log('GestureEventHandler destroyed');
     }
   }
 
@@ -287,7 +289,7 @@ export class GestureEventHandler {
         onGestureEnd: Boolean(this.callbacks.onGestureEnd),
         onContextMenu: Boolean(this.callbacks.onContextMenu),
       },
-      className: "GestureEventHandler",
+      className: 'GestureEventHandler',
     };
   }
 }

@@ -4,17 +4,17 @@
  */
 
 // Svelteアプリのインポート
-import { mount } from "svelte";
-import OptionsApp from "./OptionsApp.svelte";
+import { mount } from 'svelte';
+import OptionsApp from './OptionsApp.svelte';
 
 // Clean Architecture - DI
-import { CustomGestureManagementUseCase } from "../../application/usecases/CustomGestureManagementUseCase";
-import { GestureListUseCase } from "../../application/usecases/GestureListUseCase";
-import { SettingsManagementUseCase } from "../../application/usecases/SettingsManagementUseCase";
-import { ChromeStorageAdapter } from "../../infrastructure/adapters/ChromeStorageAdapter";
-import { NoOpLogger } from "../../infrastructure/adapters/NoOpLogger";
-import { GestureRepository } from "../../infrastructure/storage/repositories/GestureRepository";
-import { SettingsRepository } from "../../infrastructure/storage/repositories/SettingsRepository";
+import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase';
+import { GestureListUseCase } from '../../application/usecases/GestureListUseCase';
+import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
+import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
+import { NoOpLogger } from '../../infrastructure/adapters/NoOpLogger';
+import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
 
 /**
  * Svelteアプリケーションの初期化
@@ -22,10 +22,10 @@ import { SettingsRepository } from "../../infrastructure/storage/repositories/Se
 function initializeSvelteApp() {
   try {
     // アプリケーションコンテナを取得
-    const target = document.getElementById("app");
+    const target = document.getElementById('app');
 
     if (!target) {
-      throw new Error("App container not found");
+      throw new Error('App container not found');
     }
 
     // Svelte 5の mount 関数を使用
@@ -33,17 +33,17 @@ function initializeSvelteApp() {
       target: target,
     });
 
-    console.log("✅ Svelte Options App initialized successfully");
+    console.log('✅ Svelte Options App initialized successfully');
 
     // グローバルアクセス用（デバッグ目的）
     (window as unknown as Record<string, unknown>).optionsApp = app;
 
     return app;
   } catch (error) {
-    console.error("❌ Svelte Options App initialization failed:", error);
+    console.error('❌ Svelte Options App initialization failed:', error);
 
     // フォールバックエラー表示
-    const errorContainer = document.getElementById("app") || document.body;
+    const errorContainer = document.getElementById('app') || document.body;
     errorContainer.innerHTML = `
       <div style="padding: 20px; color: red; text-align: center;">
         <h2>設定画面の初期化に失敗しました</h2>
@@ -81,7 +81,7 @@ function createServices() {
 }
 
 // DOMContentLoaded時に初期化
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Clean Architecture - DI
     const services = createServices();
@@ -89,15 +89,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // グローバルサービス公開
     (window as unknown as Record<string, unknown>).services = services;
 
-    console.log("✅ Services initialized successfully");
+    console.log('✅ Services initialized successfully');
 
     // Svelteアプリを初期化
     initializeSvelteApp();
   } catch (error) {
-    console.error("❌ Services initialization failed:", error);
+    console.error('❌ Services initialization failed:', error);
 
     // フォールバックエラー表示
-    const errorContainer = document.getElementById("app") || document.body;
+    const errorContainer = document.getElementById('app') || document.body;
     errorContainer.innerHTML = `
       <div style="padding: 20px; color: red; text-align: center;">
         <h2>サービスの初期化に失敗しました</h2>

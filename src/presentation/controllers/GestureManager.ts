@@ -4,14 +4,14 @@
  * 依存性注入によるアダプターパターン適用
  */
 
-import { GestureExecutionUseCase } from "../../application/usecases/GestureExecutionUseCase.js";
-import { GestureRecognizer } from "../../domain/services/GestureRecognizer.js";
-import { GestureEventHandler } from "../handlers/GestureEventHandler.js";
+import { GestureExecutionUseCase } from '../../application/usecases/GestureExecutionUseCase.js';
+import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
+import { GestureEventHandler } from '../handlers/GestureEventHandler.js';
 
 // Application層インターフェース
-import { MessagingService } from "../../application/interfaces/MessagingService";
-import { DrawStyle, Point, RenderingService } from "../../application/interfaces/RenderingService";
-import { GestureSettings, SettingsService } from "../../application/interfaces/SettingsService";
+import { MessagingService } from '../../application/interfaces/MessagingService';
+import { DrawStyle, Point, RenderingService } from '../../application/interfaces/RenderingService';
+import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
 
 // 型定義
 interface GestureCallbacks {
@@ -56,7 +56,7 @@ export class GestureManager {
   // 設定
   private settings: GestureSettings = {
     enabled: true,
-    strokeColor: "#2196F3",
+    strokeColor: '#2196F3',
     strokeWidth: 3,
     gestureThreshold: 15,
     excludeList: [],
@@ -70,7 +70,7 @@ export class GestureManager {
   constructor(
     messagingService: MessagingService,
     renderingService: RenderingService,
-    settingsService: SettingsService,
+    settingsService: SettingsService
   ) {
     this.messagingService = messagingService;
     this.renderingService = renderingService;
@@ -83,21 +83,21 @@ export class GestureManager {
    */
   async initialize(): Promise<boolean> {
     try {
-      console.log("🏗️ GestureManager: Initializing...");
+      console.log('🏗️ GestureManager: Initializing...');
 
       // 設定を読み込み
       await this.loadSettings();
 
       // 除外サイトチェック
       if (this.settingsService.isExcludedSite()) {
-        console.log("Site excluded, disabling gestures");
+        console.log('Site excluded, disabling gestures');
         return false;
       }
 
       // Rendering層の初期化
       const renderingInitialized = this.renderingService.initializeCanvas();
       if (!renderingInitialized) {
-        throw new Error("Rendering service initialization failed");
+        throw new Error('Rendering service initialization failed');
       }
 
       // Domain層の初期化
@@ -131,10 +131,10 @@ export class GestureManager {
       this.initializeDebugDisplay();
 
       this.isInitialized = true;
-      console.log("✅ GestureManager: Initialization complete");
+      console.log('✅ GestureManager: Initialization complete');
       return true;
     } catch (error) {
-      console.error("❌ GestureManager: Initialization failed:", error);
+      console.error('❌ GestureManager: Initialization failed:', error);
       this.isInitialized = false;
       return false;
     }
@@ -146,9 +146,9 @@ export class GestureManager {
   private async loadSettings(): Promise<void> {
     try {
       this.settings = await this.settingsService.loadSettings();
-      console.log("Settings loaded:", this.settings);
+      console.log('Settings loaded:', this.settings);
     } catch (error) {
-      console.error("Failed to load settings:", error);
+      console.error('Failed to load settings:', error);
     }
   }
 
@@ -164,7 +164,7 @@ export class GestureManager {
       width: this.settings.strokeWidth,
     });
 
-    console.log("Gesture started at:", startPosition);
+    console.log('Gesture started at:', startPosition);
   }
 
   /**
@@ -197,15 +197,15 @@ export class GestureManager {
         const result = await this.gestureUseCase.executeGesture(trail);
 
         if (result.success) {
-          console.log("Gesture executed successfully:", result.gestureType, result.action);
+          console.log('Gesture executed successfully:', result.gestureType, result.action);
           // TODO: デバッグメッセージ表示は将来的にDebugService経由で実装
         } else {
-          console.log("Gesture execution failed:", result.error);
+          console.log('Gesture execution failed:', result.error);
           // TODO: デバッグメッセージ表示は将来的にDebugService経由で実装
         }
       }
     } catch (error) {
-      console.error("Gesture execution failed:", error);
+      console.error('Gesture execution failed:', error);
     }
   }
 
@@ -214,7 +214,7 @@ export class GestureManager {
    */
   private onContextMenu(): void {
     // 右クリックメニューの処理
-    console.log("Context menu");
+    console.log('Context menu');
   }
 
   /**
@@ -225,15 +225,15 @@ export class GestureManager {
       (
         message: { type: string; direction?: string },
         _sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: { success: boolean }) => void,
+        sendResponse: (response?: { success: boolean }) => void
       ) => {
-        if (message.type === "scroll" && message.direction) {
+        if (message.type === 'scroll' && message.direction) {
           this.handleScrollMessage(message.direction);
           sendResponse({ success: true });
           return true;
         }
         return false;
-      },
+      }
     );
   }
 
@@ -243,16 +243,16 @@ export class GestureManager {
    */
   private handleScrollMessage(direction: string): void {
     try {
-      if (direction === "top") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (direction === "bottom") {
+      if (direction === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (direction === 'bottom') {
         window.scrollTo({
           top: document.documentElement.scrollHeight,
-          behavior: "smooth",
+          behavior: 'smooth',
         });
       }
     } catch (error) {
-      console.error("Scroll failed:", error);
+      console.error('Scroll failed:', error);
     }
   }
 
@@ -263,7 +263,7 @@ export class GestureManager {
     this.settingsService.watchSettingsChanges((newSettings) => {
       this.settings = newSettings;
       this.updateComponentSettings();
-      console.log("Settings updated:", newSettings);
+      console.log('Settings updated:', newSettings);
     });
   }
 
@@ -281,7 +281,7 @@ export class GestureManager {
   private initializeDebugDisplay(): void {
     if (this.settings.debugSettings?.enabled) {
       // デバッグ表示の初期化処理
-      console.log("Debug display initialized");
+      console.log('Debug display initialized');
     }
   }
 
@@ -301,7 +301,7 @@ export class GestureManager {
     this.gestureUseCase = null;
     this.isInitialized = false;
 
-    console.log("GestureManager destroyed");
+    console.log('GestureManager destroyed');
   }
 
   /**
@@ -318,7 +318,7 @@ export class GestureManager {
         renderingService: this.renderingService,
         settingsService: this.settingsService,
       },
-      className: "GestureManager",
+      className: 'GestureManager',
     };
   }
 }
