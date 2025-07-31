@@ -2,21 +2,9 @@ import { GesturePattern } from '../valueObjects/GesturePattern'
 import { Threshold } from '../valueObjects/Threshold'
 import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions'
 
-/**
- * アクションの型定義
- */
-export type GestureAction = 
-  | 'back' 
-  | 'forward' 
-  | 'scroll_up' 
-  | 'scroll_down' 
-  | 'close_tab' 
-  | 'new_tab' 
-  | 'refresh' 
-  | 'duplicate_tab'
-  | 'super_refresh'
-  | 'prev_tab'
-  | 'next_tab'
+// GestureActionは重複なので削除し、ActionNameに統一
+import type { ActionName } from '../types/ActionName'
+export type GestureAction = ActionName
 
 /**
  * Gesture エンティティ

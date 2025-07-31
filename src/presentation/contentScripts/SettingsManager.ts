@@ -1,18 +1,18 @@
 /**
  * 設定管理
  * Single Responsibility: アプリケーション設定の読み込みと管理
+ * Clean Architecture準拠 - DIコンストラクターパターン
  */
 
 import { Settings } from '../../domain/entities/Settings';
 import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
-import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
-import { SettingsRepository } from '../../infrastructure/repositories/SettingsRepository';
 
 export class SettingsManager {
-  private settingsUseCase: SettingsManagementUseCase | null = null;
   private settings: Settings;
 
-  constructor() {
+  constructor(
+    private readonly settingsUseCase: SettingsManagementUseCase
+  ) {
     this.settings = new Settings();
   }
 
@@ -20,30 +20,13 @@ export class SettingsManager {
    * 設定初期化
    */
   async initialize(): Promise<void> {
-    await this.initializeUseCases();
     await this.loadSettings();
-  }
-
-  /**
-   * UseCase初期化
-   */
-  private async initializeUseCases(): Promise<void> {
-    const storageAdapter = new ChromeStorageAdapter();
-    const settingsRepository = new SettingsRepository(storageAdapter);
-    
-    this.settingsUseCase = new SettingsManagementUseCase(
-      settingsRepository
-    );
   }
 
   /**
    * 設定読み込み
    */
   private async loadSettings(): Promise<void> {
-    if (!this.settingsUseCase) {
-      throw new Error('SettingsUseCase not initialized');
-    }
-
     this.settings = await this.settingsUseCase.getCurrentSettings();
   }
 

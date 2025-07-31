@@ -134,7 +134,7 @@ export class DebugSettingsEntity {
   updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettingsEntity {
 
 
-    const updated = new DebugSettingsEntityClass({
+    const updated = new DebugSettingsEntity({
       ...this.toPlainObject(),
       ...newSettings,
       updatedAt: new Date().toISOString()
@@ -169,11 +169,9 @@ export class DebugSettingsEntity {
       };
     }
 
-
-
-    const other = otherSettings instanceof DebugSettingsEntityClass
+    const other = otherSettings instanceof DebugSettingsEntity
       ? otherSettings
-      : new DebugSettingsEntityClass(otherSettings);
+      : new DebugSettingsEntity(otherSettings);
 
     const inconsistencies: string[] = [];
     const fields: (keyof DebugSettingsEntity)[] = ['enabled', 'logLevel', 'showStatus', 'statusPosition'];
@@ -252,12 +250,9 @@ export class DebugSettingsEntity {
    */
   getChanges(otherSettings: DebugSettingsEntity | DebugSettingsData): Record<string, ChangeRecord> {
     const changes: Record<string, ChangeRecord> = {};
-
-
-
-    const other = otherSettings instanceof DebugSettingsEntityClass
+    const other = otherSettings instanceof DebugSettingsEntity
       ? otherSettings
-      : new DebugSettingsEntityClass(otherSettings);
+      : new DebugSettingsEntity(otherSettings);
 
     const fields: (keyof DebugSettingsEntity)[] = ['enabled', 'logLevel', 'showStatus', 'statusPosition'];
 
@@ -277,17 +272,14 @@ export class DebugSettingsEntity {
    * 設定の複製
    */
   clone(): DebugSettingsEntity {
-
-    return new DebugSettingsEntityClass(this.toPlainObject());
+    return new DebugSettingsEntity(this.toPlainObject());
   }
 
   /**
    * 設定の比較
    */
   equals(otherSettings: DebugSettingsEntity): boolean {
-
-
-    if (!(otherSettings instanceof DebugSettingsEntityClass)) {
+    if (!(otherSettings instanceof DebugSettingsEntity)) {
       return false;
     }
 
@@ -319,16 +311,14 @@ export class DebugSettingsEntity {
    * プレーンオブジェクトからエンティティを作成
    */
   static fromPlainObject(obj: DebugSettingsData): DebugSettingsEntity {
-
-    return new DebugSettingsEntityClass(obj);
+    return new DebugSettingsEntity(obj);
   }
 
   /**
    * デフォルト設定を取得
    */
   static getDefault(): DebugSettingsEntity {
-
-    return new DebugSettingsEntityClass({
+    return new DebugSettingsEntity({
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
       logLevel: 2 as LogLevel,
       showStatus: false, // 🎯 修正：デフォルトはfalse

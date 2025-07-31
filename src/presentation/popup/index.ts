@@ -6,7 +6,14 @@
 // Svelteアプリのインポート
 import OptionsApp from './OptionsApp.svelte';
 import { mount } from 'svelte';
-import { ServiceFactory } from '../../application/services/ServiceFactory';
+
+// Clean Architecture - DI
+import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
+import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
+import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
+import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase';
+import { GestureListUseCase } from '../../application/usecases/GestureListUseCase';
 
 /**
  * Svelteアプリケーションの初期化
@@ -48,25 +55,44 @@ function initializeSvelteApp() {
   }
 }
 
+/**
+ * Clean Architecture - DI コンテナ
+ */
+function createServices() {
+  // Infrastructure層
+  const storageAdapter = new ChromeStorageAdapter();
+  
+  // Repository層
+  const settingsRepository = new SettingsRepository(storageAdapter);
+  const gestureRepository = new GestureRepository(storageAdapter);
+  
+  // UseCase層
+  const settingsManagementUseCase = new SettingsManagementUseCase(settingsRepository);
+  const customGestureManagementUseCase = new CustomGestureManagementUseCase(gestureRepository);
+  const gestureListUseCase = new GestureListUseCase(gestureRepository);
+  
+  return {
+    settingsManagementUseCase,
+    customGestureManagementUseCase,
+    gestureListUseCase,
+  };
+}
+
 // DOMContentLoaded時に初期化
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // ServiceFactoryを初期化
-    const serviceFactory = new ServiceFactory();
-    await serviceFactory.initialize({
-      enableDebug: true,
-      skipHealthChecks: false
-    });
+    // Clean Architecture - DI
+    const services = createServices();
     
-    // ServiceFactoryをグローバルに公開
-    (window as unknown as Record<string, unknown>).ServiceFactory = serviceFactory;
+    // グローバルサービス公開
+    (window as unknown as Record<string, unknown>).services = services;
     
-    console.log('✅ ServiceFactory initialized successfully');
+    console.log('✅ Services initialized successfully');
     
     // Svelteアプリを初期化
     initializeSvelteApp();
   } catch (error) {
-    console.error('❌ ServiceFactory initialization failed:', error);
+    console.error('❌ Services initialization failed:', error);
     
     // フォールバックエラー表示
     const errorContainer = document.getElementById('app') || document.body;

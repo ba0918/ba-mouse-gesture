@@ -80,15 +80,15 @@
 
   async function initializeSettings() {
     try {
-      // ServiceFactoryが初期化されるまで待機（最大10秒）
+      // servicesが初期化されるまで待機（最大10秒）
       let attempts = 0;
       const maxAttempts = 100; // 10秒
       
       while (attempts < maxAttempts) {
-        const serviceFactory = (window as any).ServiceFactory;
-        if (serviceFactory) {
+        const services = (window as any).services;
+        if (services) {
           
-          const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+          const settingsManagementUseCase = services.settingsManagementUseCase;
           const settings = await settingsManagementUseCase.getCurrentSettings();
           
           // 設定値を読み込み
@@ -115,7 +115,7 @@
           logger = new DebugLogger(initialDebugSettings);
           
           logger?.info('🔄 Settings initialization started');
-          logger?.info('✅ ServiceFactory found, loading settings...');
+          logger?.info('✅ Services found, loading settings...');
           logger?.info('Raw settings loaded from storage:', settings);
           logger?.debug('Debug settings properties in raw data:', {
             hasDebugEnabled: 'debugEnabled' in settings,
@@ -155,7 +155,7 @@
       }
       
       // タイムアウト
-      throw new Error('ServiceFactory initialization timeout');
+      throw new Error('Services initialization timeout');
       
     } catch (error) {
       logger?.error('❌ Settings initialization failed:', error);
@@ -166,13 +166,13 @@
 
   async function loadGestures() {
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      if (!serviceFactory) {
-        logger?.warn('ServiceFactory not available for loadGestures');
+      const services = (window as any).services;
+      if (!services) {
+        logger?.warn('Services not available for loadGestures');
         return;
       }
       
-      const gestureListUseCase = serviceFactory.createGestureListUseCase();
+      const gestureListUseCase = services.gestureListUseCase;
       const loadedGestures = await gestureListUseCase.getAllGestures();
       
       // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
@@ -186,14 +186,14 @@
 
   async function loadCustomGestures() {
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      if (!serviceFactory) {
-        logger?.warn('ServiceFactory not available for loadCustomGestures');
+      const services = (window as any).services;
+      if (!services) {
+        logger?.warn('Services not available for loadCustomGestures');
         return;
       }
       
-      // GestureListUseCaseから統一されたデータを取得
-      const gestureListUseCase = serviceFactory.createGestureListUseCase();
+      // CustomGestureManagementUseCaseから統一されたデータを取得
+      const gestureListUseCase = services.gestureListUseCase;
       const allGestures = await gestureListUseCase.getAllGestures();
       
       // カスタムジェスチャーのみをフィルタリング
@@ -236,8 +236,8 @@
 
   async function handleEnabledChange() {
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const services = (window as any).services;
+      const settingsManagementUseCase = services.settingsManagementUseCase;
       await settingsManagementUseCase.toggleExtension(enabled);
       showSaveStatus(`マウスジェスチャーを${enabled ? '有効' : '無効'}にしました`);
     } catch (error) {
@@ -250,13 +250,13 @@
     try {
       logger?.debug('🔄 Track settings change triggered:', { strokeColor, strokeWidth, gestureThreshold });
       
-      const serviceFactory = (window as any).ServiceFactory;
-      if (!serviceFactory) {
-        logger?.warn('ServiceFactory not available for track settings');
+      const services = (window as any).services;
+      if (!services) {
+        logger?.warn('Services not available for track settings');
         return;
       }
       
-      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const settingsManagementUseCase = services.settingsManagementUseCase;
       
       logger?.debug('💾 Saving track settings individually...');
       
@@ -280,8 +280,8 @@
     if (!newExcludeUrl.trim()) return;
     
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const services = (window as any).services;
+      const settingsManagementUseCase = services.settingsManagementUseCase;
       await settingsManagementUseCase.addExcludeSite(newExcludeUrl.trim());
       excludeList = [...excludeList, newExcludeUrl.trim()];
       newExcludeUrl = '';
@@ -294,8 +294,8 @@
 
   async function removeExcludeUrl(url: string) {
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const services = (window as any).services;
+      const settingsManagementUseCase = services.settingsManagementUseCase;
       await settingsManagementUseCase.removeExcludeSite(url);
       excludeList = excludeList.filter(item => item !== url);
       showSaveStatus('除外サイトを削除しました');
@@ -315,8 +315,8 @@
       };
       logger?.debug('Saving debug settings:', debugConfig);
       
-      const serviceFactory = (window as any).ServiceFactory;
-      const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+      const services = (window as any).services;
+      const settingsManagementUseCase = services.settingsManagementUseCase;
       await settingsManagementUseCase.updateDebugSettings(debugConfig);
       
       // DebugLoggerの設定も更新
@@ -381,12 +381,12 @@
         action: gestureAction
       });
       
-      const serviceFactory = (window as any).ServiceFactory;
-      if (!serviceFactory) {
-        throw new Error('ServiceFactory not available');
+      const services = (window as any).services;
+      if (!services) {
+        throw new Error('Services not available');
       }
       
-      const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
+      const customGestureUseCase = services.customGestureManagementUseCase;
       
       // 統一された矢印表記を直接使用
       const gesturePattern = GesturePattern.fromString(gesturePatternDisplay);
@@ -476,9 +476,9 @@
   async function performToggle(gestureId: string, enabled: boolean) {
     
     try {
-      const serviceFactory = (window as any).ServiceFactory;
-      if (!serviceFactory) {
-        logger?.warn('ServiceFactory not available');
+      const services = (window as any).services;
+      if (!services) {
+        logger?.warn('Services not available');
         showSaveStatus('設定の更新に失敗しました', 'error');
         return;
       }
@@ -490,11 +490,11 @@
       logger?.debug('✅ Toggle gesture:', gestureId, 'enabled:', enabled);
       
       if (isCustomGesture) {
-        const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
+        const customGestureUseCase = services.customGestureManagementUseCase;
         await customGestureUseCase.toggleCustomGesture(gestureId, enabled);
         logger?.debug('✅ Custom gesture saved');
       } else {
-        const settingsManagementUseCase = serviceFactory.createSettingsManagementUseCase();
+        const settingsManagementUseCase = services.settingsManagementUseCase;
         await settingsManagementUseCase.toggleGesture(gestureId, enabled);
         logger?.debug('✅ Default gesture saved');
       }
@@ -533,12 +533,12 @@
       try {
         logger?.debug('Deleting custom gesture:', gestureId, gestureName);
         
-        const serviceFactory = (window as any).ServiceFactory;
-        if (!serviceFactory) {
-          throw new Error('ServiceFactory not available');
+        const services = (window as any).services;
+        if (!services) {
+          throw new Error('Services not available');
         }
         
-        const customGestureUseCase = serviceFactory.createCustomGestureManagementUseCase();
+        const customGestureUseCase = services.customGestureManagementUseCase;
         await customGestureUseCase.deleteCustomGesture(gestureId);
         
         // リスト更新
