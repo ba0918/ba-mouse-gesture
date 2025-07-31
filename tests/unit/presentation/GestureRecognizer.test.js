@@ -6,8 +6,8 @@
 
 // GestureRecognizerクラスのモック実装
 class MockGestureRecognizer {
-  constructor(settingsManager) {
-    this.settingsManager = settingsManager
+  constructor(settingsService) {
+    this.settingsService = settingsService
     this.gestureRecognizer = null
     this.customGestureUseCase = null
   }
@@ -28,7 +28,7 @@ class MockGestureRecognizer {
       const customResult = await this.recognizeCustomGesture(trail)
       if (customResult.type === 'custom' && customResult.action) {
         // カスタムジェスチャーも無効化チェックを実行
-        if (!this.settingsManager.isGestureEnabled(customResult.action)) {
+        if (!this.settingsService.isGestureEnabled(customResult.action)) {
           console.log(`Custom gesture ${customResult.action} is disabled`)
           return { type: 'custom', action: undefined }
         }
@@ -43,7 +43,7 @@ class MockGestureRecognizer {
       }
 
       // 3. ジェスチャーが有効かチェック
-      if (!this.settingsManager.isGestureEnabled(standardResult.action)) {
+      if (!this.settingsService.isGestureEnabled(standardResult.action)) {
         console.log(`Gesture ${standardResult.action} is disabled`)
         return { type: 'simple', action: undefined }
       }
@@ -142,7 +142,7 @@ class MockGestureRecognizer {
 
 describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
   let mockChrome
-  let mockSettingsManager
+  let mockSettingsService
   let gestureRecognizer
 
   beforeEach(async () => {
@@ -167,18 +167,18 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
     }
     global.chrome = mockChrome
 
-    // SettingsManagerのモック
-    mockSettingsManager = {
+    // SettingsServiceのモック
+    mockSettingsService = {
       isGestureEnabled: jest.fn().mockReturnValue(true)
     }
 
-    gestureRecognizer = new MockGestureRecognizer(mockSettingsManager)
+    gestureRecognizer = new MockGestureRecognizer(mockSettingsService)
     await gestureRecognizer.initialize()
   })
 
   describe('標準ジェスチャーの無効化チェック', () => {
     test('有効な標準ジェスチャーは実行される', async () => {
-      mockSettingsManager.isGestureEnabled.mockReturnValue(true)
+      mockSettingsService.isGestureEnabled.mockReturnValue(true)
       
       const trail = [
         { x: 100, y: 100 },
@@ -187,13 +187,13 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
 
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalled()
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalled()
       expect(mockChrome.runtime.sendMessage).toHaveBeenCalled()
       expect(result.action).toBeDefined()
     })
 
     test('無効な標準ジェスチャーは実行されない', async () => {
-      mockSettingsManager.isGestureEnabled.mockReturnValue(false)
+      mockSettingsService.isGestureEnabled.mockReturnValue(false)
       
       const trail = [
         { x: 100, y: 100 },
@@ -202,7 +202,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
 
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalled()
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalled()
       expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled()
       expect(result.action).toBeUndefined()
     })
@@ -219,7 +219,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       }
       gestureRecognizer.customGestureUseCase = mockCustomGestureUseCase
 
-      mockSettingsManager.isGestureEnabled.mockReturnValue(true)
+      mockSettingsService.isGestureEnabled.mockReturnValue(true)
       
       const trail = [
         { x: 100, y: 100 },
@@ -228,7 +228,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
 
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalledWith('custom_back')
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalledWith('custom_back')
       expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'custom_back' })
       expect(result.type).toBe('custom')
       expect(result.action).toBe('custom_back')
@@ -244,7 +244,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       }
       gestureRecognizer.customGestureUseCase = mockCustomGestureUseCase
 
-      mockSettingsManager.isGestureEnabled.mockReturnValue(false)
+      mockSettingsService.isGestureEnabled.mockReturnValue(false)
       
       const trail = [
         { x: 100, y: 100 },
@@ -253,7 +253,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
 
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalledWith('custom_back')
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalledWith('custom_back')
       expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled()
       expect(result.type).toBe('custom')
       expect(result.action).toBeUndefined()
@@ -269,7 +269,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       }
       gestureRecognizer.customGestureUseCase = mockCustomGestureUseCase
 
-      mockSettingsManager.isGestureEnabled.mockReturnValue(true)
+      mockSettingsService.isGestureEnabled.mockReturnValue(true)
       
       const trail = [
         { x: 100, y: 100 },
@@ -279,7 +279,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
       expect(mockCustomGestureUseCase.matchPattern).toHaveBeenCalled()
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalled()
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalled()
       expect(mockChrome.runtime.sendMessage).toHaveBeenCalled()
     })
   })
@@ -289,7 +289,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       // 初期化失敗をシミュレート
       gestureRecognizer.customGestureUseCase = null
       
-      mockSettingsManager.isGestureEnabled.mockReturnValue(true)
+      mockSettingsService.isGestureEnabled.mockReturnValue(true)
       
       const trail = [
         { x: 100, y: 100 },
@@ -299,12 +299,12 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
       const result = await gestureRecognizer.recognizeAndExecute(trail)
 
       // 標準ジェスチャー認識にフォールバック
-      expect(mockSettingsManager.isGestureEnabled).toHaveBeenCalled()
+      expect(mockSettingsService.isGestureEnabled).toHaveBeenCalled()
       expect(result).toBeDefined()
     })
 
-    test('SettingsManager呼び出し失敗時のエラーハンドリング', async () => {
-      mockSettingsManager.isGestureEnabled.mockImplementation(() => {
+    test('SettingsService呼び出し失敗時のエラーハンドリング', async () => {
+      mockSettingsService.isGestureEnabled.mockImplementation(() => {
         throw new Error('Settings error')
       })
       
@@ -322,7 +322,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
 
   describe('ジェスチャータイプとアクションのマッピング', () => {
     test('convertGestureTypeToActionメソッドが正しくマッピングする', () => {
-      const testGestureRecognizer = new MockGestureRecognizer(mockSettingsManager)
+      const testGestureRecognizer = new MockGestureRecognizer(mockSettingsService)
       
       // 直接メソッドをテスト
       expect(testGestureRecognizer.convertGestureTypeToAction('←')).toBe('back')

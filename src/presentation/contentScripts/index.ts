@@ -1,15 +1,18 @@
 /**
  * Clean Architecture - Content Scripts エントリーポイント
- * 元の動作していたGestureManagerベースの実装に復旧
+ * GestureManagerベースの実装（Clean Architecture準拠）
  */
 
 import { GestureManager } from '../controllers/GestureManager';
+import { ChromeMessagingAdapter } from '../../infrastructure/adapters/ChromeMessagingAdapter';
+import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter';
+import { ChromeSettingsAdapter } from '../../infrastructure/adapters/ChromeSettingsAdapter';
 
 // グローバルインスタンス
 let gestureManager: GestureManager | null = null;
 
 /**
- * 初期化関数
+ * 初期化関数（Clean Architecture準拠）
  */
 async function initializeGestureManager(): Promise<void> {
   try {
@@ -18,18 +21,28 @@ async function initializeGestureManager(): Promise<void> {
       gestureManager.destroy();
     }
 
-    // 新しいインスタンス作成と初期化
-    gestureManager = new GestureManager();
+    // 依存性注入でサービス層を構築
+    const messagingService = new ChromeMessagingAdapter();
+    const renderingService = new CanvasRendererAdapter();
+    const settingsService = new ChromeSettingsAdapter();
+
+    // Clean Architecture準拠でGestureManagerを初期化
+    gestureManager = new GestureManager(
+      messagingService,
+      renderingService,  
+      settingsService
+    );
+    
     const initialized = await gestureManager.initialize();
 
     if (initialized) {
-      console.log('✅ Gesture Manager initialized successfully');
+      console.log('✅ GestureManager initialized successfully');
     } else {
-      console.log('⚠️ Gesture Manager initialization skipped (excluded site or disabled)');
+      console.log('⚠️ GestureManager initialization skipped (excluded site or disabled)');
     }
 
   } catch (error) {
-    console.error('❌ Gesture Manager initialization failed:', error);
+    console.error('❌ GestureManager initialization failed:', error);
   }
 }
 

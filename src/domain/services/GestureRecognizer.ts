@@ -1,6 +1,7 @@
 /**
- * SimpleGestureRecognizer
+ * GestureRecognizer
  * 軌跡からジェスチャーパターンを認識するドメインサービス
+ * Clean Architecture - Domain層
  * 責任: Point[] → GesturePattern変換のみ
  */
 
@@ -8,7 +9,7 @@ import { Point } from '../valueObjects/Point'
 import { GesturePattern, Direction } from '../valueObjects/GesturePattern'
 import { Threshold } from '../valueObjects/Threshold'
 
-export class SimpleGestureRecognizer {
+export class GestureRecognizer {
   private threshold: Threshold
 
   constructor(threshold: number = 15) {

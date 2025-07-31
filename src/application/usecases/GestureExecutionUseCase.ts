@@ -1,9 +1,9 @@
 /**
- * SimpleGestureUseCase
+ * GestureExecutionUseCase
  * 現在動作しているジェスチャー機能のApplication層実装
  */
 
-import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
+import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 import { IMessagingService } from '../interfaces';
 
@@ -47,14 +47,14 @@ interface DebugInfo {
   className: string;
 }
 
-export class SimpleGestureUseCase {
-  private gestureRecognizer: SimpleGestureRecognizer;
+export class GestureExecutionUseCase {
+  private gestureRecognizer: GestureRecognizer;
   private messagingService: IMessagingService | null;
   private settings: Settings;
   private logger: DebugLogger;
 
-  constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: IMessagingService | null = null, logger?: DebugLogger) {
-    this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizer();
+  constructor(gestureRecognizer: GestureRecognizer | null = null, messagingService: IMessagingService | null = null, logger?: DebugLogger) {
+    this.gestureRecognizer = gestureRecognizer || new GestureRecognizer();
     this.messagingService = messagingService;
     this.logger = logger || new DebugLogger(null);
     this.settings = {
@@ -194,7 +194,7 @@ export class SimpleGestureUseCase {
    * ジェスチャー認識サービスを設定
    * @param recognizer ジェスチャー認識サービス
    */
-  setGestureRecognizer(recognizer: SimpleGestureRecognizer): void {
+  setGestureRecognizer(recognizer: GestureRecognizer): void {
     this.gestureRecognizer = recognizer;
   }
 
@@ -302,7 +302,7 @@ export class SimpleGestureUseCase {
       settings: this.settings,
       hasMessagingService: Boolean(this.messagingService),
       recognizerThreshold: this.gestureRecognizer.getThreshold(),
-      className: 'SimpleGestureUseCase'
+      className: 'GestureExecutionUseCase'
     };
   }
 }

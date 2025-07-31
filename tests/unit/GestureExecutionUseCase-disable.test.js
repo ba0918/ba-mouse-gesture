@@ -1,10 +1,10 @@
 /**
- * SimpleGestureUseCase ジェスチャー無効化機能のテスト
+ * GestureExecutionUseCase ジェスチャー無効化機能のテスト
  * @jest-environment jsdom
  */
 
-// SimpleGestureUseCaseのモック実装
-class MockSimpleGestureUseCase {
+// GestureExecutionUseCaseのモック実装
+class MockGestureExecutionUseCase {
   constructor(gestureRecognizer, messagingService, logger) {
     this.gestureRecognizer = gestureRecognizer
     this.messagingService = messagingService
@@ -77,10 +77,10 @@ class MockSimpleGestureUseCase {
   }
 
   createActionMessage(gestureType) {
-    if (this.gestureRecognizer.isSimpleGestureType(gestureType)) {
-      return { type: 'simpleGesture', direction: gestureType }
-    } else {
-      return { type: 'complexGesture', gestureType: gestureType }
+    const actionName = this.getActionNameFromGestureType(gestureType)
+    return {
+      type: 'executeAction',
+      action: actionName
     }
   }
 
@@ -96,17 +96,17 @@ class MockSimpleGestureUseCase {
 
   getGestureIdFromGestureType(gestureType) {
     const gestureIdMapping = {
-      'UP': 'up',
-      'DOWN': 'down', 
-      'LEFT': 'left',
-      'RIGHT': 'right',
-      'downright': 'downright',
-      'upright': 'upright',
-      'rightdown': 'rightdown',
-      'updown': 'updown',
-      'super_refresh': 'super_refresh',
-      'prev_tab': 'prev_tab',
-      'next_tab': 'next_tab'
+      '↑': 'up',
+      '↓': 'down',
+      '←': 'left', 
+      '→': 'right',
+      '↓→': 'downright',
+      '↑→': 'upright',
+      '→↓': 'rightdown',
+      '↑↓': 'updown',
+      '↑↓↑': 'super_refresh',
+      '←→': 'prev_tab',
+      '→←': 'next_tab'
     }
     
     return gestureIdMapping[gestureType] || gestureType.toLowerCase()
@@ -135,7 +135,7 @@ class MockSimpleGestureUseCase {
   }
 }
 
-describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () => {
+describe('GestureExecutionUseCase - ジェスチャー無効化チェック', () => {
   let mockGestureRecognizer
   let mockMessagingService
   let useCase
@@ -150,8 +150,7 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
 
     // モックの作成
     mockGestureRecognizer = {
-      recognizeGesture: jest.fn().mockReturnValue('LEFT'),
-      isSimpleGestureType: jest.fn().mockReturnValue(true),
+      recognizeGesture: jest.fn().mockReturnValue('←'),
       setThreshold: jest.fn(),
       getThreshold: jest.fn().mockReturnValue(15)
     }
@@ -170,7 +169,7 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
       error: jest.fn()
     }
 
-    useCase = new MockSimpleGestureUseCase(mockGestureRecognizer, mockMessagingService, mockLogger)
+    useCase = new MockGestureExecutionUseCase(mockGestureRecognizer, mockMessagingService, mockLogger)
   })
 
   describe('個別ジェスチャーの無効化チェック', () => {
@@ -191,7 +190,7 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
       const result = await useCase.executeGesture(trail)
 
       expect(result.success).toBe(true)
-      expect(result.gestureType).toBe('LEFT')
+      expect(result.gestureType).toBe('←')
       expect(mockMessagingService.sendMessage).toHaveBeenCalled()
     })
 
@@ -227,8 +226,8 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
         }
       })
 
-      mockGestureRecognizer.recognizeGesture.mockReturnValue('downright')
-      mockGestureRecognizer.isSimpleGestureType.mockReturnValue(false)
+      // Complex gesture test - using multi-directional gesture
+      mockGestureRecognizer.recognizeGesture.mockReturnValue('↓→')
 
       const trail = [
         { x: 100, y: 100 },
@@ -238,7 +237,7 @@ describe('SimpleGestureUseCase - ジェスチャー無効化チェック', () =>
       const result = await useCase.executeGesture(trail)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('Gesture downright is disabled')
+      expect(result.error).toContain('Gesture ↓→ is disabled')
       expect(mockMessagingService.sendMessage).not.toHaveBeenCalled()
     })
 
