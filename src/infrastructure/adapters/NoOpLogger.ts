@@ -24,8 +24,3 @@ export class NoOpLogger {
     // 何もしない
   }
 }
-
-// ブラウザ環境でグローバルアクセス可能にする
-if (typeof window !== 'undefined') {
-  (window as any).NoOpLogger = NoOpLogger
-}

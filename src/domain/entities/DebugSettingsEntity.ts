@@ -132,8 +132,7 @@ export class DebugSettingsEntity {
    * 複数の設定を一括更新
    */
   updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
 
     const updated = new DebugSettingsEntityClass({
       ...this.toPlainObject(),
@@ -170,8 +169,7 @@ export class DebugSettingsEntity {
       };
     }
 
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
 
     const other = otherSettings instanceof DebugSettingsEntityClass
       ? otherSettings
@@ -255,8 +253,7 @@ export class DebugSettingsEntity {
   getChanges(otherSettings: DebugSettingsEntity | DebugSettingsData): Record<string, ChangeRecord> {
     const changes: Record<string, ChangeRecord> = {};
 
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
 
     const other = otherSettings instanceof DebugSettingsEntityClass
       ? otherSettings
@@ -280,8 +277,7 @@ export class DebugSettingsEntity {
    * 設定の複製
    */
   clone(): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
     return new DebugSettingsEntityClass(this.toPlainObject());
   }
 
@@ -289,8 +285,7 @@ export class DebugSettingsEntity {
    * 設定の比較
    */
   equals(otherSettings: DebugSettingsEntity): boolean {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
 
     if (!(otherSettings instanceof DebugSettingsEntityClass)) {
       return false;
@@ -324,8 +319,7 @@ export class DebugSettingsEntity {
    * プレーンオブジェクトからエンティティを作成
    */
   static fromPlainObject(obj: DebugSettingsData): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
     return new DebugSettingsEntityClass(obj);
   }
 
@@ -333,8 +327,7 @@ export class DebugSettingsEntity {
    * デフォルト設定を取得
    */
   static getDefault(): DebugSettingsEntity {
-    const DebugSettingsEntityClass = (typeof window !== 'undefined' && (window as any).DebugSettingsEntity) ||
-      DebugSettingsEntity;
+
     return new DebugSettingsEntityClass({
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
       logLevel: 2 as LogLevel,

@@ -55,8 +55,8 @@ export class SettingsRepository {
     // キャッシュチェック
     const cachedData = this.cache.get(this.settingsKey);
     if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-      const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-      return SettingsClass.fromJSON(cachedData.data);
+
+      return Settings.fromJSON(cachedData.data);
     }
 
     try {
@@ -70,8 +70,8 @@ export class SettingsRepository {
           timestamp: Date.now()
         });
 
-        const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-        return SettingsClass.fromJSON(settingsData);
+  
+        return Settings.fromJSON(settingsData);
       } else {
         // デフォルト設定を返す
         return this.getDefaultSettings();
@@ -258,10 +258,10 @@ export class SettingsRepository {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey);
 
-        const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-        const newSettings = SettingsClass.fromJSON(changes[this.settingsKey].newValue);
+  
+        const newSettings = Settings.fromJSON(changes[this.settingsKey].newValue);
         const oldSettings = changes[this.settingsKey].oldValue ?
-          SettingsClass.fromJSON(changes[this.settingsKey].oldValue) : null;
+          Settings.fromJSON(changes[this.settingsKey].oldValue) : null;
 
         callback(newSettings, oldSettings);
       }
@@ -274,8 +274,7 @@ export class SettingsRepository {
    * @returns デフォルト設定
    */
   private getDefaultSettings(): Settings {
-    const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-    return SettingsClass.getDefaults();
+    return Settings.getDefaults();
   }
 
   /**

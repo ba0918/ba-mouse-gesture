@@ -55,10 +55,7 @@ export class SimpleGestureUseCase {
   private logger: DebugLogger;
 
   constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: MessagingService | null = null, logger?: DebugLogger) {
-    const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) ||
-      SimpleGestureRecognizer;
-
-    this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizerClass();
+    this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizer();
     this.messagingService = messagingService;
     this.logger = logger || new DebugLogger(null);
     this.settings = {

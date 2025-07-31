@@ -91,13 +91,8 @@ export class GestureManager {
       }
 
       // Infrastructure層の初期化
-      const SimpleMessagingAdapterClass = (typeof window !== 'undefined' && (window as any).SimpleMessagingAdapter) ||
-        SimpleMessagingAdapter;
-      const CanvasRendererAdapterClass = (typeof window !== 'undefined' && (window as any).CanvasRendererAdapter) ||
-        CanvasRendererAdapter;
-
-      this.messagingAdapter = new SimpleMessagingAdapterClass();
-      this.canvasRenderer = new CanvasRendererAdapterClass();
+      this.messagingAdapter = new SimpleMessagingAdapter();
+      this.canvasRenderer = new CanvasRendererAdapter();
 
       // Canvas初期化
       const canvasInitialized = this.canvasRenderer?.initializeCanvas();
@@ -106,20 +101,14 @@ export class GestureManager {
       }
 
       // Domain層の初期化
-      const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) ||
-        SimpleGestureRecognizer;
-      const gestureRecognizer = new SimpleGestureRecognizerClass(this.settings.gestureThreshold);
+      const gestureRecognizer = new SimpleGestureRecognizer(this.settings.gestureThreshold);
 
       // Application層の初期化
-      const SimpleGestureUseCaseClass = (typeof window !== 'undefined' && (window as any).SimpleGestureUseCase) ||
-        SimpleGestureUseCase;
-      this.gestureUseCase = new SimpleGestureUseCaseClass(gestureRecognizer, this.messagingAdapter);
+      this.gestureUseCase = new SimpleGestureUseCase(gestureRecognizer, this.messagingAdapter);
       this.gestureUseCase?.updateSettings(this.settings);
 
       // Presentation層の初期化
-      const GestureEventHandlerClass = (typeof window !== 'undefined' && (window as any).GestureEventHandler) ||
-        GestureEventHandler;
-      this.eventHandler = new GestureEventHandlerClass();
+      this.eventHandler = new GestureEventHandler();
       this.eventHandler?.updateSettings(this.settings);
 
       // イベントハンドラーのコールバック設定
