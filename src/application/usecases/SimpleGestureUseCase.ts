@@ -5,6 +5,7 @@
 
 import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+import { IMessagingService } from '../interfaces';
 
 // 型定義
 interface TrailPoint {
@@ -37,9 +38,7 @@ interface ActionMessage {
   action: string;
 }
 
-interface MessagingService {
-  sendMessage(message: ActionMessage): Promise<ActionResult>;
-}
+// MessagingServiceは IMessagingServiceに統一
 
 interface DebugInfo {
   settings: Settings;
@@ -50,11 +49,11 @@ interface DebugInfo {
 
 export class SimpleGestureUseCase {
   private gestureRecognizer: SimpleGestureRecognizer;
-  private messagingService: MessagingService | null;
+  private messagingService: IMessagingService | null;
   private settings: Settings;
   private logger: DebugLogger;
 
-  constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: MessagingService | null = null, logger?: DebugLogger) {
+  constructor(gestureRecognizer: SimpleGestureRecognizer | null = null, messagingService: IMessagingService | null = null, logger?: DebugLogger) {
     this.gestureRecognizer = gestureRecognizer || new SimpleGestureRecognizer();
     this.messagingService = messagingService;
     this.logger = logger || new DebugLogger(null);
@@ -138,7 +137,7 @@ export class SimpleGestureUseCase {
       const message = this.createActionMessage(gestureType);
 
       // backgroundスクリプトにメッセージ送信
-      const response = await this.messagingService.sendMessage(message);
+      const response = await this.messagingService.sendMessage(message) as ActionResult;
 
       return {
         success: response.success,
@@ -187,7 +186,7 @@ export class SimpleGestureUseCase {
    * メッセージングサービスを設定
    * @param messagingService メッセージングサービス
    */
-  setMessagingService(messagingService: MessagingService): void {
+  setMessagingService(messagingService: IMessagingService): void {
     this.messagingService = messagingService;
   }
 

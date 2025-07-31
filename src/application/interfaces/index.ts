@@ -6,3 +6,4 @@
 export * from './ISettingsRepository';
 export * from './IGestureRepository';
 export * from './ILogger';
+export * from './IMessagingService';

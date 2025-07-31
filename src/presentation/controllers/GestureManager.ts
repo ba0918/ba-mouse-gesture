@@ -5,7 +5,7 @@
 
 import { GestureEventHandler } from '../handlers/GestureEventHandler.js';
 import { SimpleGestureUseCase } from '../../application/usecases/SimpleGestureUseCase.js';
-import { SimpleMessagingAdapter } from '../../infrastructure/adapters/SimpleMessagingAdapter.js';
+import { ChromeMessagingAdapter } from '../../infrastructure/adapters/ChromeMessagingAdapter.js';
 import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter.js';
 import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
 
@@ -57,7 +57,7 @@ interface GestureCallbacks {
 export class GestureManager {
   private eventHandler: GestureEventHandler | null = null;
   private gestureUseCase: SimpleGestureUseCase | null = null;
-  private messagingAdapter: SimpleMessagingAdapter | null = null;
+  private messagingAdapter: ChromeMessagingAdapter | null = null;
   private canvasRenderer: CanvasRendererAdapter | null = null;
   private debugElement: HTMLElement | null = null;
 
@@ -91,7 +91,7 @@ export class GestureManager {
       }
 
       // Infrastructure層の初期化
-      this.messagingAdapter = new SimpleMessagingAdapter();
+      this.messagingAdapter = new ChromeMessagingAdapter();
       this.canvasRenderer = new CanvasRendererAdapter();
 
       // Canvas初期化
@@ -281,7 +281,7 @@ export class GestureManager {
    */
   private setupMessageListener(): void {
     if (this.messagingAdapter) {
-      this.messagingAdapter.onMessage((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+      this.messagingAdapter.addMessageListener((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
         if (message.type === 'scroll') {
           this.handleScrollMessage(message.direction);
           sendResponse({ success: true });
@@ -476,7 +476,7 @@ export class GestureManager {
       components: {
         eventHandler: this.eventHandler?.getDebugInfo(),
         gestureUseCase: this.gestureUseCase?.getDebugInfo(),
-        messagingAdapter: this.messagingAdapter?.getDebugInfo(),
+        messagingAdapter: this.messagingAdapter ? 'ChromeMessagingAdapter' : null,
         canvasRenderer: this.canvasRenderer?.getDebugInfo()
       },
       className: 'GestureManager'
