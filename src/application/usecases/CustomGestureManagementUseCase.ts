@@ -23,10 +23,10 @@ export class CustomGestureManagementUseCase {
     logger?: ILogger,
   ) {
     this.logger = logger || {
-      debug: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
+      debug: () => { },
+      info: () => { },
+      warn: () => { },
+      error: () => { },
     };
   }
 
@@ -197,7 +197,7 @@ export class CustomGestureManagementUseCase {
 /**
  * カスタムジェスチャー管理専用エラークラス
  */
-export class CustomGestureManagementError extends Error {
+class CustomGestureManagementError extends Error {
   readonly originalError?: Error;
 
   constructor(message: string, originalError?: Error) {

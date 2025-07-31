@@ -342,7 +342,7 @@ export class GestureRepository implements IGestureRepository {
 /**
  * GestureRepository専用エラークラス
  */
-export class GestureRepositoryError extends Error {
+class GestureRepositoryError extends Error {
   readonly originalError?: unknown;
 
   constructor(message: string, originalError?: unknown) {

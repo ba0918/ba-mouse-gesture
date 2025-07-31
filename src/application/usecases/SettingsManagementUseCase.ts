@@ -22,10 +22,10 @@ export class SettingsManagementUseCase {
     logger?: ILogger,
   ) {
     this.logger = logger || {
-      debug: () => {},
-      info: () => {},
-      warn: () => {},
-      error: () => {},
+      debug: () => { },
+      info: () => { },
+      warn: () => { },
+      error: () => { },
     };
   }
 
@@ -229,7 +229,7 @@ export class SettingsManagementUseCase {
       });
     } catch (error) {
       this.logger.error("Failed to watch settings changes:", error);
-      return () => {}; // 空の停止関数を返す
+      return () => { }; // 空の停止関数を返す
     }
   }
 
@@ -249,7 +249,7 @@ export class SettingsManagementUseCase {
 /**
  * 設定管理専用エラークラス
  */
-export class SettingsManagementError extends Error {
+class SettingsManagementError extends Error {
   readonly originalError?: Error;
 
   constructor(message: string, originalError?: Error) {

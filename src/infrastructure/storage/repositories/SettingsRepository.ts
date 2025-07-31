@@ -350,7 +350,7 @@ export class SettingsRepository implements ISettingsRepository {
 /**
  * SettingsRepository専用エラークラス
  */
-export class SettingsRepositoryError extends Error {
+class SettingsRepositoryError extends Error {
   public originalError: any;
 
   constructor(message: string, originalError?: any) {
