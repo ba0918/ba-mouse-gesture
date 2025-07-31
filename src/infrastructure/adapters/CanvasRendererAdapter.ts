@@ -176,7 +176,7 @@ export class CanvasRendererAdapter implements RenderingService {
    * @param trail - 軌跡データ
    * @param style - 描画スタイル
    */
-  drawSmoothTrail(trail: TrailPoint[], style: DrawStyle = {}): void {
+  drawSmoothTrail(trail: TrailPoint[], style: DrawStyle = { color: '#2196F3', width: 3 }): void {
     if (!this.isInitialized || !this.ctx || !trail || trail.length < 3) {
       // 短い軌跡は通常描画
       this.drawTrail(trail, style);

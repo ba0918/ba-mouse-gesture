@@ -9,7 +9,7 @@ import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
 import { GestureEventHandler } from '../handlers/GestureEventHandler.js';
 
 // Application層インターフェース
-import { MessagingService } from '../../application/interfaces/MessagingService';
+import { IMessagingService } from '../../application/interfaces/IMessagingService';
 import { DrawStyle, Point, RenderingService } from '../../application/interfaces/RenderingService';
 import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
 
@@ -40,7 +40,7 @@ interface DebugInfo {
  */
 export class GestureManager {
   // Application層サービス（依存性注入）
-  private messagingService: MessagingService;
+  private messagingService: IMessagingService;
   private renderingService: RenderingService;
   private settingsService: SettingsService;
 
@@ -68,7 +68,7 @@ export class GestureManager {
    * コンストラクタ - 依存性注入
    */
   constructor(
-    messagingService: MessagingService,
+    messagingService: IMessagingService,
     renderingService: RenderingService,
     settingsService: SettingsService,
   ) {
@@ -222,13 +222,16 @@ export class GestureManager {
    */
   private setupMessageListener(): void {
     this.messagingService.addMessageListener(
-      (
-        message: { type: string; direction?: string },
-        _sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: { success: boolean }) => void,
-      ) => {
-        if (message.type === 'scroll' && message.direction) {
-          this.handleScrollMessage(message.direction);
+      (message: unknown, _sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => {
+        // 型チェック
+        if (!message || typeof message !== 'object') {
+          sendResponse({ success: false });
+          return true;
+        }
+
+        const typedMessage = message as { type: string; direction?: string };
+        if (typedMessage.type === 'scroll' && typedMessage.direction) {
+          this.handleScrollMessage(typedMessage.direction);
           sendResponse({ success: true });
           return true;
         }

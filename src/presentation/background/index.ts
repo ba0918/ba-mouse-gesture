@@ -4,10 +4,10 @@
  */
 
 import { ActionName } from '../../domain/types';
-import { DebugLogger, type DebugSettings, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
+import { DebugLogger, type IDebugSettings, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
 
 // デバッグ設定
-const debugSettings: DebugSettings = {
+const debugSettings: IDebugSettings = {
   logLevel: 2,
   shouldLog(level: LogLevel): boolean {
     return level <= this.logLevel;

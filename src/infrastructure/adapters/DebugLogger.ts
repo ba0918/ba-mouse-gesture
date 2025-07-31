@@ -6,15 +6,15 @@
 // Type definitions
 export type LogLevel = 0 | 1 | 2 | 3;
 
-export interface DebugSettings {
+export interface IDebugSettings {
   shouldLog(level: LogLevel): boolean;
   logLevel: LogLevel;
 }
 
 export class DebugLogger {
-  private debugSettings: DebugSettings | null;
+  private debugSettings: IDebugSettings | null;
 
-  constructor(debugSettings: DebugSettings | null) {
+  constructor(debugSettings: IDebugSettings | null) {
     this.debugSettings = debugSettings;
   }
 
@@ -57,7 +57,7 @@ export class DebugLogger {
   /**
    * デバッグ設定を更新
    */
-  updateDebugSettings(debugSettings: DebugSettings): void {
+  updateDebugSettings(debugSettings: IDebugSettings): void {
     this.debugSettings = debugSettings;
   }
 

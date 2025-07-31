@@ -17,7 +17,10 @@ interface StorageData {
   [key: string]: any;
 }
 
-type StorageChangeCallback = (changes: chrome.storage.StorageChange, areaName: chrome.storage.AreaName) => void;
+type StorageChangeCallback = (
+  changes: Record<string, chrome.storage.StorageChange>,
+  areaName: chrome.storage.AreaName,
+) => void;
 
 export class ChromeStorageAdapter {
   private readonly storage: typeof chrome.storage | undefined;

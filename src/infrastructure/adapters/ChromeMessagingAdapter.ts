@@ -7,6 +7,13 @@
 import { IMessagingService } from '../../application/interfaces/IMessagingService';
 
 export class ChromeMessagingAdapter implements IMessagingService {
+  private chromeMessageHandler:
+    | ((
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response?: unknown) => void,
+      ) => boolean | void)
+    | null = null;
   /**
    * メッセージリスナーを設定
    */
@@ -18,7 +25,7 @@ export class ChromeMessagingAdapter implements IMessagingService {
     ) => boolean | void,
   ): void {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      this.chromeMessageHandler = (message, sender, sendResponse) => {
         try {
           const result = handler(message, sender, sendResponse);
           return Boolean(result);
@@ -30,7 +37,8 @@ export class ChromeMessagingAdapter implements IMessagingService {
           });
           return false;
         }
-      });
+      };
+      chrome.runtime.onMessage.addListener(this.chromeMessageHandler);
     }
   }
 
@@ -50,5 +58,15 @@ export class ChromeMessagingAdapter implements IMessagingService {
       });
     }
     throw new Error('Chrome runtime not available');
+  }
+
+  /**
+   * メッセージリスナーを削除
+   */
+  removeMessageListener(): void {
+    if (this.chromeMessageHandler && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+      chrome.runtime.onMessage.removeListener(this.chromeMessageHandler);
+      this.chromeMessageHandler = null;
+    }
   }
 }

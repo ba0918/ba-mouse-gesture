@@ -23,4 +23,9 @@ export interface IMessagingService {
    * @returns Promise<unknown>
    */
   sendMessage(message: unknown): Promise<unknown>;
+
+  /**
+   * メッセージリスナーを削除
+   */
+  removeMessageListener(): void;
 }
