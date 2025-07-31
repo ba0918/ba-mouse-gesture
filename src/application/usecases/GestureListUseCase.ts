@@ -25,7 +25,7 @@ export class GestureListUseCase {
     async getAllGestures(): Promise<UIGesture[]> {
         // デフォルトジェスチャーを取得
         const defaultGestures = DefaultGestureDefinitions.getAllDefinitions().map(def => ({
-            id: def.pattern,
+            id: def.id, // 正しいIDを使用（left, right, etc）
             name: def.description,
             pattern: def.pattern,
             action: def.action,
