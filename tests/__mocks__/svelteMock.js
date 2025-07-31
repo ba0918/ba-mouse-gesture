@@ -8,8 +8,8 @@ const mount = () => ({
   destroy: () => {},
   $set: () => {},
   $on: () => {},
-  $$: { fragment: null, props: {} }
-})
+  $$: { fragment: null, props: {} },
+});
 
 // Svelteコンポーネントのコンストラクタをモック
 function SvelteComponentMock(options = {}) {
@@ -19,41 +19,41 @@ function SvelteComponentMock(options = {}) {
     $$: {
       fragment: null,
       ctx: [],
-      props: options.props || {}
+      props: options.props || {},
     },
-    
+
     // プロパティ設定
     $set: () => {},
-    
+
     // イベントリスナー
     $on: () => {},
-    
+
     // コンポーネント破棄
     $destroy: () => {},
-    
+
     // オプションの保存（テスト用）
-    _options: options
-  }
+    _options: options,
+  };
 }
 
 // Svelte 5の関数群のモック
-const createEventDispatcher = () => () => {}
-const onMount = (fn) => fn && fn()
-const onDestroy = () => {}
-const tick = () => Promise.resolve()
+const createEventDispatcher = () => () => {};
+const onMount = (fn) => fn && fn();
+const onDestroy = () => {};
+const tick = () => Promise.resolve();
 
 // 複数のエクスポート形式をサポート
-module.exports = SvelteComponentMock
-module.exports.default = SvelteComponentMock
-module.exports.mount = mount
-module.exports.createEventDispatcher = createEventDispatcher
-module.exports.onMount = onMount
-module.exports.onDestroy = onDestroy
-module.exports.tick = tick
+module.exports = SvelteComponentMock;
+module.exports.default = SvelteComponentMock;
+module.exports.mount = mount;
+module.exports.createEventDispatcher = createEventDispatcher;
+module.exports.onMount = onMount;
+module.exports.onDestroy = onDestroy;
+module.exports.tick = tick;
 
 // トランスフォーム関数（Jest transform用）
 module.exports.process = (src, filename) => {
-  const componentName = filename.split('/').pop().replace('.svelte', '')
+  const componentName = filename.split('/').pop().replace('.svelte', '');
   return {
     code: `
       const SvelteComponentMock = require(__filename);
@@ -62,6 +62,6 @@ module.exports.process = (src, filename) => {
       }
       module.exports = ${componentName}Mock;
       module.exports.default = ${componentName}Mock;
-    `
-  }
-}
+    `,
+  };
+};

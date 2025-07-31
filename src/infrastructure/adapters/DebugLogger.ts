@@ -64,8 +64,8 @@ export class DebugLogger {
   /**
    * ログレベル表示用ヘルパー
    */
-  logLevel(): LogLevel | "unknown" {
-    if (!this.debugSettings) return "unknown";
+  logLevel(): LogLevel | 'unknown' {
+    if (!this.debugSettings) return 'unknown';
     return this.debugSettings.logLevel;
   }
 }

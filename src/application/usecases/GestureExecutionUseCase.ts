@@ -3,9 +3,9 @@
  * 現在動作しているジェスチャー機能のApplication層実装
  */
 
-import { GestureRecognizer } from "../../domain/services/GestureRecognizer.js";
-import { DebugLogger } from "../../infrastructure/adapters/DebugLogger";
-import { IMessagingService } from "../interfaces";
+import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
+import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
+import { IMessagingService } from '../interfaces';
 
 // 型定義
 interface TrailPoint {
@@ -34,7 +34,7 @@ interface ActionResult {
 }
 
 interface ActionMessage {
-  type: "executeAction";
+  type: 'executeAction';
   action: string;
 }
 
@@ -56,7 +56,7 @@ export class GestureExecutionUseCase {
   constructor(
     gestureRecognizer: GestureRecognizer | null = null,
     messagingService: IMessagingService | null = null,
-    logger?: DebugLogger,
+    logger?: DebugLogger
   ) {
     this.gestureRecognizer = gestureRecognizer || new GestureRecognizer();
     this.messagingService = messagingService;
@@ -79,7 +79,7 @@ export class GestureExecutionUseCase {
       if (!this.settings.enabled) {
         return {
           success: false,
-          error: "Gesture recognition is disabled",
+          error: 'Gesture recognition is disabled',
         };
       }
 
@@ -88,12 +88,12 @@ export class GestureExecutionUseCase {
       if (!gesturePattern) {
         return {
           success: false,
-          error: "Gesture not recognized",
+          error: 'Gesture not recognized',
         };
       }
 
       const gestureString = gesturePattern.toString();
-      this.logger.info("Recognized gesture:", gestureString);
+      this.logger.info('Recognized gesture:', gestureString);
 
       // アクション実行
       const result = await this.executeAction(gestureString);
@@ -105,10 +105,10 @@ export class GestureExecutionUseCase {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error("Gesture execution failed:", error);
+      this.logger.error('Gesture execution failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -122,7 +122,7 @@ export class GestureExecutionUseCase {
     if (!this.messagingService) {
       return {
         success: false,
-        error: "Messaging service not available",
+        error: 'Messaging service not available',
       };
     }
 
@@ -140,7 +140,7 @@ export class GestureExecutionUseCase {
       const message = this.createActionMessage(gestureType);
 
       // backgroundスクリプトにメッセージ送信
-      const response = await this.messagingService.sendMessage(message) as ActionResult;
+      const response = (await this.messagingService.sendMessage(message)) as ActionResult;
 
       return {
         success: response.success,
@@ -150,7 +150,7 @@ export class GestureExecutionUseCase {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -165,7 +165,7 @@ export class GestureExecutionUseCase {
     const actionName = this.getActionNameFromGestureType(gestureType);
 
     return {
-      type: "executeAction",
+      type: 'executeAction',
       action: actionName,
     };
   }
@@ -239,17 +239,17 @@ export class GestureExecutionUseCase {
    */
   private getGestureIdFromGestureType(gestureType: string): string {
     const gestureIdMapping: { [key: string]: string } = {
-      "↑": "up",
-      "↓": "down",
-      "←": "left",
-      "→": "right",
-      "↓→": "downright",
-      "↑→": "upright",
-      "→↓": "rightdown",
-      "↑↓": "updown",
-      "↑↓↑": "super_refresh",
-      "←→": "prev_tab",
-      "→←": "next_tab",
+      '↑': 'up',
+      '↓': 'down',
+      '←': 'left',
+      '→': 'right',
+      '↓→': 'downright',
+      '↑→': 'upright',
+      '→↓': 'rightdown',
+      '↑↓': 'updown',
+      '↑↓↑': 'super_refresh',
+      '←→': 'prev_tab',
+      '→←': 'next_tab',
     };
 
     return gestureIdMapping[gestureType] || gestureType.toLowerCase();
@@ -262,17 +262,17 @@ export class GestureExecutionUseCase {
    */
   private getActionNameFromGestureType(gestureType: string): string {
     const gestureMapping: { [key: string]: string } = {
-      "↑": "scroll_top",
-      "↓": "scroll_bottom",
-      "←": "back",
-      "→": "forward",
-      "↓→": "close_tab",
-      "↑→": "new_tab",
-      "→↓": "duplicate_tab",
-      "↑↓": "refresh",
-      "↑↓↑": "super_refresh",
-      "←→": "prev_tab",
-      "→←": "next_tab",
+      '↑': 'scroll_top',
+      '↓': 'scroll_bottom',
+      '←': 'back',
+      '→': 'forward',
+      '↓→': 'close_tab',
+      '↑→': 'new_tab',
+      '→↓': 'duplicate_tab',
+      '↑↓': 'refresh',
+      '↑↓↑': 'super_refresh',
+      '←→': 'prev_tab',
+      '→←': 'next_tab',
     };
 
     return gestureMapping[gestureType] || gestureType;
@@ -303,7 +303,7 @@ export class GestureExecutionUseCase {
       settings: this.settings,
       hasMessagingService: Boolean(this.messagingService),
       recognizerThreshold: this.gestureRecognizer.getThreshold(),
-      className: "GestureExecutionUseCase",
+      className: 'GestureExecutionUseCase',
     };
   }
 }

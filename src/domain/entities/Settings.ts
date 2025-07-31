@@ -1,6 +1,6 @@
-import { DefaultGestureDefinitions } from "../definitions/DefaultGestureDefinitions";
-import { Threshold } from "../valueObjects/Threshold";
-import { DebugSettings } from "./DebugSettings";
+import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions';
+import { Threshold } from '../valueObjects/Threshold';
+import { DebugSettings } from './DebugSettings';
 
 /**
  * デフォルトジェスチャー状態の型定義
@@ -14,7 +14,7 @@ export type DefaultGestureStates = Record<string, boolean>;
  */
 function createDefaultGestureStates(): DefaultGestureStates {
   const states: DefaultGestureStates = {};
-  DefaultGestureDefinitions.getValidGestureIds().forEach(id => {
+  DefaultGestureDefinitions.getValidGestureIds().forEach((id) => {
     states[id] = true; // デフォルトは全て有効
   });
   return states;
@@ -61,7 +61,7 @@ export class Settings {
   constructor(config: SettingsConfig = {}) {
     // 基本設定
     this.enabled = config.enabled !== undefined ? config.enabled : true;
-    this.strokeColor = config.strokeColor || "#2196F3";
+    this.strokeColor = config.strokeColor || '#2196F3';
     this.strokeWidth = config.strokeWidth || 3;
     this.gestureThreshold = config.gestureThreshold || 15;
     this.excludeList = config.excludeList || [];
@@ -79,7 +79,7 @@ export class Settings {
       : DebugSettings.getDefault();
 
     // メタデータ
-    this.version = "1.0.0";
+    this.version = '1.0.0';
     this.lastModified = new Date().toISOString();
   }
 
@@ -213,16 +213,16 @@ export class Settings {
     if (!url) return false;
 
     // Infrastructure層のURLParserAdapterを使用（Clean Architecture準拠）
-    const currentHost = urlParser ? urlParser.getHostname(url) : "";
+    const currentHost = urlParser ? urlParser.getHostname(url) : '';
 
-    return this.excludeList.some(pattern => {
+    return this.excludeList.some((pattern) => {
       // 完全URL マッチ
-      if (pattern.includes("://")) {
-        return url.includes(pattern) || !!url.match(pattern.replace(/\*/g, ".*"));
+      if (pattern.includes('://')) {
+        return url.includes(pattern) || !!url.match(pattern.replace(/\*/g, '.*'));
       }
       // ホスト名マッチ
-      if (pattern.includes("*")) {
-        const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+      if (pattern.includes('*')) {
+        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
         return regex.test(currentHost);
       }
       // 部分マッチ
@@ -270,12 +270,14 @@ export class Settings {
    * @returns 有効な場合true
    */
   isValid(): boolean {
-    return this.isValidColor(this.strokeColor)
-      && this.isValidWidth(this.strokeWidth)
-      && this.gestureThreshold >= 5
-      && this.gestureThreshold <= 100
-      && Array.isArray(this.excludeList)
-      && this.isValidDebugSettings();
+    return (
+      this.isValidColor(this.strokeColor) &&
+      this.isValidWidth(this.strokeWidth) &&
+      this.gestureThreshold >= 5 &&
+      this.gestureThreshold <= 100 &&
+      Array.isArray(this.excludeList) &&
+      this.isValidDebugSettings()
+    );
   }
 
   /**

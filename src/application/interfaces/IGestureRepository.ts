@@ -4,7 +4,7 @@
  * 依存性逆転原則（DIP）に従い、UseCaseが依存するRepositoryの契約を定義
  */
 
-import { CustomGesture } from "../../domain/entities/CustomGesture";
+import { CustomGesture } from '../../domain/entities/CustomGesture';
 
 export interface IGestureRepository {
   getCustomGestures(): Promise<CustomGesture[]>;

@@ -2,8 +2,8 @@
  * Svelte コンポーネントの型定義
  */
 
-declare module "*.svelte" {
-  import type { ComponentType, SvelteComponentTyped } from "svelte";
+declare module '*.svelte' {
+  import type { ComponentType, SvelteComponentTyped } from 'svelte';
 
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface ComponentEvents {}
@@ -15,8 +15,8 @@ declare module "*.svelte" {
   export default component;
 }
 
-declare module "../../../popup/OptionsApp.svelte" {
-  import type { ComponentType, SvelteComponentTyped } from "svelte";
+declare module '../../../popup/OptionsApp.svelte' {
+  import type { ComponentType, SvelteComponentTyped } from 'svelte';
 
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Props {}

@@ -4,8 +4,8 @@
  * Clean Architecture - Application層
  */
 
-import { Settings } from "../../domain/entities/Settings";
-import { ILogger, ISettingsRepository, SettingsValidationResult } from "../interfaces";
+import { Settings } from '../../domain/entities/Settings';
+import { ILogger, ISettingsRepository, SettingsValidationResult } from '../interfaces';
 
 interface SettingsChangeData {
   type: string;
@@ -19,13 +19,13 @@ export class SettingsManagementUseCase {
 
   constructor(
     private settingsRepository: ISettingsRepository,
-    logger?: ILogger,
+    logger?: ILogger
   ) {
     this.logger = logger || {
-      debug: () => { },
-      info: () => { },
-      warn: () => { },
-      error: () => { },
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
     };
   }
 
@@ -36,7 +36,7 @@ export class SettingsManagementUseCase {
     try {
       return await this.settingsRepository.getSettings();
     } catch (error) {
-      throw new SettingsManagementError("Failed to get current settings", error as Error);
+      throw new SettingsManagementError('Failed to get current settings', error as Error);
     }
   }
 
@@ -45,14 +45,14 @@ export class SettingsManagementUseCase {
    */
   async toggleExtension(enabled: boolean): Promise<Settings> {
     try {
-      const result = await this.settingsRepository.updateSetting("enabled", enabled);
+      const result = await this.settingsRepository.updateSetting('enabled', enabled);
 
       // 設定変更通知
-      await this.notifySettingsChange("extension_toggled", { enabled });
+      await this.notifySettingsChange('extension_toggled', { enabled });
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to toggle extension", error as Error);
+      throw new SettingsManagementError('Failed to toggle extension', error as Error);
     }
   }
 
@@ -64,11 +64,11 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.updateStrokeSettings(color, width);
 
       // 設定変更通知
-      await this.notifySettingsChange("stroke_settings_updated", { color, width });
+      await this.notifySettingsChange('stroke_settings_updated', { color, width });
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to update stroke settings", error as Error);
+      throw new SettingsManagementError('Failed to update stroke settings', error as Error);
     }
   }
 
@@ -80,11 +80,11 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.updateThreshold(threshold);
 
       // 設定変更通知
-      await this.notifySettingsChange("threshold_updated", { threshold });
+      await this.notifySettingsChange('threshold_updated', { threshold });
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to update gesture threshold", error as Error);
+      throw new SettingsManagementError('Failed to update gesture threshold', error as Error);
     }
   }
 
@@ -94,23 +94,23 @@ export class SettingsManagementUseCase {
   async toggleGesture(gestureId: string, enabled: boolean): Promise<Settings> {
     try {
       // カスタムジェスチャーIDの場合はエラー
-      if (gestureId.startsWith("custom_")) {
+      if (gestureId.startsWith('custom_')) {
         throw new Error(
-          `This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`,
+          `This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`
         );
       }
 
-      this.logger.debug("FIXED - SettingsManagementUseCase with correct gesture ID:", { gestureId, enabled });
+      this.logger.debug('FIXED - SettingsManagementUseCase with correct gesture ID:', { gestureId, enabled });
 
       const result = await this.settingsRepository.updateGestureState(gestureId, enabled);
 
       // 設定変更通知
-      await this.notifySettingsChange("gesture_toggled", { gestureId, enabled });
+      await this.notifySettingsChange('gesture_toggled', { gestureId, enabled });
 
       return result;
     } catch (error) {
-      this.logger.error("SettingsManagementUseCase.toggleGesture failed:", error);
-      throw new SettingsManagementError("Failed to toggle gesture", error as Error);
+      this.logger.error('SettingsManagementUseCase.toggleGesture failed:', error);
+      throw new SettingsManagementError('Failed to toggle gesture', error as Error);
     }
   }
 
@@ -122,11 +122,11 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.addExcludeSite(pattern);
 
       // 設定変更通知
-      await this.notifySettingsChange("exclude_site_added", { pattern });
+      await this.notifySettingsChange('exclude_site_added', { pattern });
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to add exclude site", error as Error);
+      throw new SettingsManagementError('Failed to add exclude site', error as Error);
     }
   }
 
@@ -138,11 +138,11 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.removeExcludeSite(pattern);
 
       // 設定変更通知
-      await this.notifySettingsChange("exclude_site_removed", { pattern });
+      await this.notifySettingsChange('exclude_site_removed', { pattern });
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to remove exclude site", error as Error);
+      throw new SettingsManagementError('Failed to remove exclude site', error as Error);
     }
   }
 
@@ -154,12 +154,12 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.updateDebugSettings(debugConfig);
 
       // 設定変更通知
-      await this.notifySettingsChange("debug_settings_updated", debugConfig);
+      await this.notifySettingsChange('debug_settings_updated', debugConfig);
 
       return result;
     } catch (error) {
-      this.logger.error("SettingsManagementUseCase.updateDebugSettings error:", error);
-      throw new SettingsManagementError("Failed to update debug settings", error as Error);
+      this.logger.error('SettingsManagementUseCase.updateDebugSettings error:', error);
+      throw new SettingsManagementError('Failed to update debug settings', error as Error);
     }
   }
 
@@ -171,11 +171,11 @@ export class SettingsManagementUseCase {
       const result = await this.settingsRepository.resetToDefaults();
 
       // 設定変更通知
-      await this.notifySettingsChange("settings_reset", {});
+      await this.notifySettingsChange('settings_reset', {});
 
       return result;
     } catch (error) {
-      throw new SettingsManagementError("Failed to reset settings to defaults", error as Error);
+      throw new SettingsManagementError('Failed to reset settings to defaults', error as Error);
     }
   }
 
@@ -186,7 +186,7 @@ export class SettingsManagementUseCase {
     try {
       return await this.settingsRepository.validateSettings();
     } catch (error) {
-      throw new SettingsManagementError("Failed to validate settings", error as Error);
+      throw new SettingsManagementError('Failed to validate settings', error as Error);
     }
   }
 
@@ -197,23 +197,23 @@ export class SettingsManagementUseCase {
     try {
       return this.settingsRepository.onSettingsChanged((newSettings, oldSettings) => {
         callback({
-          type: "settings_changed",
+          type: 'settings_changed',
           newSettings: newSettings.toJSON() as unknown as Record<string, unknown>,
-          oldSettings: oldSettings ? oldSettings.toJSON() as unknown as Record<string, unknown> : null,
+          oldSettings: oldSettings ? (oldSettings.toJSON() as unknown as Record<string, unknown>) : null,
           timestamp: new Date().toISOString(),
         });
       });
     } catch (error) {
-      this.logger.error("Failed to watch settings changes:", error);
-      return () => { }; // 空の停止関数を返す
+      this.logger.error('Failed to watch settings changes:', error);
+      return () => {}; // 空の停止関数を返す
     }
   }
 
   private async notifySettingsChange(type: string, data: Record<string, unknown>): Promise<void> {
     try {
-      this.logger.debug("Settings changed:", { type, data, timestamp: new Date().toISOString() });
+      this.logger.debug('Settings changed:', { type, data, timestamp: new Date().toISOString() });
     } catch (error) {
-      this.logger.error("Failed to notify settings change:", error);
+      this.logger.error('Failed to notify settings change:', error);
     }
   }
 }
@@ -226,7 +226,7 @@ class SettingsManagementError extends Error {
 
   constructor(message: string, originalError?: Error) {
     super(message);
-    this.name = "SettingsManagementError";
+    this.name = 'SettingsManagementError';
     this.originalError = originalError;
   }
 }

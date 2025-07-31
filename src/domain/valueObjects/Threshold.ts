@@ -1,12 +1,12 @@
 /**
  * 感度レベルの型定義
  */
-export type SensitivityLevel = "low" | "medium" | "high";
+export type SensitivityLevel = 'low' | 'medium' | 'high';
 
 /**
  * マッチングレベルの型定義
  */
-export type MatchingLevel = "loose" | "normal" | "strict";
+export type MatchingLevel = 'loose' | 'normal' | 'strict';
 
 /**
  * デバイス情報の型定義
@@ -30,11 +30,7 @@ export class Threshold {
    * @param matchThreshold - パターンマッチング閾値（0-1）
    * @param confidenceThreshold - 信頼度閾値（0-1）
    */
-  constructor(
-    detectionThreshold: number = 15,
-    matchThreshold: number = 0.6,
-    confidenceThreshold: number = 0.5,
-  ) {
+  constructor(detectionThreshold: number = 15, matchThreshold: number = 0.6, confidenceThreshold: number = 0.5) {
     this.validateThresholds(detectionThreshold, matchThreshold, confidenceThreshold);
 
     this._detectionThreshold = detectionThreshold;
@@ -51,13 +47,13 @@ export class Threshold {
    */
   private validateThresholds(detection: number, match: number, confidence: number): void {
     if (!Number.isFinite(detection) || detection < 1 || detection > 200) {
-      throw new Error("Detection threshold must be between 1 and 200 pixels");
+      throw new Error('Detection threshold must be between 1 and 200 pixels');
     }
     if (!Number.isFinite(match) || match < 0 || match > 1) {
-      throw new Error("Match threshold must be between 0 and 1");
+      throw new Error('Match threshold must be between 0 and 1');
     }
     if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
-      throw new Error("Confidence threshold must be between 0 and 1");
+      throw new Error('Confidence threshold must be between 0 and 1');
     }
   }
 
@@ -117,9 +113,9 @@ export class Threshold {
    * @returns 感度レベル
    */
   getSensitivityLevel(): SensitivityLevel {
-    if (this._detectionThreshold <= 10) return "high";
-    if (this._detectionThreshold <= 20) return "medium";
-    return "low";
+    if (this._detectionThreshold <= 10) return 'high';
+    if (this._detectionThreshold <= 20) return 'medium';
+    return 'low';
   }
 
   /**
@@ -127,9 +123,9 @@ export class Threshold {
    * @returns マッチングレベル
    */
   getMatchingLevel(): MatchingLevel {
-    if (this._matchThreshold <= 0.4) return "loose";
-    if (this._matchThreshold <= 0.7) return "normal";
-    return "strict";
+    if (this._matchThreshold <= 0.4) return 'loose';
+    if (this._matchThreshold <= 0.7) return 'normal';
+    return 'strict';
   }
 
   /**
@@ -157,11 +153,7 @@ export class Threshold {
       newConfidenceThreshold = Math.max(0.1, this._confidenceThreshold - 0.02);
     }
 
-    return new Threshold(
-      this._detectionThreshold,
-      newMatchThreshold,
-      newConfidenceThreshold,
-    );
+    return new Threshold(this._detectionThreshold, newMatchThreshold, newConfidenceThreshold);
   }
 
   /**
@@ -176,13 +168,13 @@ export class Threshold {
 
     // 感度設定
     switch (sensitivity) {
-      case "high":
+      case 'high':
         detection = Math.max(5, detection * 0.7);
         break;
-      case "low":
+      case 'low':
         detection = Math.min(50, detection * 1.5);
         break;
-      case "medium":
+      case 'medium':
       default:
         // 変更なし
         break;
@@ -190,13 +182,13 @@ export class Threshold {
 
     // 精度設定
     switch (accuracy) {
-      case "loose":
+      case 'loose':
         match = Math.max(0.2, match * 0.7);
         break;
-      case "strict":
+      case 'strict':
         match = Math.min(0.9, match * 1.3);
         break;
-      case "normal":
+      case 'normal':
       default:
         // 変更なし
         break;
@@ -237,9 +229,11 @@ export class Threshold {
       return false;
     }
 
-    return Math.abs(this._detectionThreshold - other._detectionThreshold) < epsilon
-      && Math.abs(this._matchThreshold - other._matchThreshold) < epsilon
-      && Math.abs(this._confidenceThreshold - other._confidenceThreshold) < epsilon;
+    return (
+      Math.abs(this._detectionThreshold - other._detectionThreshold) < epsilon &&
+      Math.abs(this._matchThreshold - other._matchThreshold) < epsilon &&
+      Math.abs(this._confidenceThreshold - other._confidenceThreshold) < epsilon
+    );
   }
 
   /**
@@ -247,9 +241,14 @@ export class Threshold {
    * @returns 有効な場合true
    */
   isValid(): boolean {
-    return this._detectionThreshold >= 1 && this._detectionThreshold <= 200
-      && this._matchThreshold >= 0 && this._matchThreshold <= 1
-      && this._confidenceThreshold >= 0 && this._confidenceThreshold <= 1;
+    return (
+      this._detectionThreshold >= 1 &&
+      this._detectionThreshold <= 200 &&
+      this._matchThreshold >= 0 &&
+      this._matchThreshold <= 1 &&
+      this._confidenceThreshold >= 0 &&
+      this._confidenceThreshold <= 1
+    );
   }
 
   /**
@@ -301,14 +300,12 @@ export class Threshold {
    * @param data - JSON データ
    * @returns 復元された閾値
    */
-  static fromJSON(
-    data: { detectionThreshold: number; matchThreshold: number; confidenceThreshold: number },
-  ): Threshold {
-    return new Threshold(
-      data.detectionThreshold,
-      data.matchThreshold,
-      data.confidenceThreshold,
-    );
+  static fromJSON(data: {
+    detectionThreshold: number;
+    matchThreshold: number;
+    confidenceThreshold: number;
+  }): Threshold {
+    return new Threshold(data.detectionThreshold, data.matchThreshold, data.confidenceThreshold);
   }
 
   /**

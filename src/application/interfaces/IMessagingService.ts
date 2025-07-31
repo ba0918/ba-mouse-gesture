@@ -13,8 +13,8 @@ export interface IMessagingService {
     handler: (
       message: unknown,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void,
-    ) => boolean | void,
+      sendResponse: (response?: unknown) => void
+    ) => boolean | void
   ): void;
 
   /**

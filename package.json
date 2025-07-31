@@ -10,6 +10,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint . --ext .js,.ts,.html",
     "lint:fix": "eslint . --ext .js,.ts,.html --fix",
+    "format": "prettier --write \"**/*.{js,ts,svelte,json,css,html}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,svelte,json,css,html}\"",
     "typecheck": "tsc --noEmit",
     "build": "node scripts/build.js --prod",
     "build:dev": "node scripts/build.js",
@@ -93,12 +95,17 @@
     ]
   },
   "lint-staged": {
-    "*.js": [
+    "*.{js,ts}": [
       "eslint --fix",
+      "prettier --write",
       "jest --findRelatedTests --passWithNoTests"
     ],
-    "*.html": [
-      "eslint --fix"
+    "*.svelte": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,html}": [
+      "prettier --write"
     ]
   },
   "dependencies": {

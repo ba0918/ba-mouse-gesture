@@ -5,9 +5,9 @@
  * 責任: Point[] → GesturePattern変換のみ
  */
 
-import { Direction, GesturePattern } from "../valueObjects/GesturePattern";
-import { Point } from "../valueObjects/Point";
-import { Threshold } from "../valueObjects/Threshold";
+import { Direction, GesturePattern } from '../valueObjects/GesturePattern';
+import { Point } from '../valueObjects/Point';
+import { Threshold } from '../valueObjects/Threshold';
 
 export class GestureRecognizer {
   private threshold: Threshold;

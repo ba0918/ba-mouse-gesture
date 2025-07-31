@@ -6,7 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "lib": ["ES2020", "DOM"],
-    
+
     // 型チェック設定（厳格）
     "strict": true,
     "noImplicitAny": true,
@@ -16,13 +16,13 @@
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
     "strictPropertyInitialization": true,
-    
+
     // モジュール解決
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    
+
     // パス設定（Clean Architecture対応）
     "baseUrl": "./src",
     "paths": {
@@ -31,16 +31,16 @@
       "@infrastructure/*": ["infrastructure/*"],
       "@presentation/*": ["presentation/*"]
     },
-    
+
     // 型定義
     "types": ["chrome", "jest", "node"],
-    
+
     // その他
     "declaration": true,
     "sourceMap": true,
     "outDir": "./dist",
     "removeComments": false,
-    
+
     // Svelte設定のverbatimModuleSyntaxを無効化（既存コードとの互換性）
     "verbatimModuleSyntax": false
   },
@@ -49,13 +49,9 @@
     "src/**/*.svelte",
     "src/@types/**/*.d.ts",
     "tests/**/*.ts",
-    "popup/**/*.ts", 
+    "popup/**/*.ts",
     "popup/**/*.svelte",
     "scripts/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.js"
-  ]
+  "exclude": ["node_modules", "dist", "**/*.js"]
 }

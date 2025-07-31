@@ -4,7 +4,7 @@
  * RenderingServiceインターフェースの実装
  */
 
-import { DrawStyle, Point, RenderingService } from "../../application/interfaces/RenderingService";
+import { DrawStyle, Point, RenderingService } from '../../application/interfaces/RenderingService';
 
 // Type definitions
 interface TrailPoint {
@@ -47,7 +47,7 @@ interface DebugInfo extends CanvasInfo {
 export class CanvasRendererAdapter implements RenderingService {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private readonly canvasId: string = "mouse-gesture-trail";
+  private readonly canvasId: string = 'mouse-gesture-trail';
   private isInitialized: boolean = false;
   private resizeHandler: (() => void) | null = null;
 
@@ -70,19 +70,19 @@ export class CanvasRendererAdapter implements RenderingService {
       this.removeCanvas();
 
       // 新しいcanvasを作成
-      this.canvas = document.createElement("canvas");
+      this.canvas = document.createElement('canvas');
       this.canvas.id = this.canvasId;
 
       // デフォルトスタイル
       const defaultStyle: CanvasStyle = {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100vw",
-        height: "100vh",
-        pointerEvents: "none",
-        zIndex: "999999",
-        background: "transparent",
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: '999999',
+        background: 'transparent',
       };
 
       // スタイル適用
@@ -93,14 +93,14 @@ export class CanvasRendererAdapter implements RenderingService {
       this.updateCanvasSize();
 
       // コンテキストを取得
-      this.ctx = this.canvas.getContext("2d");
+      this.ctx = this.canvas.getContext('2d');
       if (!this.ctx) {
-        throw new Error("Failed to get canvas context");
+        throw new Error('Failed to get canvas context');
       }
 
       // 描画設定のデフォルト値
-      this.ctx.lineCap = "round";
-      this.ctx.lineJoin = "round";
+      this.ctx.lineCap = 'round';
+      this.ctx.lineJoin = 'round';
 
       // DOMに追加
       document.body.appendChild(this.canvas);
@@ -111,7 +111,7 @@ export class CanvasRendererAdapter implements RenderingService {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      console.error("Canvas initialization failed:", error);
+      console.error('Canvas initialization failed:', error);
       this.isInitialized = false;
       return false;
     }
@@ -134,7 +134,7 @@ export class CanvasRendererAdapter implements RenderingService {
     this.resizeHandler = () => {
       this.updateCanvasSize();
     };
-    window.addEventListener("resize", this.resizeHandler);
+    window.addEventListener('resize', this.resizeHandler);
   }
 
   /**
@@ -152,7 +152,7 @@ export class CanvasRendererAdapter implements RenderingService {
       this.clearCanvas();
 
       // 描画スタイル設定
-      this.ctx.strokeStyle = style.color || "#2196F3";
+      this.ctx.strokeStyle = style.color || '#2196F3';
       this.ctx.lineWidth = style.width || 3;
 
       // パスを開始
@@ -167,7 +167,7 @@ export class CanvasRendererAdapter implements RenderingService {
       // 描画実行
       this.ctx.stroke();
     } catch (error) {
-      console.error("Trail drawing failed:", error);
+      console.error('Trail drawing failed:', error);
     }
   }
 
@@ -188,7 +188,7 @@ export class CanvasRendererAdapter implements RenderingService {
       this.clearCanvas();
 
       // 描画スタイル設定
-      this.ctx.strokeStyle = style.color || "#2196F3";
+      this.ctx.strokeStyle = style.color || '#2196F3';
       this.ctx.lineWidth = style.width || 3;
 
       // パスを開始
@@ -214,7 +214,7 @@ export class CanvasRendererAdapter implements RenderingService {
       // 描画実行
       this.ctx.stroke();
     } catch (error) {
-      console.error("Smooth trail drawing failed:", error);
+      console.error('Smooth trail drawing failed:', error);
     }
   }
 
@@ -243,7 +243,7 @@ export class CanvasRendererAdapter implements RenderingService {
   removeCanvas(): void {
     // リサイズリスナーを削除
     if (this.resizeHandler) {
-      window.removeEventListener("resize", this.resizeHandler);
+      window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
     }
 
@@ -314,9 +314,9 @@ export class CanvasRendererAdapter implements RenderingService {
       contextExists: Boolean(this.ctx),
       canvasSize: this.canvas
         ? {
-          width: this.canvas.width,
-          height: this.canvas.height,
-        }
+            width: this.canvas.width,
+            height: this.canvas.height,
+          }
         : null,
       canvasId: this.canvasId,
     };
@@ -333,7 +333,7 @@ export class CanvasRendererAdapter implements RenderingService {
         width: window.innerWidth,
         height: window.innerHeight,
       },
-      className: "CanvasRendererAdapter",
+      className: 'CanvasRendererAdapter',
     };
   }
 }

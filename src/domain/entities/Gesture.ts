@@ -1,9 +1,9 @@
-import { DefaultGestureDefinitions } from "../definitions/DefaultGestureDefinitions";
-import { GesturePattern } from "../valueObjects/GesturePattern";
-import { Threshold } from "../valueObjects/Threshold";
+import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions';
+import { Direction, GesturePattern } from '../valueObjects/GesturePattern';
+import { Threshold } from '../valueObjects/Threshold';
 
 // GestureActionは重複なので削除し、ActionNameに統一
-import type { ActionName } from "../types/ActionName";
+import type { ActionName } from '../types/ActionName';
 export type GestureAction = ActionName;
 
 /**
@@ -66,7 +66,7 @@ export class Gesture {
    */
   isBasicGesture(): boolean {
     const definition = DefaultGestureDefinitions.getDefinitionById(this.id);
-    return definition?.category === "basic";
+    return definition?.category === 'basic';
   }
 
   /**
@@ -75,6 +75,16 @@ export class Gesture {
    */
   isComplexGesture(): boolean {
     return !this.isBasicGesture();
+  }
+
+  /**
+   * カスタムジェスチャーかどうか判定
+   * IDに `custom_` のプレフィックスがあるかどうかで判断される
+   *
+   * @returns 常にtrue
+   */
+  isCustomGesture(): boolean {
+    return this.id.startsWith('custom_');
   }
 
   /**
@@ -113,13 +123,7 @@ export class Gesture {
     const hasAction = Boolean(this.action);
     const patternIsValid = this.pattern ? this.pattern.isValid() : false;
 
-    return Boolean(
-      hasId
-        && hasName
-        && hasPattern
-        && hasAction
-        && patternIsValid,
-    );
+    return Boolean(hasId && hasName && hasPattern && hasAction && patternIsValid);
   }
 
   /**
@@ -127,13 +131,7 @@ export class Gesture {
    * @returns 複製されたジェスチャー
    */
   clone(): Gesture {
-    return new Gesture(
-      this.id,
-      this.name,
-      this.pattern.clone(),
-      this.action,
-      this.enabled,
-    );
+    return new Gesture(this.id, this.name, this.pattern.clone(), this.action, this.enabled);
   }
 
   /**
@@ -143,7 +141,7 @@ export class Gesture {
   toJSON(): {
     id: string;
     name: string;
-    pattern: string[];
+    pattern: Direction[];
     action: GestureAction;
     enabled: boolean;
     createdAt: string;
@@ -165,13 +163,13 @@ export class Gesture {
    */
   static fromJSON(data: any): Gesture {
     // データ形式のバリデーション
-    if (!data || typeof data !== "object") {
-      throw new Error("Invalid data format: data must be an object");
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid data format: data must be an object');
     }
 
     // 必須フィールドのチェック
     if (!data.id || !data.name || !data.action) {
-      throw new Error("Invalid data format: missing required fields (id, name, action)");
+      throw new Error('Invalid data format: missing required fields (id, name, action)');
     }
 
     // パターンのデシリアライゼーション

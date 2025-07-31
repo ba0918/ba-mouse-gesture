@@ -1,15 +1,15 @@
-import { Point } from "./Point";
-import { Threshold } from "./Threshold";
+import { Point } from './Point';
+import { Threshold } from './Threshold';
 
 /**
  * ジェスチャーの方向を表す型（矢印記号統一）
  */
-export type Direction = "↑" | "↓" | "←" | "→";
+export type Direction = '↑' | '↓' | '←' | '→';
 
 /**
  * 有効な方向の定数配列
  */
-const VALID_DIRECTIONS: Direction[] = ["↑", "↓", "←", "→"];
+const VALID_DIRECTIONS: Direction[] = ['↑', '↓', '←', '→'];
 
 /**
  * GesturePattern 値オブジェクト
@@ -25,10 +25,10 @@ export class GesturePattern {
    */
   constructor(directions: Direction[]) {
     if (!Array.isArray(directions)) {
-      throw new Error("Directions must be an array");
+      throw new Error('Directions must be an array');
     }
 
-    this._directions = directions.map(dir => this.validateDirection(dir));
+    this._directions = directions.map((dir) => this.validateDirection(dir));
     this._length = this._directions.length;
     Object.freeze(this._directions);
     Object.freeze(this);
@@ -41,7 +41,7 @@ export class GesturePattern {
    */
   private validateDirection(direction: string): Direction {
     if (!VALID_DIRECTIONS.includes(direction as Direction)) {
-      throw new Error(`Invalid direction: ${direction}. Must be one of: ${VALID_DIRECTIONS.join(", ")}`);
+      throw new Error(`Invalid direction: ${direction}. Must be one of: ${VALID_DIRECTIONS.join(', ')}`);
     }
     return direction as Direction;
   }
@@ -165,7 +165,7 @@ export class GesturePattern {
     const distance = this.levenshteinDistance(other);
     const maxLength = Math.max(this._length, other._length);
 
-    return 1.0 - (distance / maxLength);
+    return 1.0 - distance / maxLength;
   }
 
   /**
@@ -195,7 +195,7 @@ export class GesturePattern {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // 置換
             matrix[i][j - 1] + 1, // 挿入
-            matrix[i - 1][j] + 1, // 削除
+            matrix[i - 1][j] + 1 // 削除
           );
         }
       }
@@ -232,7 +232,8 @@ export class GesturePattern {
 
     // LCS 再構築
     const lcs: Direction[] = [];
-    let i = a.length, j = b.length;
+    let i = a.length,
+      j = b.length;
 
     while (i > 0 && j > 0) {
       if (a[i - 1] === b[j - 1]) {
@@ -291,8 +292,7 @@ export class GesturePattern {
    * @returns 有効な場合true
    */
   isValid(): boolean {
-    return this._length > 0
-      && this._directions.every(dir => VALID_DIRECTIONS.includes(dir));
+    return this._length > 0 && this._directions.every((dir) => VALID_DIRECTIONS.includes(dir));
   }
 
   /**
@@ -308,7 +308,7 @@ export class GesturePattern {
    * @returns 文字列表現 例: "↑↓←→"
    */
   toString(): string {
-    return this._directions.join("");
+    return this._directions.join('');
   }
 
   /**
@@ -334,7 +334,7 @@ export class GesturePattern {
    */
   static fromArray(directions: Direction[]): GesturePattern {
     if (!Array.isArray(directions)) {
-      throw new Error("Directions must be an array");
+      throw new Error('Directions must be an array');
     }
     return new GesturePattern(directions);
   }
@@ -345,10 +345,10 @@ export class GesturePattern {
    * @returns 復元されたパターン
    */
   static fromString(str: string): GesturePattern {
-    if (!str || typeof str !== "string") {
+    if (!str || typeof str !== 'string') {
       return new GesturePattern([]);
     }
-    return new GesturePattern(str.split("") as Direction[]);
+    return new GesturePattern(str.split('') as Direction[]);
   }
 
   /**
@@ -412,13 +412,13 @@ export class GesturePattern {
    * @returns 方向
    */
   static angleToDirection(angle: number): Direction {
-    const degree = (angle * 180 / Math.PI + 360) % 360;
+    const degree = ((angle * 180) / Math.PI + 360) % 360;
 
-    if (degree >= 315 || degree < 45) return "→";
-    if (degree >= 45 && degree < 135) return "↓";
-    if (degree >= 135 && degree < 225) return "←";
-    if (degree >= 225 && degree < 315) return "↑";
+    if (degree >= 315 || degree < 45) return '→';
+    if (degree >= 45 && degree < 135) return '↓';
+    if (degree >= 135 && degree < 225) return '←';
+    if (degree >= 225 && degree < 315) return '↑';
 
-    return "→"; // fallback
+    return '→'; // fallback
   }
 }

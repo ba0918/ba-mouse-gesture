@@ -4,7 +4,7 @@
  * SettingsServiceインターフェースの実装
  */
 
-import { GestureSettings, SettingsService } from "../../application/interfaces/SettingsService";
+import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
 
 /**
  * Chrome拡張機能の設定管理アダプター
@@ -12,7 +12,7 @@ import { GestureSettings, SettingsService } from "../../application/interfaces/S
 export class ChromeSettingsAdapter implements SettingsService {
   private settings: GestureSettings = {
     enabled: true,
-    strokeColor: "#2196F3",
+    strokeColor: '#2196F3',
     strokeWidth: 3,
     gestureThreshold: 15,
     excludeList: [],
@@ -27,9 +27,9 @@ export class ChromeSettingsAdapter implements SettingsService {
    */
   async loadSettings(): Promise<GestureSettings> {
     try {
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
         const result = await new Promise<Record<string, unknown>>((resolve) => {
-          chrome.storage.sync.get("appSettings", (data) => {
+          chrome.storage.sync.get('appSettings', (data) => {
             resolve(data);
           });
         });
@@ -41,7 +41,7 @@ export class ChromeSettingsAdapter implements SettingsService {
 
       return this.settings;
     } catch (error) {
-      console.error("Failed to load settings:", error);
+      console.error('Failed to load settings:', error);
       return this.settings;
     }
   }
@@ -52,9 +52,9 @@ export class ChromeSettingsAdapter implements SettingsService {
   watchSettingsChanges(callback: (settings: GestureSettings) => void): void {
     this.settingsChangeCallback = callback;
 
-    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, namespace) => {
-        if (namespace === "sync" && "appSettings" in changes) {
+        if (namespace === 'sync' && 'appSettings' in changes) {
           const newSettings = changes.appSettings.newValue as GestureSettings;
           this.settings = newSettings;
 
@@ -72,13 +72,13 @@ export class ChromeSettingsAdapter implements SettingsService {
   isExcludedSite(url?: string): boolean {
     const currentUrl = url || window.location.href;
 
-    return this.settings.excludeList.some(pattern => {
+    return this.settings.excludeList.some((pattern) => {
       try {
         // シンプルなパターンマッチング
-        const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
         return regex.test(currentUrl);
       } catch (error) {
-        console.warn("Invalid exclude pattern:", pattern, error);
+        console.warn('Invalid exclude pattern:', pattern, error);
         return false;
       }
     });
@@ -91,7 +91,7 @@ export class ChromeSettingsAdapter implements SettingsService {
     try {
       this.settings = { ...this.settings, ...settings };
 
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
         await new Promise<void>((resolve, reject) => {
           chrome.storage.sync.set({ appSettings: this.settings }, () => {
             if (chrome.runtime.lastError) {
@@ -103,7 +103,7 @@ export class ChromeSettingsAdapter implements SettingsService {
         });
       }
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      console.error('Failed to save settings:', error);
       throw error;
     }
   }

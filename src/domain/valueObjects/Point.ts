@@ -14,7 +14,7 @@ export class Point {
    */
   constructor(x: number, y: number, timestamp?: number) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      throw new Error("Point coordinates must be finite numbers");
+      throw new Error('Point coordinates must be finite numbers');
     }
 
     this._x = x;
@@ -51,7 +51,7 @@ export class Point {
    */
   distanceTo(other: Point): number {
     if (!(other instanceof Point)) {
-      throw new Error("Argument must be a Point instance");
+      throw new Error('Argument must be a Point instance');
     }
 
     const dx = this._x - other._x;
@@ -66,7 +66,7 @@ export class Point {
    */
   angleTo(other: Point): number {
     if (!(other instanceof Point)) {
-      throw new Error("Argument must be a Point instance");
+      throw new Error('Argument must be a Point instance');
     }
 
     const dx = other._x - this._x;
@@ -81,7 +81,7 @@ export class Point {
    */
   directionTo(other: Point): Point {
     if (!(other instanceof Point)) {
-      throw new Error("Argument must be a Point instance");
+      throw new Error('Argument must be a Point instance');
     }
 
     const dx = other._x - this._x;
@@ -114,10 +114,7 @@ export class Point {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
 
-    return new Point(
-      this._x * cos - this._y * sin,
-      this._x * sin + this._y * cos,
-    );
+    return new Point(this._x * cos - this._y * sin, this._x * sin + this._y * cos);
   }
 
   /**
@@ -160,8 +157,7 @@ export class Point {
       return false;
     }
 
-    return Math.abs(this._x - other._x) < epsilon
-      && Math.abs(this._y - other._y) < epsilon;
+    return Math.abs(this._x - other._x) < epsilon && Math.abs(this._y - other._y) < epsilon;
   }
 
   /**
@@ -236,7 +232,7 @@ export class Point {
    */
   static fromArray(array: [number, number]): Point {
     if (!Array.isArray(array) || array.length !== 2) {
-      throw new Error("Array must contain exactly 2 elements");
+      throw new Error('Array must contain exactly 2 elements');
     }
     return new Point(array[0], array[1]);
   }

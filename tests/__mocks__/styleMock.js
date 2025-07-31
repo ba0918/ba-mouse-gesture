@@ -1,2 +1,2 @@
 // CSS モックファイル
-module.exports = {}
+module.exports = {};

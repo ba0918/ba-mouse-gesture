@@ -4,8 +4,8 @@
  * Clean Architecture - Infrastructure層
  */
 
-import { ISettingsRepository, SettingsValidationResult } from "../../../application/interfaces";
-import { Settings } from "../../../domain/entities/Settings";
+import { ISettingsRepository, SettingsValidationResult } from '../../../application/interfaces';
+import { Settings } from '../../../domain/entities/Settings';
 
 // 型定義
 interface CacheEntry {
@@ -18,14 +18,14 @@ interface Storage {
   set(data: Record<string, any>): Promise<void>;
   onChanged(
     callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void,
-    namespace: string,
+    namespace: string
   ): () => void;
   getUsageStats?(): Promise<{ sync?: any }>;
 }
 
 export class SettingsRepository implements ISettingsRepository {
   private storage: Storage;
-  private settingsKey: string = "appSettings";
+  private settingsKey: string = 'appSettings';
   private cache: Map<string, CacheEntry> = new Map();
   private cacheTimeout: number = 5000; // 5秒でキャッシュ無効化
 
@@ -64,7 +64,7 @@ export class SettingsRepository implements ISettingsRepository {
         return this.getDefaultSettings();
       }
     } catch (error) {
-      console.error("Failed to load settings:", error);
+      console.error('Failed to load settings:', error);
       return this.getDefaultSettings();
     }
   }
@@ -76,8 +76,8 @@ export class SettingsRepository implements ISettingsRepository {
   async saveSettings(settings: Settings): Promise<void> {
     try {
       // バリデーション
-      if (!settings || typeof settings.isValid !== "function" || !settings.isValid()) {
-        throw new Error("Invalid settings object");
+      if (!settings || typeof settings.isValid !== 'function' || !settings.isValid()) {
+        throw new Error('Invalid settings object');
       }
 
       const serializedData = settings.toJSON();
@@ -89,8 +89,8 @@ export class SettingsRepository implements ISettingsRepository {
         timestamp: Date.now(),
       });
     } catch (error) {
-      console.error("Failed to save settings:", error);
-      throw new SettingsRepositoryError("Failed to save settings", error);
+      console.error('Failed to save settings:', error);
+      throw new SettingsRepositoryError('Failed to save settings', error);
     }
   }
 
@@ -124,7 +124,7 @@ export class SettingsRepository implements ISettingsRepository {
    */
   async updateGestureState(gestureId: string, enabled: boolean): Promise<Settings> {
     const settings = await this.getSettings();
-    console.log("🔍 Debug - Before gesture state update:", {
+    console.log('🔍 Debug - Before gesture state update:', {
       gestureId,
       enabled,
       currentState: settings.defaultGestureStates[gestureId],
@@ -133,7 +133,7 @@ export class SettingsRepository implements ISettingsRepository {
 
     settings.setGestureEnabled(gestureId, enabled);
 
-    console.log("🔍 Debug - After gesture state update:", {
+    console.log('🔍 Debug - After gesture state update:', {
       gestureId,
       enabled,
       newState: settings.defaultGestureStates[gestureId],
@@ -199,25 +199,25 @@ export class SettingsRepository implements ISettingsRepository {
    * @returns 更新された設定
    */
   async updateDebugSettings(debugConfig: any): Promise<Settings> {
-    console.log("🔧 [Debug] SettingsRepository.updateDebugSettings called:", {
+    console.log('🔧 [Debug] SettingsRepository.updateDebugSettings called:', {
       debugConfig: debugConfig,
       logLevel: debugConfig.logLevel,
     });
 
     const settings = await this.getSettings();
-    console.log("🔧 [Debug] Current settings before update:", {
+    console.log('🔧 [Debug] Current settings before update:', {
       currentDebugSettings: (settings as any).debugSettings,
       currentLogLevel: (settings as any).debugSettings?.logLevel,
     });
 
     settings.setDebugSettings(debugConfig);
-    console.log("🔧 [Debug] Settings after setDebugSettings:", {
+    console.log('🔧 [Debug] Settings after setDebugSettings:', {
       updatedDebugSettings: (settings as any).debugSettings,
       updatedLogLevel: (settings as any).debugSettings?.logLevel,
     });
 
     await this.saveSettings(settings);
-    console.log("🔧 [Debug] Settings saved successfully");
+    console.log('🔧 [Debug] Settings saved successfully');
 
     return settings;
   }
@@ -239,7 +239,7 @@ export class SettingsRepository implements ISettingsRepository {
    */
   onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void {
     return this.storage.onChanged((changes: Record<string, chrome.storage.StorageChange>, namespace: string) => {
-      if (namespace === "sync" && changes[this.settingsKey]) {
+      if (namespace === 'sync' && changes[this.settingsKey]) {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey);
 
@@ -250,7 +250,7 @@ export class SettingsRepository implements ISettingsRepository {
 
         callback(newSettings, oldSettings);
       }
-    }, "sync");
+    }, 'sync');
   }
 
   /**
@@ -285,28 +285,28 @@ export class SettingsRepository implements ISettingsRepository {
       // 基本バリデーション
       if (!settings.isValid()) {
         validation.isValid = false;
-        validation.errors.push("Settings object is invalid");
+        validation.errors.push('Settings object is invalid');
       }
 
       // 閾値範囲チェック
       if ((settings as any).gestureThreshold < 5 || (settings as any).gestureThreshold > 100) {
-        validation.warnings.push("Gesture threshold is outside recommended range (5-100)");
+        validation.warnings.push('Gesture threshold is outside recommended range (5-100)');
       }
 
       // 除外リストチェック
       const excludeList = settings.getExcludeList();
       if (excludeList.length > 20) {
-        validation.warnings.push("Exclude list is very long (>20 items)");
+        validation.warnings.push('Exclude list is very long (>20 items)');
       }
 
       // 色設定チェック
       if (!settings.isValidColor((settings as any).strokeColor)) {
-        validation.errors.push("Invalid stroke color format");
+        validation.errors.push('Invalid stroke color format');
         validation.isValid = false;
       }
     } catch (error) {
       validation.isValid = false;
-      validation.errors.push(`Validation error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      validation.errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     return validation;
@@ -321,7 +321,7 @@ class SettingsRepositoryError extends Error {
 
   constructor(message: string, originalError?: any) {
     super(message);
-    this.name = "SettingsRepositoryError";
+    this.name = 'SettingsRepositoryError';
     this.originalError = originalError;
   }
 }
