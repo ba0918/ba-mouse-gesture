@@ -230,18 +230,184 @@ src/domain/types/
 
 ---
 
+## UI改修・OptionsApp.svelteリファクタリング詳細計画
+
+### **Phase 12.1: Store/Composableパターン完全移行**
+
+#### **🔥 優先度High - コンポーネントプロップス統一**
+
+**現在の問題**:
+```typescript
+// OptionsApp.refactored.svelte で発生中のTypeScriptエラー
+- Property 'isLoading' missing in OptionsBasicSettingsProps
+- Property 'search' does not exist / not bindable in OptionsGestureList
+- Property 'onAddUrl' does not exist in OptionsExcludeListProps
+- Property 'onAddGesture' does not exist in OptionsCustomGestures
+```
+
+**対象コンポーネント** (7ファイル):
+1. `OptionsBasicSettings.svelte` - 基本設定UI
+2. `OptionsTrackSettings.svelte` - 軌跡設定UI
+3. `OptionsExcludeList.svelte` - 除外サイト管理UI
+4. `OptionsGestureList.svelte` - デフォルトジェスチャー一覧UI
+5. `OptionsCustomGestures.svelte` - カスタムジェスチャー管理UI
+6. `OptionsDebugSettings.svelte` - デバッグ設定UI
+7. `OptionsApp.svelte` - メインコンテナ
+
+**修正作業**:
+```typescript
+// Step 1: プロップス定義統一
+interface ComponentProps {
+  // 必須プロップス明確化
+  isLoading: boolean;
+  
+  // バインド可能プロップス統一
+  search?: string; // $bindable()対応
+  filter?: string; // $bindable()対応
+  
+  // イベントハンドラー統一
+  onAddUrl?: (url: string) => void;
+  onAddGesture?: () => void;
+}
+
+// Step 2: Store連携プロップス
+interface StoreConnectedProps {
+  // Store値の直接バインド対応
+  bind:enabled={settingsStore.enabled}
+  bind:search={gesturesStore.gestureSearch}
+}
+```
+
+#### **⚡ 優先度Medium - 段階的移行戦略**
+
+**移行フェーズ**:
+1. **Phase 12.1.1**: コンポーネントプロップス修正 (2-3時間)
+2. **Phase 12.1.2**: Store連携テスト (1-2時間)  
+3. **Phase 12.1.3**: リファクタリング版適用 (1時間)
+4. **Phase 12.1.4**: 動作検証・バグ修正 (2-3時間)
+
+**各フェーズの作業内容**:
+
+##### **Phase 12.1.1: コンポーネントプロップス修正**
+```typescript
+// OptionsBasicSettings.svelte
+interface OptionsBasicSettingsProps {
+  enabled: boolean;
+  isLoading: boolean;          // ← 追加
+  onEnabledChange: () => Promise<void>;
+}
+
+// OptionsGestureList.svelte  
+interface Props {
+  gestures: UIGesture[];
+  search: string;              // ← $bindable()対応
+  filter: string;              // ← $bindable()対応
+  isLoading: boolean;
+  onToggleGesture: (id: string, enabled: boolean) => Promise<void>;
+}
+
+// OptionsExcludeList.svelte
+interface OptionsExcludeListProps {
+  excludeList: string[];
+  newExcludeUrl: string;
+  isLoading: boolean;
+  onAddUrl: () => Promise<void>;     // ← 追加
+  onRemoveUrl: (url: string) => Promise<void>;
+}
+
+// OptionsCustomGestures.svelte
+interface Props {
+  customGestures: UICustomGesture[];
+  gestureName: string;
+  gesturePatternDisplay: string;
+  gestureAction: string;
+  currentPattern: string[];
+  customGestureError: string;
+  isLoading: boolean;
+  onAddGesture: () => Promise<void>; // ← 追加 (onAddCustomGesture改名)
+  onDeleteGesture: (id: string, name: string) => Promise<void>;
+  onToggleGesture: (id: string, enabled: boolean) => Promise<void>;
+  onShowHelp?: () => void;
+}
+```
+
+##### **Phase 12.1.2: Store連携テスト**
+```svelte
+<!-- 修正後のOptionsApp.svelte -->
+<OptionsGestureList
+  gestures={gesturesStore.gestures}
+  bind:search={gesturesStore.gestureSearch}     <!-- bindable対応 -->
+  bind:filter={gesturesStore.gestureFilter}    <!-- bindable対応 -->
+  {isLoading}
+  onToggleGesture={toggleGesture}
+/>
+
+<OptionsExcludeList
+  excludeList={settingsStore.excludeList}
+  bind:newExcludeUrl={settingsStore.newExcludeUrl}
+  {isLoading}
+  onAddUrl={addExcludeUrl}                      <!-- 統一命名 -->
+  onRemoveUrl={removeExcludeUrl}
+/>
+```
+
+##### **Phase 12.1.3: 完全移行チェックリスト**
+- [ ] 全コンポーネントのプロップス統一完了
+- [ ] TypeScriptエラー0件達成
+- [ ] Store/Composable正常動作確認
+- [ ] UI表示・操作性変更なし確認
+- [ ] 269テスト全パス維持
+
+#### **📋 優先度Low - 追加改善項目**
+
+##### **UI/UX改善**
+- プロップス名の統一性向上
+- イベントハンドラー命名規則統一
+- コンポーネント間のデータフロー最適化
+
+##### **アーキテクチャ改善**
+- Store間の依存関係整理
+- Composable再利用性向上
+- 型定義の共通化推進
+
+---
+
 ## 現在の作業状況
 
 **最終更新**: 2025-07-31
 **作業ブランチ**: `feature/refactor-options-components`
-**完了済み**: Magic Numbers統一リファクタリング
-**次のアクション**: 設定初期化重複の解消（Factory Pattern適用）
+
+### **✅ 完了済み**
+- Magic Numbers統一リファクタリング
+- 設定初期化重複の解消（Factory Pattern適用）
+- Chrome Storage制限対策（デバウンス機構実装）
+- Store/Composableパターン設計完了
+
+### **🔄 進行中**
+- **Phase 12.1**: UI改修・OptionsApp.svelteリファクタリング完全移行
+
+### **📋 次のアクション**
+1. **即座実行**: コンポーネントプロップス統一（TypeScriptエラー解消）
+2. **段階的実行**: Store連携テスト→リファクタリング版適用
+3. **品質保証**: 動作検証・バグ修正・テスト維持
 
 ### **直近のコミット**
 ```
-6080278 refactor: Magic Numbers統一 - 定数管理の一元化
-84f4e09 fix: TypeScriptエラー修正とClean Architecture統一
-52bf120 refactor: 不要ファイル削除完了 - Clean Architecture統一
+75f8de6 refactor: OptionsApp.svelteリファクタリング設計実装
+e08fbfc fix: スライダーUI高頻度保存問題の解決 - デバウンス機構実装
+6ec8d6a fix: Chrome Storage書き込み制限のユーザーフレンドリーなエラーハンドリング
+06643fe refactor: 設定初期化重複の解消 - GestureSettingsFactory統一
 ```
 
-**準備完了**: 次の段階（設定初期化重複解消）の実装準備完了
+### **推定作業時間**
+- **Phase 12.1全体**: 6-9時間
+- **コンポーネント修正**: 2-3時間（最優先）
+- **テスト・検証**: 3-4時間
+- **バグ修正・調整**: 1-2時間
+
+### **品質保証目標**
+- ✅ TypeScriptエラー0件維持
+- ✅ 269テスト全パス維持  
+- ✅ UI・機能変更なし（完全互換）
+- ✅ ビルドサイズ増加5%以下
+- ✅ Store/Composableパターン100%適用
