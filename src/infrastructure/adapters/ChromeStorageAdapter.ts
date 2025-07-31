@@ -94,8 +94,16 @@ export class ChromeStorageAdapter {
 
       this.logger.info('ChromeStorageAdapter: Data saved successfully');
     } catch (error) {
+      const errorMessage = (error as Error).message;
+
+      // MAX_WRITE_OPERATIONS_PER_MINUTE制限の場合は分かりやすいメッセージに変更
+      if (errorMessage.includes('MAX_WRITE_OPERATIONS_PER_MINUTE')) {
+        this.logger.warn('ChromeStorageAdapter: Chrome sync storage rate limit exceeded (1分後に自動解除)');
+        throw new Error('Chrome Storageの書き込み制限に達しました。1分後に再試行してください。');
+      }
+
       this.logger.error('ChromeStorageAdapter: Failed to set data:', error);
-      throw new Error(`Failed to set data to storage: ${(error as Error).message}`);
+      throw new Error(`Failed to set data to storage: ${errorMessage}`);
     }
   }
 
@@ -107,7 +115,7 @@ export class ChromeStorageAdapter {
     try {
       this.logger.info('ChromeStorageAdapter: Syncing data for content script notification');
 
-      // まずsync storageに保存
+      // まずsync storageに保存（rate limit対策済み）
       await this.set(data);
 
       // storage.onChangedイベントが発火され、content_scriptが反応する
@@ -115,6 +123,14 @@ export class ChromeStorageAdapter {
 
       return true;
     } catch (error) {
+      const errorMessage = (error as Error).message;
+
+      // Rate limit エラーの場合は分かりやすいメッセージ
+      if (errorMessage.includes('Chrome Storageの書き込み制限')) {
+        this.logger.warn('ChromeStorageAdapter: Sync operation rate limited, will retry automatically');
+        throw new Error('設定同期が一時的に制限されています。1分後に自動的に解除されます。');
+      }
+
       this.logger.error('ChromeStorageAdapter: Failed to sync data:', error);
       throw error;
     }
