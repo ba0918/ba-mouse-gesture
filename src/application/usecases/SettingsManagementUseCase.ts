@@ -19,7 +19,7 @@ export class SettingsManagementUseCase {
 
   constructor(
     private settingsRepository: ISettingsRepository,
-    logger?: ILogger
+    logger?: ILogger,
   ) {
     this.logger = logger || {
       debug: () => {},
@@ -96,7 +96,7 @@ export class SettingsManagementUseCase {
       // カスタムジェスチャーIDの場合はエラー
       if (gestureId.startsWith('custom_')) {
         throw new Error(
-          `This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`
+          `This method is for default gestures only. Use CustomGestureManagementUseCase for custom gestures: ${gestureId}`,
         );
       }
 

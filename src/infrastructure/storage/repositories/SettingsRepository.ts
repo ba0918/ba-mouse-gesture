@@ -18,7 +18,7 @@ interface Storage {
   set(data: Record<string, any>): Promise<void>;
   onChanged(
     callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void,
-    namespace: string
+    namespace: string,
   ): () => void;
   getUsageStats?(): Promise<{ sync?: any }>;
 }

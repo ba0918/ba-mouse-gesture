@@ -222,7 +222,7 @@
           description: g.description,
           pattern: g.pattern,
           enabled: g.enabled,
-        }))
+        })),
       );
     } catch (error) {
       logger?.error('❌ カスタムジェスチャー読み込みエラー:', error);

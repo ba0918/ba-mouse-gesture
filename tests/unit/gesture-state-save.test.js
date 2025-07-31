@@ -222,7 +222,7 @@ describe('ジェスチャー状態保存機能', () => {
           defaultGestureStates: expect.objectContaining({
             left: false,
           }),
-        })
+        }),
       );
     });
 

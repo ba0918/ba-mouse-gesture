@@ -122,7 +122,7 @@
                       'current enabled:',
                       currentEnabled,
                       'new enabled:',
-                      newEnabled
+                      newEnabled,
                     );
                     // gestureIdが文字列であることを確認
                     const gestureId = String(gesture.id);

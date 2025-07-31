@@ -305,7 +305,7 @@ export class ChromeStorageAdapter {
    */
   onChanged(
     callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void,
-    namespace: string
+    namespace: string,
   ): () => void {
     return this.addChangeListener((changes, areaName) => {
       if (areaName === namespace || namespace === 'both') {

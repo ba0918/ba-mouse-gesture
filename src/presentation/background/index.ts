@@ -52,7 +52,7 @@ chrome.runtime.onInstalled.addListener(function (details: chrome.runtime.Install
 chrome.runtime.onMessage.addListener(function (
   request: MessageRequest,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: MessageResponse) => void
+  sendResponse: (response: MessageResponse) => void,
 ): boolean | void {
   logger.debug('Message received:', request);
   logger.debug('Sender tab ID:', sender.tab?.id);

@@ -21,7 +21,7 @@ interface UIGesture {
 export class GestureListUseCase {
   constructor(
     private gestureRepository: IGestureRepository,
-    private settingsRepository: ISettingsRepository
+    private settingsRepository: ISettingsRepository,
   ) {}
 
   async getAllGestures(): Promise<UIGesture[]> {

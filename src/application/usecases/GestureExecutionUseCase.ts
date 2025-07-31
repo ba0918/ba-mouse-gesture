@@ -56,7 +56,7 @@ export class GestureExecutionUseCase {
   constructor(
     gestureRecognizer: GestureRecognizer | null = null,
     messagingService: IMessagingService | null = null,
-    logger?: DebugLogger
+    logger?: DebugLogger,
   ) {
     this.gestureRecognizer = gestureRecognizer || new GestureRecognizer();
     this.messagingService = messagingService;

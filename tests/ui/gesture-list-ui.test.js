@@ -207,7 +207,7 @@ describe('ジェスチャー一覧UI', () => {
           (gesture) =>
             gesture.name.toLowerCase().includes(searchQuery) ||
             gesture.description.toLowerCase().includes(searchQuery) ||
-            gesture.pattern.includes(searchQuery)
+            gesture.pattern.includes(searchQuery),
         );
       }.bind(mockOptionsManager);
 
@@ -293,7 +293,7 @@ describe('ジェスチャー一覧UI', () => {
         'custom1',
         expect.objectContaining({
           enabled: false,
-        })
+        }),
       );
       expect(mockOptionsManager.showSaveStatus).toHaveBeenCalledWith('テストジェスチャーを無効にしました', true);
     });

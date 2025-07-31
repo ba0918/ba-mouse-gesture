@@ -212,7 +212,7 @@ describe('ジェスチャー無効化機能', () => {
       expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture ← is disabled');
       expect(mockDebugLogger.showStatus).toHaveBeenCalledWith(
         'ジェスチャー ← は無効です',
-        mockDebugLogger.LOG_LEVELS.WARN
+        mockDebugLogger.LOG_LEVELS.WARN,
       );
     });
   });
@@ -232,7 +232,7 @@ describe('ジェスチャー無効化機能', () => {
               mockDebugLogger.info(`Complex gesture ${gestureResult.action} is disabled`);
               mockDebugLogger.showStatus(
                 `ジェスチャー ${gestureResult.action} は無効です`,
-                mockDebugLogger.LOG_LEVELS.WARN
+                mockDebugLogger.LOG_LEVELS.WARN,
               );
               return;
             }
@@ -273,7 +273,7 @@ describe('ジェスチャー無効化機能', () => {
               mockDebugLogger.info(`Complex gesture ${gestureResult.action} is disabled`);
               mockDebugLogger.showStatus(
                 `ジェスチャー ${gestureResult.action} は無効です`,
-                mockDebugLogger.LOG_LEVELS.WARN
+                mockDebugLogger.LOG_LEVELS.WARN,
               );
               return;
             }
@@ -296,7 +296,7 @@ describe('ジェスチャー無効化機能', () => {
       expect(mockDebugLogger.info).toHaveBeenCalledWith('Complex gesture ↑↓ is disabled');
       expect(mockDebugLogger.showStatus).toHaveBeenCalledWith(
         'ジェスチャー ↑↓ は無効です',
-        mockDebugLogger.LOG_LEVELS.WARN
+        mockDebugLogger.LOG_LEVELS.WARN,
       );
     });
 
@@ -322,7 +322,7 @@ describe('ジェスチャー無効化機能', () => {
           action: 'back',
           name: 'カスタム戻る',
         },
-        60
+        60,
       );
 
       expect(sendGestureMessage).toHaveBeenCalledWith({

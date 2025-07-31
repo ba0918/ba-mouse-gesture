@@ -195,7 +195,7 @@ export class GesturePattern {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // 置換
             matrix[i][j - 1] + 1, // 挿入
-            matrix[i - 1][j] + 1 // 削除
+            matrix[i - 1][j] + 1, // 削除
           );
         }
       }

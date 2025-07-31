@@ -33,7 +33,7 @@
       if (gestureFilter === 'custom') return gesture.type === 'custom';
 
       return true;
-    })
+    }),
   );
 </script>
 

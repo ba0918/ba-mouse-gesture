@@ -70,7 +70,7 @@ export class GestureManager {
   constructor(
     messagingService: MessagingService,
     renderingService: RenderingService,
-    settingsService: SettingsService
+    settingsService: SettingsService,
   ) {
     this.messagingService = messagingService;
     this.renderingService = renderingService;
@@ -225,7 +225,7 @@ export class GestureManager {
       (
         message: { type: string; direction?: string },
         _sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: { success: boolean }) => void
+        sendResponse: (response?: { success: boolean }) => void,
       ) => {
         if (message.type === 'scroll' && message.direction) {
           this.handleScrollMessage(message.direction);
@@ -233,7 +233,7 @@ export class GestureManager {
           return true;
         }
         return false;
-      }
+      },
     );
   }
 

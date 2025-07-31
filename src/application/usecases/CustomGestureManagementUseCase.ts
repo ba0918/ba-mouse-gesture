@@ -20,7 +20,7 @@ export class CustomGestureManagementUseCase {
 
   constructor(
     private gestureRepository: IGestureRepository,
-    logger?: ILogger
+    logger?: ILogger,
   ) {
     this.logger = logger || {
       debug: () => {},
@@ -138,7 +138,7 @@ export class CustomGestureManagementUseCase {
       });
       throw new CustomGestureManagementError(
         `Failed to add custom gesture: ${(error as Error).message}`,
-        error as Error
+        error as Error,
       );
     }
   }

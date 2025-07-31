@@ -225,7 +225,7 @@ describe('ジェスチャー無効化UI機能', () => {
           defaultGestureStates: expect.objectContaining({
             left: false,
           }),
-        })
+        }),
       );
 
       // 成功メッセージが表示されることを確認

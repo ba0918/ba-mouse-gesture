@@ -155,7 +155,7 @@ describe('ジェスチャー検出機能', () => {
 
         if (debug)
           console.log(
-            `Point ${i} to ${i + 1}: (${start.x},${start.y}) -> (${end.x},${end.y}), delta: (${deltaX},${deltaY}), distance: ${distance}`
+            `Point ${i} to ${i + 1}: (${start.x},${start.y}) -> (${end.x},${end.y}), delta: (${deltaX},${deltaY}), distance: ${distance}`,
           );
 
         if (distance > 5) {

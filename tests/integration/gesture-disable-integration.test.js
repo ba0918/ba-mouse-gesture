@@ -128,7 +128,7 @@ describe('ジェスチャー無効化機能統合テスト', () => {
             mockDebugLogger.info(`Complex gesture ${gestureResult.action} is disabled`);
             mockDebugLogger.showStatus(
               `ジェスチャー ${gestureResult.action} は無効です`,
-              mockDebugLogger.LOG_LEVELS.WARN
+              mockDebugLogger.LOG_LEVELS.WARN,
             );
             return { executed: false, reason: 'disabled' };
           }
@@ -183,7 +183,7 @@ describe('ジェスチャー無効化機能統合テスト', () => {
       expect(mockDebugLogger.info).toHaveBeenCalledWith('Gesture ← is disabled');
       expect(mockDebugLogger.showStatus).toHaveBeenCalledWith(
         'ジェスチャー ← は無効です',
-        mockDebugLogger.LOG_LEVELS.WARN
+        mockDebugLogger.LOG_LEVELS.WARN,
       );
       expect(gestureSystem.sendGestureMessage).not.toHaveBeenCalled();
     });
@@ -288,7 +288,7 @@ describe('ジェスチャー無効化機能統合テスト', () => {
           action: 'back',
           name: 'カスタム戻る',
         },
-        60
+        60,
       );
       expect(customResult.executed).toBe(true);
 

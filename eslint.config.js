@@ -91,8 +91,8 @@ module.exports = [
       // スタイル関連
       indent: ['error', 2],
       quotes: ['error', 'single', { avoidEscape: true }],
-      semi: ['error', 'never'],
-      'comma-dangle': ['error', 'never'],
+      semi: ['error', 'always'],
+      'comma-dangle': ['error', 'always-multiline'],
       'brace-style': ['error', '1tbs', { allowSingleLine: true }],
       'space-before-function-paren': [
         'error',

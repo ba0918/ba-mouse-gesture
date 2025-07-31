@@ -14,8 +14,8 @@ export class ChromeMessagingAdapter implements IMessagingService {
     handler: (
       message: unknown,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void
-    ) => boolean | void
+      sendResponse: (response?: unknown) => void,
+    ) => boolean | void,
   ): void {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
