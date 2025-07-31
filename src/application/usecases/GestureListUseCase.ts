@@ -15,6 +15,7 @@ export interface UIGesture {
     action: GestureAction;
     type: 'default' | 'custom';
     enabled: boolean;
+    description: string;
 }
 
 export class GestureListUseCase {
@@ -31,11 +32,12 @@ export class GestureListUseCase {
         // デフォルトジェスチャーを取得
         const defaultGestures = DefaultGestureDefinitions.getAllDefinitions().map(def => ({
             id: def.id, // 正しいIDを使用（left, right, etc）
-            name: def.description,
+            name: def.name,
             pattern: def.pattern,
             action: def.action,
             type: 'default' as const,
-            enabled: gestureStates[def.id] ?? true // 設定から状態を取得、デフォルトはtrue
+            enabled: gestureStates[def.id] ?? true, // 設定から状態を取得、デフォルトはtrue
+            description: def.description
         }));
 
         // カスタムジェスチャーを取得
@@ -46,7 +48,8 @@ export class GestureListUseCase {
             pattern: gesture.pattern.toString(),
             action: gesture.action,
             type: 'custom' as const,
-            enabled: gesture.enabled
+            enabled: gesture.enabled,
+            description: gesture.name // カスタムジェスチャーはnameをdescriptionとして使用
         }));
 
         return [...defaultGestures, ...customGestureList];
