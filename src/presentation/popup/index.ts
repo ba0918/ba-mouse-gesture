@@ -69,7 +69,7 @@ function createServices() {
   // UseCase層
   const settingsManagementUseCase = new SettingsManagementUseCase(settingsRepository);
   const customGestureManagementUseCase = new CustomGestureManagementUseCase(gestureRepository);
-  const gestureListUseCase = new GestureListUseCase(gestureRepository);
+  const gestureListUseCase = new GestureListUseCase(gestureRepository, settingsRepository);
   
   return {
     settingsManagementUseCase,

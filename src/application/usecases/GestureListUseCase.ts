@@ -4,6 +4,7 @@
  */
 
 import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js';
+import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js';
 import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions.js';
 import { CustomGesture } from '../../domain/entities/CustomGesture.js';
 import type { GestureAction } from '../../domain/entities/Gesture.js';
@@ -19,10 +20,15 @@ export interface UIGesture {
 
 export class GestureListUseCase {
     constructor(
-        private gestureRepository: GestureRepository
+        private gestureRepository: GestureRepository,
+        private settingsRepository: SettingsRepository
     ) {}
 
     async getAllGestures(): Promise<UIGesture[]> {
+        // 設定から標準ジェスチャーの有効/無効状態を取得
+        const settings = await this.settingsRepository.getSettings();
+        const gestureStates = settings.defaultGestureStates || {};
+
         // デフォルトジェスチャーを取得
         const defaultGestures = DefaultGestureDefinitions.getAllDefinitions().map(def => ({
             id: def.id, // 正しいIDを使用（left, right, etc）
@@ -30,7 +36,7 @@ export class GestureListUseCase {
             pattern: def.pattern,
             action: def.action,
             type: 'default' as const,
-            enabled: true
+            enabled: gestureStates[def.id] ?? true // 設定から状態を取得、デフォルトはtrue
         }));
 
         // カスタムジェスチャーを取得
