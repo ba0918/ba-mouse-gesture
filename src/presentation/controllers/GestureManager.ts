@@ -12,11 +12,7 @@ import { GestureEventHandler } from '../handlers/GestureEventHandler.js';
 import { IMessagingService } from '../../application/interfaces/IMessagingService';
 import { DrawStyle, Point, RenderingService } from '../../application/interfaces/RenderingService';
 import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
-import {
-  DEFAULT_GESTURE_THRESHOLD,
-  DEFAULT_STROKE_COLOR,
-  DEFAULT_STROKE_WIDTH,
-} from '../../domain/definitions/GestureConstants';
+import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
 // 型定義
 interface GestureCallbacks {
@@ -59,13 +55,7 @@ export class GestureManager {
   // private debugElement: HTMLElement | null = null;
 
   // 設定
-  private settings: GestureSettings = {
-    enabled: true,
-    strokeColor: DEFAULT_STROKE_COLOR,
-    strokeWidth: DEFAULT_STROKE_WIDTH,
-    gestureThreshold: DEFAULT_GESTURE_THRESHOLD,
-    excludeList: [],
-  };
+  private settings: GestureSettings = GestureSettingsFactory.createDefaultSettings();
 
   private isInitialized: boolean = false;
 

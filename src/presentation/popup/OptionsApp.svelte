@@ -1,14 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { DebugSettings } from '../../domain/entities/DebugSettings';
-  import { ActionName } from '../../domain/types';
+  import type { ActionName } from '../../domain/types/ActionName';
   import { GesturePattern } from '../../domain/valueObjects/GesturePattern';
   import { DebugLogger, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
-  import {
-    DEFAULT_GESTURE_THRESHOLD,
-    DEFAULT_STROKE_COLOR,
-    DEFAULT_STROKE_WIDTH,
-  } from '../../domain/definitions/GestureConstants';
+  import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
   // UI用の型定義
   interface UIGesture {
@@ -42,10 +38,11 @@
   // 基本設定
   let enabled = $state(true);
 
-  // 軌跡設定
-  let strokeColor = $state(DEFAULT_STROKE_COLOR);
-  let strokeWidth = $state(DEFAULT_STROKE_WIDTH);
-  let gestureThreshold = $state(DEFAULT_GESTURE_THRESHOLD);
+  // 軌跡設定（デフォルト設定から取得）
+  const defaultSettings = GestureSettingsFactory.createDefaultSettings();
+  let strokeColor = $state(defaultSettings.strokeColor);
+  let strokeWidth = $state(defaultSettings.strokeWidth);
+  let gestureThreshold = $state(defaultSettings.gestureThreshold);
 
   // 除外サイト
   let excludeList = $state<string[]>([]);
@@ -96,9 +93,9 @@
 
           // 設定値を読み込み
           enabled = settings.enabled !== false;
-          strokeColor = settings.strokeColor || DEFAULT_STROKE_COLOR;
-          strokeWidth = settings.strokeWidth || DEFAULT_STROKE_WIDTH;
-          gestureThreshold = settings.gestureThreshold || DEFAULT_GESTURE_THRESHOLD;
+          strokeColor = settings.strokeColor || defaultSettings.strokeColor;
+          strokeWidth = settings.strokeWidth || defaultSettings.strokeWidth;
+          gestureThreshold = settings.gestureThreshold || defaultSettings.gestureThreshold;
           excludeList = settings.excludeList || [];
 
           // Clean Architecture準拠のデバッグ設定読み込み

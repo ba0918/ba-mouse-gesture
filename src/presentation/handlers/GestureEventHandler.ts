@@ -3,7 +3,7 @@
  * マウスイベントの処理を担当するPresentation層コンポーネント
  */
 
-import { DEFAULT_GESTURE_THRESHOLD } from '../../domain/definitions/GestureConstants';
+import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
 interface Point {
   x: number;
@@ -60,7 +60,7 @@ export class GestureEventHandler {
     };
     this.settings = {
       enabled: true,
-      gestureThreshold: DEFAULT_GESTURE_THRESHOLD,
+      gestureThreshold: GestureSettingsFactory.createDefaultSettings().gestureThreshold,
     };
     this.callbacks = {
       onGestureStart: () => {},

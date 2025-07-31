@@ -153,8 +153,8 @@ export class GestureSettingsFactory {
       strokeColor: DEFAULT_STROKE_COLOR,
       strokeWidth: DEFAULT_STROKE_WIDTH,
       gestureThreshold: DEFAULT_GESTURE_THRESHOLD,
-      excludeList: [],
-    } as const;
+      excludeList: [] as string[],
+    };
   }
 
   /**

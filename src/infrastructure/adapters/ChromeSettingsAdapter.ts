@@ -5,23 +5,13 @@
  */
 
 import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
-import {
-  DEFAULT_GESTURE_THRESHOLD,
-  DEFAULT_STROKE_COLOR,
-  DEFAULT_STROKE_WIDTH,
-} from '../../domain/definitions/GestureConstants';
+import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
 /**
  * Chrome拡張機能の設定管理アダプター
  */
 export class ChromeSettingsAdapter implements SettingsService {
-  private settings: GestureSettings = {
-    enabled: true,
-    strokeColor: DEFAULT_STROKE_COLOR,
-    strokeWidth: DEFAULT_STROKE_WIDTH,
-    gestureThreshold: DEFAULT_GESTURE_THRESHOLD,
-    excludeList: [],
-  };
+  private settings: GestureSettings = GestureSettingsFactory.createDefaultSettings();
 
   private settingsChangeCallback: ((settings: GestureSettings) => void) | null = null;
 
