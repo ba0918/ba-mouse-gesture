@@ -191,30 +191,6 @@ export class SettingsManagementUseCase {
   }
 
   /**
-   * 設定の使用統計を取得
-   */
-  async getSettingsUsageStats(): Promise<Record<string, unknown>> {
-    try {
-      const settings = await this.settingsRepository.getSettings();
-      const repoStatus = await this.settingsRepository.getRepositoryStatus();
-
-      return {
-        enabled: settings.isEnabled(),
-        enabledGestures: this.countEnabledGestures(settings),
-        totalGestures: Object.keys(settings.defaultGestureStates).length,
-        excludeListSize: settings.getExcludeList().length,
-        strokeSettings: settings.getStrokeSettings(),
-        threshold: settings.gestureThreshold,
-        debugSettings: settings.getDebugSettings(),
-        lastModified: settings.lastModified,
-        repositoryStatus: repoStatus,
-      } as unknown as Record<string, unknown>;
-    } catch (error) {
-      throw new SettingsManagementError("Failed to get settings usage stats", error as Error);
-    }
-  }
-
-  /**
    * 設定変更の監視を開始
    */
   watchSettingsChanges(callback: (data: SettingsChangeData) => void): () => void {
@@ -231,10 +207,6 @@ export class SettingsManagementUseCase {
       this.logger.error("Failed to watch settings changes:", error);
       return () => { }; // 空の停止関数を返す
     }
-  }
-
-  private countEnabledGestures(settings: Settings): number {
-    return Object.values(settings.defaultGestureStates).filter(Boolean).length;
   }
 
   private async notifySettingsChange(type: string, data: Record<string, unknown>): Promise<void> {

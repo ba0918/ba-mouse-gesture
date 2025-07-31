@@ -23,6 +23,5 @@ export interface ISettingsRepository {
   updateDebugSettings(debugConfig: Record<string, unknown>): Promise<Settings>;
   resetToDefaults(): Promise<Settings>;
   validateSettings(): Promise<SettingsValidationResult>;
-  getRepositoryStatus(): Promise<Record<string, unknown>>;
   onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void;
 }
