@@ -4,6 +4,11 @@
   import { ActionName } from '../../domain/types';
   import { GesturePattern } from '../../domain/valueObjects/GesturePattern';
   import { DebugLogger, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
+  import {
+    DEFAULT_GESTURE_THRESHOLD,
+    DEFAULT_STROKE_COLOR,
+    DEFAULT_STROKE_WIDTH,
+  } from '../../domain/definitions/GestureConstants';
 
   // UI用の型定義
   interface UIGesture {
@@ -38,9 +43,9 @@
   let enabled = $state(true);
 
   // 軌跡設定
-  let strokeColor = $state('#2196F3');
-  let strokeWidth = $state(3);
-  let gestureThreshold = $state(15);
+  let strokeColor = $state(DEFAULT_STROKE_COLOR);
+  let strokeWidth = $state(DEFAULT_STROKE_WIDTH);
+  let gestureThreshold = $state(DEFAULT_GESTURE_THRESHOLD);
 
   // 除外サイト
   let excludeList = $state<string[]>([]);
@@ -91,9 +96,9 @@
 
           // 設定値を読み込み
           enabled = settings.enabled !== false;
-          strokeColor = settings.strokeColor || '#2196F3';
-          strokeWidth = settings.strokeWidth || 3;
-          gestureThreshold = settings.gestureThreshold || 15;
+          strokeColor = settings.strokeColor || DEFAULT_STROKE_COLOR;
+          strokeWidth = settings.strokeWidth || DEFAULT_STROKE_WIDTH;
+          gestureThreshold = settings.gestureThreshold || DEFAULT_GESTURE_THRESHOLD;
           excludeList = settings.excludeList || [];
 
           // Clean Architecture準拠のデバッグ設定読み込み

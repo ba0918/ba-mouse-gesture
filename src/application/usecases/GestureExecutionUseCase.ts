@@ -6,6 +6,7 @@
 import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
 import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
 import { IMessagingService } from '../interfaces';
+import { DEFAULT_GESTURE_THRESHOLD } from '../../domain/definitions/GestureConstants';
 
 // 型定義
 interface TrailPoint {
@@ -63,7 +64,7 @@ export class GestureExecutionUseCase {
     this.logger = logger || new DebugLogger(null);
     this.settings = {
       enabled: true,
-      gestureThreshold: 15,
+      gestureThreshold: DEFAULT_GESTURE_THRESHOLD,
       defaultGestureStates: {},
     };
   }

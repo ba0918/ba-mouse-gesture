@@ -1,5 +1,6 @@
 import { Point } from './Point';
 import { Threshold } from './Threshold';
+import { DIRECTION_ANGLES } from '../definitions/GestureConstants';
 
 /**
  * ジェスチャーの方向を表す型（矢印記号統一）
@@ -412,12 +413,12 @@ export class GesturePattern {
    * @returns 方向
    */
   static angleToDirection(angle: number): Direction {
-    const degree = ((angle * 180) / Math.PI + 360) % 360;
+    const degree = (angle * DIRECTION_ANGLES.RAD_TO_DEG + DIRECTION_ANGLES.FULL_CIRCLE) % DIRECTION_ANGLES.FULL_CIRCLE;
 
-    if (degree >= 315 || degree < 45) return '→';
-    if (degree >= 45 && degree < 135) return '↓';
-    if (degree >= 135 && degree < 225) return '←';
-    if (degree >= 225 && degree < 315) return '↑';
+    if (degree >= DIRECTION_ANGLES.RIGHT_MIN || degree < DIRECTION_ANGLES.RIGHT_MAX) return '→';
+    if (degree >= DIRECTION_ANGLES.DOWN_MIN && degree < DIRECTION_ANGLES.DOWN_MAX) return '↓';
+    if (degree >= DIRECTION_ANGLES.LEFT_MIN && degree < DIRECTION_ANGLES.LEFT_MAX) return '←';
+    if (degree >= DIRECTION_ANGLES.UP_MIN && degree < DIRECTION_ANGLES.UP_MAX) return '↑';
 
     return '→'; // fallback
   }

@@ -8,11 +8,12 @@
 import { GesturePattern } from '../valueObjects/GesturePattern';
 import { Point } from '../valueObjects/Point';
 import { Threshold } from '../valueObjects/Threshold';
+import { DEFAULT_GESTURE_THRESHOLD } from '../definitions/GestureConstants';
 
 export class GestureRecognizer {
   private threshold: Threshold;
 
-  constructor(threshold: number = 15) {
+  constructor(threshold: number = DEFAULT_GESTURE_THRESHOLD) {
     this.threshold = new Threshold(threshold);
   }
 

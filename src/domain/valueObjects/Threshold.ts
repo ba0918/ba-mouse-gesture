@@ -1,3 +1,5 @@
+import { DEFAULT_GESTURE_THRESHOLD, PATTERN_MATCHING } from '../definitions/GestureConstants';
+
 /**
  * 感度レベルの型定義
  */
@@ -30,7 +32,11 @@ export class Threshold {
    * @param matchThreshold - パターンマッチング閾値（0-1）
    * @param confidenceThreshold - 信頼度閾値（0-1）
    */
-  constructor(detectionThreshold: number = 15, matchThreshold: number = 0.6, confidenceThreshold: number = 0.5) {
+  constructor(
+    detectionThreshold: number = DEFAULT_GESTURE_THRESHOLD,
+    matchThreshold: number = PATTERN_MATCHING.DEFAULT_MATCH_THRESHOLD,
+    confidenceThreshold: number = PATTERN_MATCHING.DEFAULT_CONFIDENCE_THRESHOLD,
+  ) {
     this.validateThresholds(detectionThreshold, matchThreshold, confidenceThreshold);
 
     this._detectionThreshold = detectionThreshold;
@@ -313,7 +319,11 @@ export class Threshold {
    * @returns デフォルト閾値
    */
   static getDefault(): Threshold {
-    return new Threshold(15, 0.6, 0.5);
+    return new Threshold(
+      DEFAULT_GESTURE_THRESHOLD,
+      PATTERN_MATCHING.DEFAULT_MATCH_THRESHOLD,
+      PATTERN_MATCHING.DEFAULT_CONFIDENCE_THRESHOLD,
+    );
   }
 
   /**

@@ -1,4 +1,5 @@
 import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions';
+import { DEFAULT_STROKE_COLOR, DEFAULT_STROKE_WIDTH, DEFAULT_GESTURE_THRESHOLD } from '../definitions/GestureConstants';
 import { Threshold } from '../valueObjects/Threshold';
 import { DebugSettings } from './DebugSettings';
 
@@ -61,9 +62,9 @@ export class Settings {
   constructor(config: SettingsConfig = {}) {
     // 基本設定
     this.enabled = config.enabled !== undefined ? config.enabled : true;
-    this.strokeColor = config.strokeColor || '#2196F3';
-    this.strokeWidth = config.strokeWidth || 3;
-    this.gestureThreshold = config.gestureThreshold || 15;
+    this.strokeColor = config.strokeColor || DEFAULT_STROKE_COLOR;
+    this.strokeWidth = config.strokeWidth || DEFAULT_STROKE_WIDTH;
+    this.gestureThreshold = config.gestureThreshold || DEFAULT_GESTURE_THRESHOLD;
     this.excludeList = config.excludeList || [];
 
     // デフォルトジェスチャー状態
