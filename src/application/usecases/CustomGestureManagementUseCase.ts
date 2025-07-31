@@ -3,18 +3,9 @@
  * カスタムジェスチャー管理のビジネスロジックを統合するUseCaseクラス
  */
 
-import { CustomGesture, type GestureAction } from '../../domain/entities'
-import { GesturePattern } from '../../domain/valueObjects'
-import { DebugLogger } from '../../infrastructure/adapters/DebugLogger'
-
-// Repository interfaces
-interface GestureRepository {
-  getCustomGestures(): Promise<CustomGesture[]>
-  addCustomGesture(gesture: CustomGesture): Promise<void>
-  updateCustomGesture(gestureId: string, updates: Record<string, unknown>): Promise<CustomGesture>
-  deleteCustomGesture(gestureId: string): Promise<CustomGesture[]>
-  toggleCustomGesture(gestureId: string, enabled: boolean): Promise<CustomGesture>
-}
+import { CustomGesture, type GestureAction } from '../../domain/entities';
+import { GesturePattern } from '../../domain/valueObjects';
+import { IGestureRepository, ILogger } from '../interfaces';
 
 
 
@@ -26,14 +17,19 @@ interface GestureCreationData {
 }
 
 export class CustomGestureManagementUseCase {
-  private isInitialized: boolean = false
-  private logger: DebugLogger
+  private isInitialized: boolean = false;
+  private logger: ILogger;
 
   constructor(
-    private gestureRepository: GestureRepository,
-    logger?: DebugLogger
+    private gestureRepository: IGestureRepository,
+    logger?: ILogger
   ) {
-    this.logger = logger || new DebugLogger(null)
+    this.logger = logger || {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {}
+    };
   }
 
   /**

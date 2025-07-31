@@ -1,10 +1,12 @@
 /**
  * GestureRepository
  * ジェスチャーデータ（カスタムジェスチャー・学習データ）の永続化を担当するリポジトリ
+ * Clean Architecture - Infrastructure層
  */
 
-import { CustomGesture } from '../../../domain/entities/CustomGesture'
-import type { ChromeStorageAdapter } from '../../adapters/ChromeStorageAdapter'
+import { CustomGesture } from '../../../domain/entities/CustomGesture';
+import { IGestureRepository } from '../../../application/interfaces';
+import type { ChromeStorageAdapter } from '../../adapters/ChromeStorageAdapter';
 
 // Type definitions
 interface CacheEntry {
@@ -46,7 +48,7 @@ interface RepositoryStatus {
 
 type GestureChangeCallback = (changes: any) => void
 
-export class GestureRepository {
+export class GestureRepository implements IGestureRepository {
   private readonly storage: ChromeStorageAdapter
   private readonly customGesturesKey: string = 'customGestures'
 

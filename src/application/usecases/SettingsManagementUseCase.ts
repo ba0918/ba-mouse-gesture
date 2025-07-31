@@ -1,37 +1,11 @@
 /**
  * SettingsManagementUseCase
  * 設定管理のビジネスロジックを統合するUseCaseクラス
+ * Clean Architecture - Application層
  */
 
-import { Settings } from '../../domain/entities';
-import { DebugLogger } from '../../infrastructure/adapters/DebugLogger';
-
-// Repository interfaces
-interface SettingsRepository {
-  getSettings(): Promise<Settings>
-  updateSetting(key: string, value: unknown): Promise<Settings>
-  updateStrokeSettings(color: string, width: number): Promise<Settings>
-  updateThreshold(threshold: number): Promise<Settings>
-  updateGestureState(gestureId: string, enabled: boolean): Promise<Settings>
-  addExcludeSite(pattern: string): Promise<Settings>
-  removeExcludeSite(pattern: string): Promise<Settings>
-  updateDebugSettings(debugConfig: Record<string, unknown>): Promise<Settings>
-  resetToDefaults(): Promise<Settings>
-  validateSettings(): Promise<SettingsValidationResult>
-  getRepositoryStatus(): Promise<Record<string, unknown>>
-  onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void
-}
-
-interface ChromeMessagingAdapter {
-  sendMessage(message: unknown, options?: { expectResponse?: boolean }): Promise<unknown>
-}
-
-// Types for internal use
-interface SettingsValidationResult {
-  isValid: boolean
-  errors: string[]
-  warnings: string[]
-}
+import { Settings } from '../../domain/entities/Settings';
+import { ISettingsRepository, ILogger, SettingsValidationResult } from '../interfaces';
 
 interface SettingsChangeData {
   type: string
@@ -41,11 +15,18 @@ interface SettingsChangeData {
 }
 
 export class SettingsManagementUseCase {
-  private messagingAdapter?: ChromeMessagingAdapter
-  private logger: DebugLogger
+  private logger: ILogger
 
-  constructor(private settingsRepository: SettingsRepository, logger?: DebugLogger) {
-    this.logger = logger || new DebugLogger(null)
+  constructor(
+    private settingsRepository: ISettingsRepository, 
+    logger?: ILogger
+  ) {
+    this.logger = logger || {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {}
+    };
   }
 
   /**
@@ -260,18 +241,9 @@ export class SettingsManagementUseCase {
 
   private async notifySettingsChange(type: string, data: Record<string, unknown>): Promise<void> {
     try {
-      if (this.messagingAdapter) {
-        await this.messagingAdapter.sendMessage({
-          type: 'settings_changed',
-          changeType: type,
-          data: data,
-          timestamp: new Date().toISOString()
-        }, { expectResponse: false }).catch(error => {
-          this.logger.warn('Settings change notification failed:', error)
-        })
-      }
+      this.logger.debug('Settings changed:', { type, data, timestamp: new Date().toISOString() });
     } catch (error) {
-      this.logger.error('Failed to notify settings change:', error)
+      this.logger.error('Failed to notify settings change:', error);
     }
   }
 }

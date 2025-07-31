@@ -3,11 +3,10 @@
  * Clean Architecture - Application層
  */
 
-import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository.js';
-import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository.js';
-import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions.js';
-import { CustomGesture } from '../../domain/entities/CustomGesture.js';
-import type { GestureAction } from '../../domain/entities/Gesture.js';
+import { DefaultGestureDefinitions } from '../../domain/definitions/DefaultGestureDefinitions';
+import { CustomGesture } from '../../domain/entities/CustomGesture';
+import type { GestureAction } from '../../domain/entities/Gesture';
+import { IGestureRepository, ISettingsRepository } from '../interfaces';
 
 export interface UIGesture {
     id: string;
@@ -20,8 +19,8 @@ export interface UIGesture {
 
 export class GestureListUseCase {
     constructor(
-        private gestureRepository: GestureRepository,
-        private settingsRepository: SettingsRepository
+        private gestureRepository: IGestureRepository,
+        private settingsRepository: ISettingsRepository
     ) {}
 
     async getAllGestures(): Promise<UIGesture[]> {

@@ -11,6 +11,7 @@ import { mount } from 'svelte';
 import { ChromeStorageAdapter } from '../../infrastructure/adapters/ChromeStorageAdapter';
 import { SettingsRepository } from '../../infrastructure/storage/repositories/SettingsRepository';
 import { GestureRepository } from '../../infrastructure/storage/repositories/GestureRepository';
+import { NoOpLogger } from '../../infrastructure/adapters/NoOpLogger';
 import { SettingsManagementUseCase } from '../../application/usecases/SettingsManagementUseCase';
 import { CustomGestureManagementUseCase } from '../../application/usecases/CustomGestureManagementUseCase';
 import { GestureListUseCase } from '../../application/usecases/GestureListUseCase';
@@ -67,8 +68,9 @@ function createServices() {
   const gestureRepository = new GestureRepository(storageAdapter);
   
   // UseCase層
-  const settingsManagementUseCase = new SettingsManagementUseCase(settingsRepository);
-  const customGestureManagementUseCase = new CustomGestureManagementUseCase(gestureRepository);
+  const logger = new NoOpLogger();
+  const settingsManagementUseCase = new SettingsManagementUseCase(settingsRepository, logger);
+  const customGestureManagementUseCase = new CustomGestureManagementUseCase(gestureRepository, logger);
   const gestureListUseCase = new GestureListUseCase(gestureRepository, settingsRepository);
   
   return {

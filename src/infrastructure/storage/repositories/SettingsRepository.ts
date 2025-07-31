@@ -1,9 +1,11 @@
 /**
  * SettingsRepository
  * 設定データの永続化を担当するリポジトリ
+ * Clean Architecture - Infrastructure層
  */
 
 import { Settings, DefaultGestureStates } from '../../../domain/entities/Settings';
+import { ISettingsRepository, SettingsValidationResult } from '../../../application/interfaces';
 
 // 型定義
 interface CacheEntry {
@@ -28,13 +30,7 @@ interface RepositoryStatus {
   error?: string;
 }
 
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-export class SettingsRepository {
+export class SettingsRepository implements ISettingsRepository {
   private storage: Storage;
   private settingsKey: string = 'appSettings';
   private cache: Map<string, CacheEntry> = new Map();
@@ -252,7 +248,7 @@ export class SettingsRepository {
    * @param callback - 変更時コールバック
    * @returns リスナー削除関数
    */
-  onSettingsChanged(callback: (newSettings: Settings, oldSettings: Settings | null) => void): () => void {
+  onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void {
     return this.storage.onChanged((changes: Record<string, chrome.storage.StorageChange>, namespace: string) => {
       if (namespace === 'sync' && changes[this.settingsKey]) {
         // キャッシュを無効化
@@ -261,7 +257,7 @@ export class SettingsRepository {
   
         const newSettings = Settings.fromJSON(changes[this.settingsKey].newValue);
         const oldSettings = changes[this.settingsKey].oldValue ?
-          Settings.fromJSON(changes[this.settingsKey].oldValue) : null;
+          Settings.fromJSON(changes[this.settingsKey].oldValue) : undefined;
 
         callback(newSettings, oldSettings);
       }
@@ -288,7 +284,7 @@ export class SettingsRepository {
    * リポジトリの状態確認
    * @returns リポジトリの状態
    */
-  async getRepositoryStatus(): Promise<RepositoryStatus> {
+  async getRepositoryStatus(): Promise<Record<string, unknown>> {
     try {
       const settings = await this.getSettings();
       const storageStats = this.storage.getUsageStats ? await this.storage.getUsageStats() : { sync: {} };
@@ -313,8 +309,8 @@ export class SettingsRepository {
    * 設定の整合性チェック
    * @returns バリデーション結果
    */
-  async validateSettings(): Promise<ValidationResult> {
-    const validation: ValidationResult = {
+  async validateSettings(): Promise<SettingsValidationResult> {
+    const validation: SettingsValidationResult = {
       isValid: true,
       errors: [],
       warnings: []
