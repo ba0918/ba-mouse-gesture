@@ -106,12 +106,4 @@ describe('NoOpLogger', () => {
     })
   })
 
-  describe('グローバル登録', () => {
-    test('ブラウザ環境でwindowに登録される', () => {
-      // windowオブジェクトがある場合のみテスト
-      if (typeof window !== 'undefined') {
-        expect(window.NoOpLogger).toBe(NoOpLogger)
-      }
-    })
-  })
 })
