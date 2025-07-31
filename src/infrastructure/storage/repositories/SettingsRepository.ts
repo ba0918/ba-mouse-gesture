@@ -5,7 +5,7 @@
  */
 
 import { ISettingsRepository, SettingsValidationResult } from "../../../application/interfaces";
-import { DefaultGestureStates, Settings } from "../../../domain/entities/Settings";
+import { Settings } from "../../../domain/entities/Settings";
 
 // 型定義
 interface CacheEntry {
@@ -21,15 +21,6 @@ interface Storage {
     namespace: string,
   ): () => void;
   getUsageStats?(): Promise<{ sync?: any }>;
-}
-
-interface RepositoryStatus {
-  isHealthy: boolean;
-  settingsLoaded?: boolean;
-  cacheSize?: number;
-  storage?: any;
-  lastModified?: string | null;
-  error?: string;
 }
 
 export class SettingsRepository implements ISettingsRepository {
@@ -275,31 +266,6 @@ export class SettingsRepository implements ISettingsRepository {
    */
   clearCache(): void {
     this.cache.clear();
-  }
-
-  /**
-   * リポジトリの状態確認
-   * @returns リポジトリの状態
-   */
-  async getRepositoryStatus(): Promise<Record<string, unknown>> {
-    try {
-      const settings = await this.getSettings();
-      const storageStats = this.storage.getUsageStats ? await this.storage.getUsageStats() : { sync: {} };
-
-      return {
-        isHealthy: true,
-        settingsLoaded: Boolean(settings),
-        cacheSize: this.cache.size,
-        storage: storageStats.sync || {},
-        lastModified: (settings as any).lastModified || null,
-      };
-    } catch (error) {
-      return {
-        isHealthy: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        cacheSize: this.cache.size,
-      };
-    }
   }
 
   /**
