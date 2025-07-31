@@ -4,8 +4,8 @@
  * Clean Architecture - Infrastructure層
  */
 
-import { Settings, DefaultGestureStates } from '../../../domain/entities/Settings';
-import { ISettingsRepository, SettingsValidationResult } from '../../../application/interfaces';
+import { ISettingsRepository, SettingsValidationResult } from "../../../application/interfaces";
+import { DefaultGestureStates, Settings } from "../../../domain/entities/Settings";
 
 // 型定義
 interface CacheEntry {
@@ -16,10 +16,12 @@ interface CacheEntry {
 interface Storage {
   get(key: string): Promise<Record<string, any>>;
   set(data: Record<string, any>): Promise<void>;
-  onChanged(callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void, namespace: string): () => void;
+  onChanged(
+    callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void,
+    namespace: string,
+  ): () => void;
   getUsageStats?(): Promise<{ sync?: any }>;
 }
-
 
 interface RepositoryStatus {
   isHealthy: boolean;
@@ -32,7 +34,7 @@ interface RepositoryStatus {
 
 export class SettingsRepository implements ISettingsRepository {
   private storage: Storage;
-  private settingsKey: string = 'appSettings';
+  private settingsKey: string = "appSettings";
   private cache: Map<string, CacheEntry> = new Map();
   private cacheTimeout: number = 5000; // 5秒でキャッシュ無効化
 
@@ -51,7 +53,6 @@ export class SettingsRepository implements ISettingsRepository {
     // キャッシュチェック
     const cachedData = this.cache.get(this.settingsKey);
     if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-
       return Settings.fromJSON(cachedData.data);
     }
 
@@ -63,17 +64,16 @@ export class SettingsRepository implements ISettingsRepository {
         // キャッシュに保存
         this.cache.set(this.settingsKey, {
           data: settingsData,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
-  
         return Settings.fromJSON(settingsData);
       } else {
         // デフォルト設定を返す
         return this.getDefaultSettings();
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error("Failed to load settings:", error);
       return this.getDefaultSettings();
     }
   }
@@ -85,8 +85,8 @@ export class SettingsRepository implements ISettingsRepository {
   async saveSettings(settings: Settings): Promise<void> {
     try {
       // バリデーション
-      if (!settings || typeof settings.isValid !== 'function' || !settings.isValid()) {
-        throw new Error('Invalid settings object');
+      if (!settings || typeof settings.isValid !== "function" || !settings.isValid()) {
+        throw new Error("Invalid settings object");
       }
 
       const serializedData = settings.toJSON();
@@ -95,12 +95,11 @@ export class SettingsRepository implements ISettingsRepository {
       // キャッシュ更新
       this.cache.set(this.settingsKey, {
         data: serializedData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-
     } catch (error) {
-      console.error('Failed to save settings:', error);
-      throw new SettingsRepositoryError('Failed to save settings', error);
+      console.error("Failed to save settings:", error);
+      throw new SettingsRepositoryError("Failed to save settings", error);
     }
   }
 
@@ -134,20 +133,20 @@ export class SettingsRepository implements ISettingsRepository {
    */
   async updateGestureState(gestureId: string, enabled: boolean): Promise<Settings> {
     const settings = await this.getSettings();
-    console.log('🔍 Debug - Before gesture state update:', {
+    console.log("🔍 Debug - Before gesture state update:", {
       gestureId,
       enabled,
       currentState: settings.defaultGestureStates[gestureId],
-      allStates: settings.defaultGestureStates
+      allStates: settings.defaultGestureStates,
     });
 
     settings.setGestureEnabled(gestureId, enabled);
 
-    console.log('🔍 Debug - After gesture state update:', {
+    console.log("🔍 Debug - After gesture state update:", {
       gestureId,
       enabled,
       newState: settings.defaultGestureStates[gestureId],
-      allStates: settings.defaultGestureStates
+      allStates: settings.defaultGestureStates,
     });
 
     await this.saveSettings(settings);
@@ -209,25 +208,25 @@ export class SettingsRepository implements ISettingsRepository {
    * @returns 更新された設定
    */
   async updateDebugSettings(debugConfig: any): Promise<Settings> {
-    console.log('🔧 [Debug] SettingsRepository.updateDebugSettings called:', {
+    console.log("🔧 [Debug] SettingsRepository.updateDebugSettings called:", {
       debugConfig: debugConfig,
-      logLevel: debugConfig.logLevel
+      logLevel: debugConfig.logLevel,
     });
 
     const settings = await this.getSettings();
-    console.log('🔧 [Debug] Current settings before update:', {
+    console.log("🔧 [Debug] Current settings before update:", {
       currentDebugSettings: (settings as any).debugSettings,
-      currentLogLevel: (settings as any).debugSettings?.logLevel
+      currentLogLevel: (settings as any).debugSettings?.logLevel,
     });
 
     settings.setDebugSettings(debugConfig);
-    console.log('🔧 [Debug] Settings after setDebugSettings:', {
+    console.log("🔧 [Debug] Settings after setDebugSettings:", {
       updatedDebugSettings: (settings as any).debugSettings,
-      updatedLogLevel: (settings as any).debugSettings?.logLevel
+      updatedLogLevel: (settings as any).debugSettings?.logLevel,
     });
 
     await this.saveSettings(settings);
-    console.log('🔧 [Debug] Settings saved successfully');
+    console.log("🔧 [Debug] Settings saved successfully");
 
     return settings;
   }
@@ -242,7 +241,6 @@ export class SettingsRepository implements ISettingsRepository {
     return defaultSettings;
   }
 
-
   /**
    * 設定変更を監視
    * @param callback - 変更時コールバック
@@ -250,20 +248,19 @@ export class SettingsRepository implements ISettingsRepository {
    */
   onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void {
     return this.storage.onChanged((changes: Record<string, chrome.storage.StorageChange>, namespace: string) => {
-      if (namespace === 'sync' && changes[this.settingsKey]) {
+      if (namespace === "sync" && changes[this.settingsKey]) {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey);
 
-  
         const newSettings = Settings.fromJSON(changes[this.settingsKey].newValue);
-        const oldSettings = changes[this.settingsKey].oldValue ?
-          Settings.fromJSON(changes[this.settingsKey].oldValue) : undefined;
+        const oldSettings = changes[this.settingsKey].oldValue
+          ? Settings.fromJSON(changes[this.settingsKey].oldValue)
+          : undefined;
 
         callback(newSettings, oldSettings);
       }
-    }, 'sync');
+    }, "sync");
   }
-
 
   /**
    * デフォルト設定を取得
@@ -294,13 +291,13 @@ export class SettingsRepository implements ISettingsRepository {
         settingsLoaded: Boolean(settings),
         cacheSize: this.cache.size,
         storage: storageStats.sync || {},
-        lastModified: (settings as any).lastModified || null
+        lastModified: (settings as any).lastModified || null,
       };
     } catch (error) {
       return {
         isHealthy: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        cacheSize: this.cache.size
+        error: error instanceof Error ? error.message : "Unknown error",
+        cacheSize: this.cache.size,
       };
     }
   }
@@ -313,7 +310,7 @@ export class SettingsRepository implements ISettingsRepository {
     const validation: SettingsValidationResult = {
       isValid: true,
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
@@ -322,29 +319,28 @@ export class SettingsRepository implements ISettingsRepository {
       // 基本バリデーション
       if (!settings.isValid()) {
         validation.isValid = false;
-        validation.errors.push('Settings object is invalid');
+        validation.errors.push("Settings object is invalid");
       }
 
       // 閾値範囲チェック
       if ((settings as any).gestureThreshold < 5 || (settings as any).gestureThreshold > 100) {
-        validation.warnings.push('Gesture threshold is outside recommended range (5-100)');
+        validation.warnings.push("Gesture threshold is outside recommended range (5-100)");
       }
 
       // 除外リストチェック
       const excludeList = settings.getExcludeList();
       if (excludeList.length > 20) {
-        validation.warnings.push('Exclude list is very long (>20 items)');
+        validation.warnings.push("Exclude list is very long (>20 items)");
       }
 
       // 色設定チェック
       if (!settings.isValidColor((settings as any).strokeColor)) {
-        validation.errors.push('Invalid stroke color format');
+        validation.errors.push("Invalid stroke color format");
         validation.isValid = false;
       }
-
     } catch (error) {
       validation.isValid = false;
-      validation.errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      validation.errors.push(`Validation error: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 
     return validation;
@@ -359,7 +355,7 @@ export class SettingsRepositoryError extends Error {
 
   constructor(message: string, originalError?: any) {
     super(message);
-    this.name = 'SettingsRepositoryError';
+    this.name = "SettingsRepositoryError";
     this.originalError = originalError;
   }
 }

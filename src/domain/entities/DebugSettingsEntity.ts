@@ -1,12 +1,12 @@
 /**
  * デバッグ設定のドメインエンティティ
  * ビジネスロジックと検証を含む
- * 
+ *
  * 🎯 修正：統一されたストレージアクセスに対応
  * popup-content script間の同期問題を解決
  */
 
-import type { LogLevel } from '../../infrastructure/adapters/DebugLogger';
+import type { LogLevel } from "../../infrastructure/adapters/DebugLogger";
 
 // 型定義
 interface DebugSettingsData {
@@ -61,9 +61,9 @@ export class DebugSettingsEntity {
     enabled = false,
     logLevel = 2 as LogLevel, // INFO レベル
     showStatus = false,
-    statusPosition = 'top-right',
+    statusPosition = "top-right",
     createdAt = null,
-    updatedAt = null
+    updatedAt = null,
   }: DebugSettingsData = {}) {
     this.enabled = enabled;
     this.logLevel = logLevel;
@@ -120,7 +120,7 @@ export class DebugSettingsEntity {
    * 表示位置を設定
    */
   setStatusPosition(position: string): void {
-    const validPositions = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+    const validPositions = ["top-right", "top-left", "bottom-right", "bottom-left"];
     if (!validPositions.includes(position)) {
       throw new Error(`Invalid status position: ${position}`);
     }
@@ -132,12 +132,10 @@ export class DebugSettingsEntity {
    * 複数の設定を一括更新
    */
   updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettingsEntity {
-
-
     const updated = new DebugSettingsEntity({
       ...this.toPlainObject(),
       ...newSettings,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     return updated;
@@ -165,7 +163,7 @@ export class DebugSettingsEntity {
     if (!otherSettings) {
       return {
         isConsistent: false,
-        inconsistencies: ['Other settings is null or undefined']
+        inconsistencies: ["Other settings is null or undefined"],
       };
     }
 
@@ -174,7 +172,7 @@ export class DebugSettingsEntity {
       : new DebugSettingsEntity(otherSettings);
 
     const inconsistencies: string[] = [];
-    const fields: (keyof DebugSettingsEntity)[] = ['enabled', 'logLevel', 'showStatus', 'statusPosition'];
+    const fields: (keyof DebugSettingsEntity)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
 
     fields.forEach(field => {
       if (this[field] !== other[field]) {
@@ -185,7 +183,7 @@ export class DebugSettingsEntity {
     return {
       isConsistent: inconsistencies.length === 0,
       inconsistencies,
-      syncStatus: inconsistencies.length === 0 ? 'SYNCED' : 'OUT_OF_SYNC'
+      syncStatus: inconsistencies.length === 0 ? "SYNCED" : "OUT_OF_SYNC",
     };
   }
 
@@ -202,19 +200,19 @@ export class DebugSettingsEntity {
    * エンティティの妥当性検証
    */
   validate(): boolean {
-    if (typeof this.enabled !== 'boolean') {
-      throw new Error('enabled must be boolean');
+    if (typeof this.enabled !== "boolean") {
+      throw new Error("enabled must be boolean");
     }
     const validLevels: LogLevel[] = [0, 1, 2, 3];
     if (!validLevels.includes(this.logLevel)) {
-      throw new Error('logLevel must be a valid LogLevel (0-3)');
+      throw new Error("logLevel must be a valid LogLevel (0-3)");
     }
-    if (typeof this.showStatus !== 'boolean') {
-      throw new Error('showStatus must be boolean');
+    if (typeof this.showStatus !== "boolean") {
+      throw new Error("showStatus must be boolean");
     }
-    const validPositions = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+    const validPositions = ["top-right", "top-left", "bottom-right", "bottom-left"];
     if (!validPositions.includes(this.statusPosition)) {
-      throw new Error('statusPosition must be valid position string');
+      throw new Error("statusPosition must be valid position string");
     }
     return true;
   }
@@ -229,7 +227,7 @@ export class DebugSettingsEntity {
       showStatus: this.showStatus,
       statusPosition: this.statusPosition,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
     };
   }
 
@@ -241,7 +239,7 @@ export class DebugSettingsEntity {
       enabled: this.enabled,
       logLevel: this.logLevel,
       showStatus: this.showStatus,
-      statusPosition: this.statusPosition
+      statusPosition: this.statusPosition,
     };
   }
 
@@ -254,13 +252,13 @@ export class DebugSettingsEntity {
       ? otherSettings
       : new DebugSettingsEntity(otherSettings);
 
-    const fields: (keyof DebugSettingsEntity)[] = ['enabled', 'logLevel', 'showStatus', 'statusPosition'];
+    const fields: (keyof DebugSettingsEntity)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
 
     fields.forEach(field => {
       if (this[field] !== other[field]) {
         changes[String(field)] = {
           from: other[field],
-          to: this[field]
+          to: this[field],
         };
       }
     });
@@ -284,10 +282,10 @@ export class DebugSettingsEntity {
     }
 
     return (
-      this.enabled === otherSettings.enabled &&
-      this.logLevel === otherSettings.logLevel &&
-      this.showStatus === otherSettings.showStatus &&
-      this.statusPosition === otherSettings.statusPosition
+      this.enabled === otherSettings.enabled
+      && this.logLevel === otherSettings.logLevel
+      && this.showStatus === otherSettings.showStatus
+      && this.statusPosition === otherSettings.statusPosition
     );
   }
 
@@ -296,14 +294,14 @@ export class DebugSettingsEntity {
    */
   getSyncInfo(): SyncInfo {
     return {
-      entity: 'DebugSettingsEntity',
+      entity: "DebugSettingsEntity",
       enabled: this.enabled,
       logLevel: this.logLevel,
       showStatus: this.showStatus,
       statusPosition: this.statusPosition,
       shouldShowDebugInfo: this.shouldShowStatus(),
       updatedAt: this.updatedAt,
-      storageFormat: this.toStorageFormat()
+      storageFormat: this.toStorageFormat(),
     };
   }
 
@@ -322,7 +320,7 @@ export class DebugSettingsEntity {
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
       logLevel: 2 as LogLevel,
       showStatus: false, // 🎯 修正：デフォルトはfalse
-      statusPosition: 'top-right'
+      statusPosition: "top-right",
     });
   }
 
@@ -345,7 +343,7 @@ export class DebugSettingsEntity {
   static shouldLogStatic(level: LogLevel): boolean {
     // Chrome Storage から現在のlogLevel設定を取得して判定
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
+      if (typeof chrome !== "undefined" && chrome.storage) {
         // 同期的に設定を取得することはできないため、デフォルトはERRORレベル（0）のみ
         // ユーザーがlogLevel変更した場合は、DebugLoggerが初期化されるのでこのメソッドは使われない
         return level <= 0;

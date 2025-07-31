@@ -4,13 +4,13 @@
  */
 
 export interface Point {
-  x: number
-  y: number
+  x: number;
+  y: number;
 }
 
 export interface DrawStyle {
-  color: string
-  width: number
+  color: string;
+  width: number;
 }
 
 /**
@@ -20,30 +20,30 @@ export interface RenderingService {
   /**
    * Canvas初期化
    */
-  initializeCanvas(): boolean
+  initializeCanvas(): boolean;
 
   /**
    * 描画スタイルを更新
    */
-  updateStyle(style: DrawStyle): void
+  updateStyle(style: DrawStyle): void;
 
   /**
    * 軌跡を描画
    */
-  drawTrail(trail: Point[], style: DrawStyle): void
+  drawTrail(trail: Point[], style: DrawStyle): void;
 
   /**
    * Canvasを遅延クリア
    */
-  clearCanvasWithDelay(delay: number): void
+  clearCanvasWithDelay(delay: number): void;
 
   /**
    * Canvasを即座にクリア
    */
-  clearCanvas(): void
+  clearCanvas(): void;
 
   /**
    * Canvas要素を取得
    */
-  getCanvasElement(): HTMLCanvasElement | null
+  getCanvasElement(): HTMLCanvasElement | null;
 }

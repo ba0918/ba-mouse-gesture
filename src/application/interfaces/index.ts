@@ -3,7 +3,7 @@
  * UseCaseが依存するインターフェースの統一エクスポート
  */
 
-export * from './ISettingsRepository';
-export * from './IGestureRepository';
-export * from './ILogger';
-export * from './IMessagingService';
+export * from "./IGestureRepository";
+export * from "./ILogger";
+export * from "./IMessagingService";
+export * from "./ISettingsRepository";

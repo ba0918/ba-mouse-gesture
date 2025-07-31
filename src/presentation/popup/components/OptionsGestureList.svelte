@@ -1,71 +1,79 @@
 <!-- OptionsGestureList.svelte - ジェスチャー一覧表示コンポーネント -->
 <script lang="ts">
-  // Props定義（Svelte 5）
-  interface Props {
-    gestures: any[];
-    gestureSearch: string;
-    gestureFilter: string;
-    isLoading: boolean;
-    onToggleGesture: (gestureId: string, enabled: boolean) => Promise<void>;
+// Props定義（Svelte 5）
+interface Props {
+  gestures: any[];
+  gestureSearch: string;
+  gestureFilter: string;
+  isLoading: boolean;
+  onToggleGesture: (gestureId: string, enabled: boolean) => Promise<void>;
+}
+
+let {
+  gestures = $bindable(),
+  gestureSearch = $bindable(),
+  gestureFilter = $bindable(),
+  isLoading,
+  onToggleGesture,
+}: Props = $props();
+
+// 🎯 矢印統一により変換処理が不要になりました！
+
+// フィルタされたジェスチャー一覧
+let filteredGestures = $derived(gestures.filter(gesture => {
+  if (gestureSearch) {
+    const query = gestureSearch.toLowerCase();
+    if (
+      !gesture.name.toLowerCase().includes(query)
+      && !gesture.description.toLowerCase().includes(query)
+    ) {
+      return false;
+    }
   }
 
-  let {
-    gestures = $bindable(),
-    gestureSearch = $bindable(),
-    gestureFilter = $bindable(),
-    isLoading,
-    onToggleGesture
-  }: Props = $props();
+  if (gestureFilter === "default") return gesture.type === "default";
+  if (gestureFilter === "custom") return gesture.type === "custom";
 
-  // 🎯 矢印統一により変換処理が不要になりました！
-
-  // フィルタされたジェスチャー一覧
-  let filteredGestures = $derived(gestures.filter(gesture => {
-    if (gestureSearch) {
-      const query = gestureSearch.toLowerCase();
-      if (!gesture.name.toLowerCase().includes(query) && 
-        !gesture.description.toLowerCase().includes(query)) {
-        return false;
-      }
-    }
-    
-    if (gestureFilter === 'default') return gesture.type === 'default';
-    if (gestureFilter === 'custom') return gesture.type === 'custom';
-    
-    return true;
-  }));
+  return true;
+}));
 </script>
 
 <!-- ジェスチャー一覧 -->
 <div class="section">
   <h2>📋 ジェスチャー一覧</h2>
   <div class="setting-item">
-    <div style="width: 100%;">
+    <div style="width: 100%">
       <div class="setting-label">利用可能なすべてのジェスチャー</div>
       <div class="setting-description">
         標準ジェスチャーとカスタムジェスチャーを一括管理・確認できます
       </div>
-                    
+
       <!-- 検索・フィルター -->
-      <div class="gesture-controls-bar" style="display: flex; gap: 8px; margin: 16px 0; align-items: center;">
-        <input 
-          type="text" 
-          bind:value={gestureSearch} 
-          placeholder="ジェスチャーを検索..." 
-          style="flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px;"
+      <div
+        class="gesture-controls-bar"
+        style="display: flex; gap: 8px; margin: 16px 0; align-items: center"
+      >
+        <input
+          type="text"
+          bind:value={gestureSearch}
+          placeholder="ジェスチャーを検索..."
+          style="flex: 1; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px"
         >
-        <select 
-          bind:value={gestureFilter} 
-          style="padding: 8px; border: 1px solid #dadce0; border-radius: 4px;"
+        <select
+          bind:value={gestureFilter}
+          style="padding: 8px; border: 1px solid #dadce0; border-radius: 4px"
         >
           <option value="all">すべて</option>
           <option value="default">標準ジェスチャー</option>
           <option value="custom">カスタムジェスチャー</option>
         </select>
       </div>
-                    
+
       <!-- ジェスチャー一覧表示 -->
-      <div class="all-gestures-container" style="border: 1px solid #e8eaed; border-radius: 8px; background: white; min-height: 200px;">
+      <div
+        class="all-gestures-container"
+        style="border: 1px solid #e8eaed; border-radius: 8px; background: white; min-height: 200px"
+      >
         {#each filteredGestures as gesture (gesture.id)}
           <div class="all-gesture-item" class:disabled={!gesture.enabled}>
             <div class="gesture-visual">
@@ -78,27 +86,43 @@
               <div class="gesture-description">{gesture.description}</div>
             </div>
             <div class="gesture-actions">
-              <button 
-                class="gesture-status-toggle" 
+              <button
+                class="gesture-status-toggle"
                 class:enabled={gesture.enabled}
-                aria-label={gesture.enabled ? 'ジェスチャーを無効にする' : 'ジェスチャーを有効にする'}
+                aria-label={gesture.enabled
+                ? "ジェスチャーを無効にする"
+                : "ジェスチャーを有効にする"}
                 onclick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  console.log('✅ FIXED - Gesture toggle with correct data structure:');
-                  console.log('  gestureId:', gesture.id, '(should be gesture ID like "left", "right")');
-                  console.log('  action:', gesture.action, '(should be action name like "back", "forward")');
-                  console.log('  current enabled:', gesture.enabled);
-                  console.log('  new enabled:', !gesture.enabled);
-                  
+
+                  console.log(
+                    "✅ FIXED - Gesture toggle with correct data structure:",
+                  );
+                  console.log(
+                    "  gestureId:",
+                    gesture.id,
+                    "(should be gesture ID like \"left\", \"right\")",
+                  );
+                  console.log(
+                    "  action:",
+                    gesture.action,
+                    "(should be action name like \"back\", \"forward\")",
+                  );
+                  console.log(
+                    "  current enabled:",
+                    gesture.enabled,
+                  );
+                  console.log("  new enabled:", !gesture.enabled);
+
                   // 根本原因修正後：正しいジェスチャーIDを直接使用
                   const gestureId = String(gesture.id);
                   const newEnabled = !gesture.enabled;
-                  
+
                   await onToggleGesture(gestureId, newEnabled);
                 }}
-              ></button>
+              >
+              </button>
             </div>
           </div>
         {/each}
@@ -113,152 +137,152 @@
 </div>
 
 <style>
-  /* セクション共通スタイル */
-  .section {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 3px rgba(60,64,67,0.3);
-  }
+/* セクション共通スタイル */
+.section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+}
 
-  .section h2 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #202124;
-    margin: 0 0 16px 0;
-    border-bottom: 2px solid #1a73e8;
-    padding-bottom: 8px;
-  }
+.section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
+  margin: 0 0 16px 0;
+  border-bottom: 2px solid #1a73e8;
+  padding-bottom: 8px;
+}
 
-  .setting-item {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 12px 0;
-  }
+.setting-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 0;
+}
 
-  .setting-label {
-    font-weight: 500;
-    color: #202124;
-    margin-bottom: 4px;
-  }
+.setting-label {
+  font-weight: 500;
+  color: #202124;
+  margin-bottom: 4px;
+}
 
-  .setting-description {
-    font-size: 13px;
-    color: #5f6368;
-    line-height: 1.4;
-    margin-bottom: 16px;
-  }
+.setting-description {
+  font-size: 13px;
+  color: #5f6368;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
 
-  /* ジェスチャー一覧画面用スタイル */
-  .all-gestures-container {
-    max-height: 400px;
-    overflow-y: auto;
-  }
+/* ジェスチャー一覧画面用スタイル */
+.all-gestures-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
 
-  .all-gesture-item {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid #f1f3f4;
-    transition: background-color 0.2s;
-  }
+.all-gesture-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.2s;
+}
 
-  .all-gesture-item:hover {
-    background-color: #f8f9fa;
-  }
+.all-gesture-item:hover {
+  background-color: #f8f9fa;
+}
 
-  .all-gesture-item:last-child {
-    border-bottom: none;
-  }
+.all-gesture-item:last-child {
+  border-bottom: none;
+}
 
-  .all-gesture-item.disabled {
-    opacity: 0.6;
-    background-color: #fafbfc;
-  }
+.all-gesture-item.disabled {
+  opacity: 0.6;
+  background-color: #fafbfc;
+}
 
-  .gesture-visual {
-    width: 80px;
-    text-align: center;
-    margin-right: 16px;
-    flex-shrink: 0;
-  }
+.gesture-visual {
+  width: 80px;
+  text-align: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
 
-  .gesture-pattern-large {
-    font-size: 20px;
-    line-height: 1.2;
-    margin-bottom: 4px;
-    word-break: break-all;
-    overflow-wrap: break-word;
-    max-width: 100%;
-  }
+.gesture-pattern-large {
+  font-size: 20px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
 
-  .gesture-details {
-    flex: 1;
-    min-width: 0;
-  }
+.gesture-details {
+  flex: 1;
+  min-width: 0;
+}
 
-  .gesture-title {
-    font-weight: 600;
-    color: #202124;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+.gesture-title {
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-  .gesture-description {
-    color: #5f6368;
-    font-size: 13px;
-    line-height: 1.3;
-  }
+.gesture-description {
+  color: #5f6368;
+  font-size: 13px;
+  line-height: 1.3;
+}
 
-  .gesture-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+.gesture-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
 
-  .gesture-status-toggle {
-    width: 40px;
-    height: 20px;
-    background: #dadce0;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    position: relative;
-    transition: background-color 0.3s;
-  }
+.gesture-status-toggle {
+  width: 40px;
+  height: 20px;
+  background: #dadce0;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s;
+}
 
-  .gesture-status-toggle.enabled {
-    background: #34a853;
-  }
+.gesture-status-toggle.enabled {
+  background: #34a853;
+}
 
-  .gesture-status-toggle::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    background: white;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.3s;
-  }
+.gesture-status-toggle::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s;
+}
 
-  .gesture-status-toggle.enabled::after {
-    transform: translateX(20px);
-  }
+.gesture-status-toggle.enabled::after {
+  transform: translateX(20px);
+}
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #5f6368;
-  }
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #5f6368;
+}
 
-  .empty-state p {
-    margin: 0;
-    font-size: 14px;
-  }
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
 </style>

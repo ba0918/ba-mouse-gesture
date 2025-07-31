@@ -2,16 +2,6 @@
  * ドメイン層の型定義エクスポート
  */
 
-export type {
-  ActionName,
-  NavigationAction,
-  ScrollAction,
-  TabAction,
-  PageAction
-} from './ActionName';
+export type { ActionName, NavigationAction, PageAction, ScrollAction, TabAction } from "./ActionName";
 
-export {
-  ACTION_NAMES,
-  ACTION_CATEGORIES,
-  isValidActionName
-} from './ActionName';
+export { ACTION_CATEGORIES, ACTION_NAMES, isValidActionName } from "./ActionName";

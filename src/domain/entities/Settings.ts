@@ -1,43 +1,43 @@
-import { Threshold } from '../valueObjects/Threshold'
-import { DefaultGestureDefinitions } from '../definitions/DefaultGestureDefinitions'
-import { DebugSettingsEntity } from './DebugSettingsEntity'
+import { DefaultGestureDefinitions } from "../definitions/DefaultGestureDefinitions";
+import { Threshold } from "../valueObjects/Threshold";
+import { DebugSettingsEntity } from "./DebugSettingsEntity";
 
 /**
  * デフォルトジェスチャー状態の型定義
  * DefaultGestureDefinitionsから動的に生成される
  */
-export type DefaultGestureStates = Record<string, boolean>
+export type DefaultGestureStates = Record<string, boolean>;
 
 /**
  * デフォルトジェスチャー状態の実際の値を取得
  * DefaultGestureDefinitionsをSingle Source of Truthとして使用
  */
 function createDefaultGestureStates(): DefaultGestureStates {
-  const states: DefaultGestureStates = {}
+  const states: DefaultGestureStates = {};
   DefaultGestureDefinitions.getValidGestureIds().forEach(id => {
-    states[id] = true // デフォルトは全て有効
-  })
-  return states
+    states[id] = true; // デフォルトは全て有効
+  });
+  return states;
 }
 
 /**
  * 設定データの型定義
  */
 export interface SettingsConfig {
-  enabled?: boolean
-  strokeColor?: string
-  strokeWidth?: number
-  gestureThreshold?: number
-  excludeList?: string[]
-  defaultGestureStates?: Record<string, boolean>
-  debugSettings?: Record<string, any> // DebugSettingsEntityと互換性のため
+  enabled?: boolean;
+  strokeColor?: string;
+  strokeWidth?: number;
+  gestureThreshold?: number;
+  excludeList?: string[];
+  defaultGestureStates?: Record<string, boolean>;
+  debugSettings?: Record<string, any>; // DebugSettingsEntityと互換性のため
 }
 
 /**
  * URLパーサーアダプターのインターフェース
  */
 export interface URLParserAdapter {
-  getHostname(url: string): string
+  getHostname(url: string): string;
 }
 
 /**
@@ -45,42 +45,42 @@ export interface URLParserAdapter {
  * アプリケーション設定を表現するドメインエンティティ
  */
 export class Settings {
-  public enabled: boolean
-  public strokeColor: string
-  public strokeWidth: number
-  public gestureThreshold: number
-  public excludeList: string[]
-  public defaultGestureStates: DefaultGestureStates
-  public debugSettings: DebugSettingsEntity
-  public readonly version: string
-  public lastModified: string
+  public enabled: boolean;
+  public strokeColor: string;
+  public strokeWidth: number;
+  public gestureThreshold: number;
+  public excludeList: string[];
+  public defaultGestureStates: DefaultGestureStates;
+  public debugSettings: DebugSettingsEntity;
+  public readonly version: string;
+  public lastModified: string;
 
   /**
    * @param config - 設定データ
    */
   constructor(config: SettingsConfig = {}) {
     // 基本設定
-    this.enabled = config.enabled !== undefined ? config.enabled : true
-    this.strokeColor = config.strokeColor || '#2196F3'
-    this.strokeWidth = config.strokeWidth || 3
-    this.gestureThreshold = config.gestureThreshold || 15
-    this.excludeList = config.excludeList || []
-    
+    this.enabled = config.enabled !== undefined ? config.enabled : true;
+    this.strokeColor = config.strokeColor || "#2196F3";
+    this.strokeWidth = config.strokeWidth || 3;
+    this.gestureThreshold = config.gestureThreshold || 15;
+    this.excludeList = config.excludeList || [];
+
     // デフォルトジェスチャー状態
-    const defaultStates = createDefaultGestureStates()
+    const defaultStates = createDefaultGestureStates();
     this.defaultGestureStates = {
       ...defaultStates,
-      ...config.defaultGestureStates
-    }
-    
+      ...config.defaultGestureStates,
+    };
+
     // デバッグ設定（DebugSettingsEntityに統一）
-    this.debugSettings = config.debugSettings 
+    this.debugSettings = config.debugSettings
       ? DebugSettingsEntity.fromPlainObject(config.debugSettings)
-      : DebugSettingsEntity.getDefault()
-    
+      : DebugSettingsEntity.getDefault();
+
     // メタデータ
-    this.version = '1.0.0'
-    this.lastModified = new Date().toISOString()
+    this.version = "1.0.0";
+    this.lastModified = new Date().toISOString();
   }
 
   /**
@@ -88,7 +88,7 @@ export class Settings {
    * @returns 有効な場合true
    */
   isEnabled(): boolean {
-    return this.enabled
+    return this.enabled;
   }
 
   /**
@@ -96,8 +96,8 @@ export class Settings {
    * @param enabled - 有効/無効
    */
   setEnabled(enabled: boolean): void {
-    this.enabled = Boolean(enabled)
-    this.updateModified()
+    this.enabled = Boolean(enabled);
+    this.updateModified();
   }
 
   /**
@@ -108,9 +108,9 @@ export class Settings {
   isGestureEnabled(gestureId: string): boolean {
     // バリデーション: 有効なジェスチャーIDかチェック
     if (!DefaultGestureDefinitions.getValidGestureIds().includes(gestureId)) {
-      return false
+      return false;
     }
-    return this.defaultGestureStates[gestureId] !== false
+    return this.defaultGestureStates[gestureId] !== false;
   }
 
   /**
@@ -121,10 +121,10 @@ export class Settings {
   setGestureEnabled(gestureId: string, enabled: boolean): void {
     // バリデーション: 有効なジェスチャーIDかチェック
     if (!DefaultGestureDefinitions.getValidGestureIds().includes(gestureId)) {
-      throw new Error(`Invalid gesture ID: ${gestureId}`)
+      throw new Error(`Invalid gesture ID: ${gestureId}`);
     }
-    this.defaultGestureStates[gestureId] = Boolean(enabled)
-    this.updateModified()
+    this.defaultGestureStates[gestureId] = Boolean(enabled);
+    this.updateModified();
   }
 
   /**
@@ -134,8 +134,8 @@ export class Settings {
   getStrokeSettings(): { color: string; width: number } {
     return {
       color: this.strokeColor,
-      width: this.strokeWidth
-    }
+      width: this.strokeWidth,
+    };
   }
 
   /**
@@ -145,12 +145,12 @@ export class Settings {
    */
   setStrokeSettings(color: string, width: number): void {
     if (this.isValidColor(color)) {
-      this.strokeColor = color
+      this.strokeColor = color;
     }
     if (this.isValidWidth(width)) {
-      this.strokeWidth = width
+      this.strokeWidth = width;
     }
-    this.updateModified()
+    this.updateModified();
   }
 
   /**
@@ -158,7 +158,7 @@ export class Settings {
    * @returns 閾値オブジェクト
    */
   getThreshold(): Threshold {
-    return new Threshold(this.gestureThreshold)
+    return new Threshold(this.gestureThreshold);
   }
 
   /**
@@ -167,8 +167,8 @@ export class Settings {
    */
   setThreshold(threshold: number): void {
     if (threshold >= 5 && threshold <= 100) {
-      this.gestureThreshold = threshold
-      this.updateModified()
+      this.gestureThreshold = threshold;
+      this.updateModified();
     }
   }
 
@@ -177,7 +177,7 @@ export class Settings {
    * @returns 除外サイトリストのコピー
    */
   getExcludeList(): string[] {
-    return [...this.excludeList]
+    return [...this.excludeList];
   }
 
   /**
@@ -186,8 +186,8 @@ export class Settings {
    */
   addExcludeSite(pattern: string): void {
     if (pattern && !this.excludeList.includes(pattern)) {
-      this.excludeList.push(pattern)
-      this.updateModified()
+      this.excludeList.push(pattern);
+      this.updateModified();
     }
   }
 
@@ -196,10 +196,10 @@ export class Settings {
    * @param pattern - URLパターン
    */
   removeExcludeSite(pattern: string): void {
-    const index = this.excludeList.indexOf(pattern)
+    const index = this.excludeList.indexOf(pattern);
     if (index > -1) {
-      this.excludeList.splice(index, 1)
-      this.updateModified()
+      this.excludeList.splice(index, 1);
+      this.updateModified();
     }
   }
 
@@ -210,24 +210,24 @@ export class Settings {
    * @returns 除外対象の場合true
    */
   isExcludedSite(url: string, urlParser?: URLParserAdapter): boolean {
-    if (!url) return false
-    
+    if (!url) return false;
+
     // Infrastructure層のURLParserAdapterを使用（Clean Architecture準拠）
-    const currentHost = urlParser ? urlParser.getHostname(url) : ''
-    
+    const currentHost = urlParser ? urlParser.getHostname(url) : "";
+
     return this.excludeList.some(pattern => {
       // 完全URL マッチ
-      if (pattern.includes('://')) {
-        return url.includes(pattern) || !!url.match(pattern.replace(/\*/g, '.*'))
+      if (pattern.includes("://")) {
+        return url.includes(pattern) || !!url.match(pattern.replace(/\*/g, ".*"));
       }
       // ホスト名マッチ
-      if (pattern.includes('*')) {
-        const regex = new RegExp(pattern.replace(/\*/g, '.*'))
-        return regex.test(currentHost)
+      if (pattern.includes("*")) {
+        const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+        return regex.test(currentHost);
       }
       // 部分マッチ
-      return currentHost.includes(pattern)
-    })
+      return currentHost.includes(pattern);
+    });
   }
 
   /**
@@ -235,7 +235,7 @@ export class Settings {
    * @returns デバッグ設定のコピー
    */
   getDebugSettings(): DebugSettingsEntity {
-    return this.debugSettings.clone()
+    return this.debugSettings.clone();
   }
 
   /**
@@ -243,8 +243,8 @@ export class Settings {
    * @param debugConfig - デバッグ設定
    */
   setDebugSettings(debugConfig: Record<string, any>): void {
-    this.debugSettings = this.debugSettings.updateSettings(debugConfig)
-    this.updateModified()
+    this.debugSettings = this.debugSettings.updateSettings(debugConfig);
+    this.updateModified();
   }
 
   /**
@@ -253,7 +253,7 @@ export class Settings {
    * @returns 有効な場合true
    */
   isValidColor(color: string): boolean {
-    return /^#[0-9A-F]{6}$/i.test(color)
+    return /^#[0-9A-F]{6}$/i.test(color);
   }
 
   /**
@@ -262,7 +262,7 @@ export class Settings {
    * @returns 有効な場合true
    */
   isValidWidth(width: number): boolean {
-    return Number.isInteger(width) && width >= 1 && width <= 10
+    return Number.isInteger(width) && width >= 1 && width <= 10;
   }
 
   /**
@@ -270,12 +270,12 @@ export class Settings {
    * @returns 有効な場合true
    */
   isValid(): boolean {
-    return this.isValidColor(this.strokeColor) &&
-           this.isValidWidth(this.strokeWidth) &&
-           this.gestureThreshold >= 5 &&
-           this.gestureThreshold <= 100 &&
-           Array.isArray(this.excludeList) &&
-           this.isValidDebugSettings()
+    return this.isValidColor(this.strokeColor)
+      && this.isValidWidth(this.strokeWidth)
+      && this.gestureThreshold >= 5
+      && this.gestureThreshold <= 100
+      && Array.isArray(this.excludeList)
+      && this.isValidDebugSettings();
   }
 
   /**
@@ -284,9 +284,9 @@ export class Settings {
    */
   private isValidDebugSettings(): boolean {
     try {
-      return this.debugSettings && this.debugSettings.validate()
+      return this.debugSettings && this.debugSettings.validate();
     } catch {
-      return false
+      return false;
     }
   }
 
@@ -294,16 +294,16 @@ export class Settings {
    * 更新日時を設定
    */
   private updateModified(): void {
-    this.lastModified = new Date().toISOString()
+    this.lastModified = new Date().toISOString();
   }
 
   /**
    * デフォルト設定にリセット
    */
   resetToDefaults(): void {
-    const defaultConfig = new Settings()
-    Object.assign(this, defaultConfig)
-    this.updateModified()
+    const defaultConfig = new Settings();
+    Object.assign(this, defaultConfig);
+    this.updateModified();
   }
 
   /**
@@ -311,7 +311,7 @@ export class Settings {
    * @returns ジェスチャーIDの配列
    */
   getAvailableGestureIds(): readonly string[] {
-    return DefaultGestureDefinitions.getValidGestureIds()
+    return DefaultGestureDefinitions.getValidGestureIds();
   }
 
   /**
@@ -319,7 +319,7 @@ export class Settings {
    * @returns 複製された設定
    */
   clone(): Settings {
-    return new Settings(this.toJSON())
+    return new Settings(this.toJSON());
   }
 
   /**
@@ -336,8 +336,8 @@ export class Settings {
       defaultGestureStates: { ...this.defaultGestureStates },
       debugSettings: this.debugSettings.toPlainObject(),
       version: this.version,
-      lastModified: this.lastModified
-    }
+      lastModified: this.lastModified,
+    };
   }
 
   /**
@@ -346,7 +346,7 @@ export class Settings {
    * @returns 復元された設定
    */
   static fromJSON(data: SettingsConfig): Settings {
-    return new Settings(data)
+    return new Settings(data);
   }
 
   /**
@@ -354,6 +354,6 @@ export class Settings {
    * @returns デフォルト設定
    */
   static getDefaults(): Settings {
-    return new Settings()
+    return new Settings();
   }
 }

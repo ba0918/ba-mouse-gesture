@@ -1,21 +1,21 @@
-import { Gesture, GestureAction } from './Gesture'
-import { GesturePattern } from '../valueObjects/GesturePattern'
+import { GesturePattern } from "../valueObjects/GesturePattern";
+import { Gesture, GestureAction } from "./Gesture";
 
 /**
  * 使用統計の型定義
  */
 export interface UsageStats {
-  totalCount: number
-  successCount: number
-  lastUsed: string | null
+  totalCount: number;
+  successCount: number;
+  lastUsed: string | null;
 }
 
 /**
  * メタデータの型定義
  */
 export interface CustomGestureMetadata {
-  isCustom: boolean
-  version: string
+  isCustom: boolean;
+  version: string;
 }
 
 /**
@@ -23,9 +23,9 @@ export interface CustomGestureMetadata {
  * ユーザー定義カスタムジェスチャーを表現するドメインエンティティ
  */
 export class CustomGesture extends Gesture {
-  public priority: number
-  public usage: UsageStats
-  public metadata: CustomGestureMetadata
+  public priority: number;
+  public usage: UsageStats;
+  public metadata: CustomGestureMetadata;
 
   /**
    * @param id - 一意ID
@@ -36,24 +36,24 @@ export class CustomGesture extends Gesture {
    * @param priority - 優先度（高いほど優先）
    */
   constructor(
-    id: string, 
-    name: string, 
-    pattern: GesturePattern, 
-    action: GestureAction, 
-    enabled: boolean = true, 
-    priority: number = 1
+    id: string,
+    name: string,
+    pattern: GesturePattern,
+    action: GestureAction,
+    enabled: boolean = true,
+    priority: number = 1,
   ) {
-    super(id, name, pattern, action, enabled)
-    this.priority = priority
+    super(id, name, pattern, action, enabled);
+    this.priority = priority;
     this.usage = {
       totalCount: 0,
       successCount: 0,
-      lastUsed: null
-    }
+      lastUsed: null,
+    };
     this.metadata = {
       isCustom: true,
-      version: '1.0.0'
-    }
+      version: "1.0.0",
+    };
   }
 
   /**
@@ -61,7 +61,7 @@ export class CustomGesture extends Gesture {
    * @returns 常にtrue
    */
   isCustomGesture(): boolean {
-    return true
+    return true;
   }
 
   /**
@@ -70,9 +70,9 @@ export class CustomGesture extends Gesture {
    */
   setPriority(priority: number): void {
     if (priority < 1 || priority > 10) {
-      throw new Error('Priority must be between 1 and 10')
+      throw new Error("Priority must be between 1 and 10");
     }
-    this.priority = priority
+    this.priority = priority;
   }
 
   /**
@@ -80,11 +80,11 @@ export class CustomGesture extends Gesture {
    * @param success - 実行成功
    */
   recordUsage(success: boolean): void {
-    this.usage.totalCount++
+    this.usage.totalCount++;
     if (success) {
-      this.usage.successCount++
+      this.usage.successCount++;
     }
-    this.usage.lastUsed = new Date().toISOString()
+    this.usage.lastUsed = new Date().toISOString();
   }
 
   /**
@@ -92,8 +92,8 @@ export class CustomGesture extends Gesture {
    * @returns 0-1の範囲の成功率
    */
   getSuccessRate(): number {
-    if (this.usage.totalCount === 0) return 0
-    return this.usage.successCount / this.usage.totalCount
+    if (this.usage.totalCount === 0) return 0;
+    return this.usage.successCount / this.usage.totalCount;
   }
 
   /**
@@ -101,7 +101,7 @@ export class CustomGesture extends Gesture {
    * @returns よく使われる場合true
    */
   isFrequentlyUsed(): boolean {
-    return this.usage.totalCount >= 10 && this.getSuccessRate() >= 0.8
+    return this.usage.totalCount >= 10 && this.getSuccessRate() >= 0.8;
   }
 
   /**
@@ -109,11 +109,11 @@ export class CustomGesture extends Gesture {
    * @returns 0-1の範囲の信頼度
    */
   getConfidence(): number {
-    const baseConfidence = 0.5
-    const complexityBonus = Math.min(0.3, this.getComplexity() * 0.05)
-    const usageBonus = Math.min(0.2, this.getSuccessRate() * 0.2)
-    
-    return Math.min(1.0, baseConfidence + complexityBonus + usageBonus)
+    const baseConfidence = 0.5;
+    const complexityBonus = Math.min(0.3, this.getComplexity() * 0.05);
+    const usageBonus = Math.min(0.2, this.getSuccessRate() * 0.2);
+
+    return Math.min(1.0, baseConfidence + complexityBonus + usageBonus);
   }
 
   /**
@@ -121,11 +121,11 @@ export class CustomGesture extends Gesture {
    * @returns 有効な場合true
    */
   override isValid(): boolean {
-    const superValid = super.isValid()
-    const priorityValid = this.priority >= 1 && this.priority <= 10
-    const metadataValid = this.metadata.isCustom === true
-    
-    return superValid && priorityValid && metadataValid
+    const superValid = super.isValid();
+    const priorityValid = this.priority >= 1 && this.priority <= 10;
+    const metadataValid = this.metadata.isCustom === true;
+
+    return superValid && priorityValid && metadataValid;
   }
 
   /**
@@ -134,16 +134,16 @@ export class CustomGesture extends Gesture {
    * @returns -1: this > other, 0: equal, 1: this < other
    */
   comparePriority(other: CustomGesture): number {
-    if (this.priority > other.priority) return -1
-    if (this.priority < other.priority) return 1
-    
+    if (this.priority > other.priority) return -1;
+    if (this.priority < other.priority) return 1;
+
     // 優先度が同じ場合は使用頻度で比較
-    const thisScore = this.usage.totalCount * this.getSuccessRate()
-    const otherScore = other.usage.totalCount * other.getSuccessRate()
-    
-    if (thisScore > otherScore) return -1
-    if (thisScore < otherScore) return 1
-    return 0
+    const thisScore = this.usage.totalCount * this.getSuccessRate();
+    const otherScore = other.usage.totalCount * other.getSuccessRate();
+
+    if (thisScore > otherScore) return -1;
+    if (thisScore < otherScore) return 1;
+    return 0;
   }
 
   /**
@@ -157,12 +157,12 @@ export class CustomGesture extends Gesture {
       this.pattern.clone(),
       this.action,
       this.enabled,
-      this.priority
-    )
-    cloned.usage = { ...this.usage }
-    cloned.metadata = { ...this.metadata }
-    cloned.createdAt = this.createdAt
-    return cloned
+      this.priority,
+    );
+    cloned.usage = { ...this.usage };
+    cloned.metadata = { ...this.metadata };
+    cloned.createdAt = this.createdAt;
+    return cloned;
   }
 
   /**
@@ -170,22 +170,22 @@ export class CustomGesture extends Gesture {
    * @returns シリアライズされたデータ
    */
   override toJSON(): {
-    id: string
-    name: string
-    pattern: string[]
-    action: GestureAction
-    enabled: boolean
-    createdAt: string
-    priority: number
-    usage: UsageStats
-    metadata: CustomGestureMetadata
+    id: string;
+    name: string;
+    pattern: string[];
+    action: GestureAction;
+    enabled: boolean;
+    createdAt: string;
+    priority: number;
+    usage: UsageStats;
+    metadata: CustomGestureMetadata;
   } {
     return {
       ...super.toJSON(),
       priority: this.priority,
       usage: this.usage,
-      metadata: this.metadata
-    }
+      metadata: this.metadata,
+    };
   }
 
   /**
@@ -196,48 +196,50 @@ export class CustomGesture extends Gesture {
   static override fromJSON(data: any): CustomGesture {
     try {
       // データ形式のバリデーション
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid data format: data must be an object')
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid data format: data must be an object");
       }
-      
+
       // 必須フィールドのチェック
       if (!data.id || !data.name || !data.action) {
-        throw new Error('Invalid data format: missing required fields (id, name, action)')
+        throw new Error("Invalid data format: missing required fields (id, name, action)");
       }
-      
+
       // パターンのデシリアライゼーション（エラー処理付き）
-      let pattern: GesturePattern
+      let pattern: GesturePattern;
       try {
-        pattern = GesturePattern.fromArray(data.pattern)
+        pattern = GesturePattern.fromArray(data.pattern);
       } catch (patternError) {
-        console.warn('CustomGesture.fromJSON: Failed to deserialize pattern, using empty pattern:', patternError)
-        pattern = GesturePattern.empty()
+        console.warn("CustomGesture.fromJSON: Failed to deserialize pattern, using empty pattern:", patternError);
+        pattern = GesturePattern.empty();
       }
-      
+
       // デフォルト値の設定
-      const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true
-      const priority = (typeof data.priority === 'number' && data.priority >= 1 && data.priority <= 10) 
-        ? data.priority 
-        : 1
-      
+      const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true;
+      const priority = (typeof data.priority === "number" && data.priority >= 1 && data.priority <= 10)
+        ? data.priority
+        : 1;
+
       const gesture = new CustomGesture(
-        data.id, 
-        data.name, 
-        pattern, 
-        data.action as GestureAction, 
-        enabled, 
-        priority
-      )
-      
+        data.id,
+        data.name,
+        pattern,
+        data.action as GestureAction,
+        enabled,
+        priority,
+      );
+
       // オプショナルフィールドの設定
-      gesture.usage = data.usage || { totalCount: 0, successCount: 0, lastUsed: null }
-      gesture.metadata = data.metadata || { isCustom: true, version: '1.0.0' }
-      gesture.createdAt = data.createdAt || new Date().toISOString()
-      
-      return gesture
+      gesture.usage = data.usage || { totalCount: 0, successCount: 0, lastUsed: null };
+      gesture.metadata = data.metadata || { isCustom: true, version: "1.0.0" };
+      gesture.createdAt = data.createdAt || new Date().toISOString();
+
+      return gesture;
     } catch (error) {
       // Fail-Fast: エラーを再投げして呼び出し側にエラーハンドリングを委譲
-      throw new Error(`Failed to deserialize CustomGesture: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to deserialize CustomGesture: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 }

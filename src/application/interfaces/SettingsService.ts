@@ -4,18 +4,18 @@
  */
 
 export interface GestureSettings {
-  enabled: boolean
-  strokeColor: string
-  strokeWidth: number
-  gestureThreshold: number
-  excludeList: string[]
-  defaultGestureStates?: Record<string, boolean>
+  enabled: boolean;
+  strokeColor: string;
+  strokeWidth: number;
+  gestureThreshold: number;
+  excludeList: string[];
+  defaultGestureStates?: Record<string, boolean>;
   debugSettings?: {
-    enabled: boolean
-    logLevel: number
-    showStatus: boolean
-    statusPosition: string
-  }
+    enabled: boolean;
+    logLevel: number;
+    showStatus: boolean;
+    statusPosition: string;
+  };
 }
 
 /**
@@ -25,15 +25,15 @@ export interface SettingsService {
   /**
    * 設定を読み込み
    */
-  loadSettings(): Promise<GestureSettings>
+  loadSettings(): Promise<GestureSettings>;
 
   /**
    * 設定変更を監視
    */
-  watchSettingsChanges(callback: (settings: GestureSettings) => void): void
+  watchSettingsChanges(callback: (settings: GestureSettings) => void): void;
 
   /**
    * サイトが除外対象かチェック
    */
-  isExcludedSite(url?: string): boolean
+  isExcludedSite(url?: string): boolean;
 }

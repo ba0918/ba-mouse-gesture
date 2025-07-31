@@ -54,17 +54,17 @@ export class GestureEventHandler {
       isRecording: false,
       trail: [],
       startPosition: null,
-      preventContextMenu: false
+      preventContextMenu: false,
     };
     this.settings = {
       enabled: true,
-      gestureThreshold: 15
+      gestureThreshold: 15,
     };
     this.callbacks = {
-      onGestureStart: () => { },
-      onGestureMove: () => { },
-      onGestureEnd: () => { },
-      onContextMenu: () => { }
+      onGestureStart: () => {},
+      onGestureMove: () => {},
+      onGestureEnd: () => {},
+      onContextMenu: () => {},
     };
   }
 
@@ -78,20 +78,20 @@ export class GestureEventHandler {
       ...(callbacks.onGestureStart && { onGestureStart: callbacks.onGestureStart }),
       ...(callbacks.onGestureMove && { onGestureMove: callbacks.onGestureMove }),
       ...(callbacks.onGestureEnd && { onGestureEnd: callbacks.onGestureEnd }),
-      ...(callbacks.onContextMenu && { onContextMenu: callbacks.onContextMenu })
+      ...(callbacks.onContextMenu && { onContextMenu: callbacks.onContextMenu }),
     };
 
     // マウスイベントリスナーを設定
-    document.addEventListener('mousedown', this.onMouseDown.bind(this), true);
-    document.addEventListener('mousemove', this.onMouseMove.bind(this), true);
-    document.addEventListener('mouseup', this.onMouseUp.bind(this), true);
-    document.addEventListener('contextmenu', this.onContextMenu.bind(this), true);
+    document.addEventListener("mousedown", this.onMouseDown.bind(this), true);
+    document.addEventListener("mousemove", this.onMouseMove.bind(this), true);
+    document.addEventListener("mouseup", this.onMouseUp.bind(this), true);
+    document.addEventListener("contextmenu", this.onContextMenu.bind(this), true);
 
     // ウィンドウリサイズ対応
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    window.addEventListener("resize", this.onWindowResize.bind(this));
 
     this.isInitialized = true;
-    console.log('GestureEventHandler initialized');
+    console.log("GestureEventHandler initialized");
   }
 
   /**
@@ -104,12 +104,12 @@ export class GestureEventHandler {
     this.gestureState.startPosition = {
       x: e.clientX,
       y: e.clientY,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     this.gestureState.trail = [{
       x: e.clientX,
       y: e.clientY,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }];
     this.gestureState.preventContextMenu = false;
 
@@ -128,7 +128,7 @@ export class GestureEventHandler {
     const newPoint: Point = {
       x: e.clientX,
       y: e.clientY,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     this.gestureState.trail.push(newPoint);
 
@@ -259,15 +259,15 @@ export class GestureEventHandler {
    */
   destroy(): void {
     if (this.isInitialized) {
-      document.removeEventListener('mousedown', this.onMouseDown, true);
-      document.removeEventListener('mousemove', this.onMouseMove, true);
-      document.removeEventListener('mouseup', this.onMouseUp, true);
-      document.removeEventListener('contextmenu', this.onContextMenu, true);
-      window.removeEventListener('resize', this.onWindowResize);
+      document.removeEventListener("mousedown", this.onMouseDown, true);
+      document.removeEventListener("mousemove", this.onMouseMove, true);
+      document.removeEventListener("mouseup", this.onMouseUp, true);
+      document.removeEventListener("contextmenu", this.onContextMenu, true);
+      window.removeEventListener("resize", this.onWindowResize);
 
       this.resetGestureState();
       this.isInitialized = false;
-      console.log('GestureEventHandler destroyed');
+      console.log("GestureEventHandler destroyed");
     }
   }
 
@@ -285,9 +285,9 @@ export class GestureEventHandler {
         onGestureStart: Boolean(this.callbacks.onGestureStart),
         onGestureMove: Boolean(this.callbacks.onGestureMove),
         onGestureEnd: Boolean(this.callbacks.onGestureEnd),
-        onContextMenu: Boolean(this.callbacks.onContextMenu)
+        onContextMenu: Boolean(this.callbacks.onContextMenu),
       },
-      className: 'GestureEventHandler'
+      className: "GestureEventHandler",
     };
   }
 }

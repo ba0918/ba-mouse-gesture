@@ -4,18 +4,18 @@
  */
 
 // Type definitions
-export type LogLevel = 0 | 1 | 2 | 3
+export type LogLevel = 0 | 1 | 2 | 3;
 
 export interface DebugSettings {
-  shouldLog(level: LogLevel): boolean
-  logLevel: LogLevel
+  shouldLog(level: LogLevel): boolean;
+  logLevel: LogLevel;
 }
 
 export class DebugLogger {
-  private debugSettings: DebugSettings | null
+  private debugSettings: DebugSettings | null;
 
   constructor(debugSettings: DebugSettings | null) {
-    this.debugSettings = debugSettings
+    this.debugSettings = debugSettings;
   }
 
   /**
@@ -23,7 +23,7 @@ export class DebugLogger {
    */
   debug(message: string, ...args: unknown[]): void {
     if (this.debugSettings && this.debugSettings.shouldLog(3)) {
-      console.log(`🐛 [Debug] ${message}`, ...args)
+      console.log(`🐛 [Debug] ${message}`, ...args);
     }
   }
 
@@ -32,7 +32,7 @@ export class DebugLogger {
    */
   info(message: string, ...args: unknown[]): void {
     if (this.debugSettings && this.debugSettings.shouldLog(2)) {
-      console.log(`🔧 ${message}`, ...args)
+      console.log(`🔧 ${message}`, ...args);
     }
   }
 
@@ -41,7 +41,7 @@ export class DebugLogger {
    */
   warn(message: string, ...args: unknown[]): void {
     if (this.debugSettings && this.debugSettings.shouldLog(1)) {
-      console.warn(`⚠️ ${message}`, ...args)
+      console.warn(`⚠️ ${message}`, ...args);
     }
   }
 
@@ -50,7 +50,7 @@ export class DebugLogger {
    */
   error(message: string, ...args: unknown[]): void {
     if (this.debugSettings && this.debugSettings.shouldLog(0)) {
-      console.error(`❌ ${message}`, ...args)
+      console.error(`❌ ${message}`, ...args);
     }
   }
 
@@ -58,15 +58,14 @@ export class DebugLogger {
    * デバッグ設定を更新
    */
   updateDebugSettings(debugSettings: DebugSettings): void {
-    this.debugSettings = debugSettings
+    this.debugSettings = debugSettings;
   }
 
   /**
    * ログレベル表示用ヘルパー
    */
-  logLevel(): LogLevel | 'unknown' {
-    if (!this.debugSettings) return 'unknown'
-    return this.debugSettings.logLevel
+  logLevel(): LogLevel | "unknown" {
+    if (!this.debugSettings) return "unknown";
+    return this.debugSettings.logLevel;
   }
 }
-

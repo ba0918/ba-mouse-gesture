@@ -8,28 +8,27 @@ export class URLParserAdapter {
    * URLからホスト名を取得
    */
   getHostname(url: string): string {
-    if (!url || typeof url !== 'string') {
-      return '';
+    if (!url || typeof url !== "string") {
+      return "";
     }
 
     try {
       // ブラウザ環境でのURL解析
-      if (typeof window !== 'undefined' && window.URL) {
+      if (typeof window !== "undefined" && window.URL) {
         const urlObj = new window.URL(url);
         return urlObj.hostname;
       }
 
       // Node.js環境またはURL APIが利用できない場合
-      if (typeof globalThis !== 'undefined' && globalThis.URL) {
+      if (typeof globalThis !== "undefined" && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         return urlObj.hostname;
       }
 
       // フォールバック: 正規表現による解析
       return this.parseHostnameWithRegex(url);
-
     } catch (error) {
-      console.warn('URLParserAdapter: Failed to parse URL:', url, error);
+      console.warn("URLParserAdapter: Failed to parse URL:", url, error);
       return this.parseHostnameWithRegex(url);
     }
   }
@@ -38,25 +37,24 @@ export class URLParserAdapter {
    * URLのパスを取得
    */
   getPathname(url: string): string {
-    if (!url || typeof url !== 'string') {
-      return '/';
+    if (!url || typeof url !== "string") {
+      return "/";
     }
 
     try {
-      if (typeof window !== 'undefined' && window.URL) {
+      if (typeof window !== "undefined" && window.URL) {
         const urlObj = new window.URL(url);
         return urlObj.pathname;
       }
 
-      if (typeof globalThis !== 'undefined' && globalThis.URL) {
+      if (typeof globalThis !== "undefined" && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         return urlObj.pathname;
       }
 
       return this.parsePathnameWithRegex(url);
-
     } catch (error) {
-      console.warn('URLParserAdapter: Failed to parse pathname:', url, error);
+      console.warn("URLParserAdapter: Failed to parse pathname:", url, error);
       return this.parsePathnameWithRegex(url);
     }
   }
@@ -65,24 +63,23 @@ export class URLParserAdapter {
    * URLが有効かチェック
    */
   isValidURL(url: string): boolean {
-    if (!url || typeof url !== 'string') {
+    if (!url || typeof url !== "string") {
       return false;
     }
 
     try {
-      if (typeof window !== 'undefined' && window.URL) {
+      if (typeof window !== "undefined" && window.URL) {
         new window.URL(url);
         return true;
       }
 
-      if (typeof globalThis !== 'undefined' && globalThis.URL) {
+      if (typeof globalThis !== "undefined" && globalThis.URL) {
         new globalThis.URL(url);
         return true;
       }
 
       // 基本的なURL形式チェック
       return /^https?:\/\/.+/.test(url);
-
     } catch {
       return false;
     }
@@ -107,9 +104,9 @@ export class URLParserAdapter {
     }
 
     // ワイルドカード対応
-    if (pattern.startsWith('*.')) {
+    if (pattern.startsWith("*.")) {
       const domain = pattern.substring(2);
-      return hostname === domain || hostname.endsWith('.' + domain);
+      return hostname === domain || hostname.endsWith("." + domain);
     }
 
     return false;
@@ -120,7 +117,7 @@ export class URLParserAdapter {
    */
   getSearchParams(url: string): Record<string, string> {
     try {
-      if (typeof window !== 'undefined' && window.URL) {
+      if (typeof window !== "undefined" && window.URL) {
         const urlObj = new window.URL(url);
         const params: Record<string, string> = {};
         urlObj.searchParams.forEach((value, key) => {
@@ -129,7 +126,7 @@ export class URLParserAdapter {
         return params;
       }
 
-      if (typeof globalThis !== 'undefined' && globalThis.URL) {
+      if (typeof globalThis !== "undefined" && globalThis.URL) {
         const urlObj = new globalThis.URL(url);
         const params: Record<string, string> = {};
         urlObj.searchParams.forEach((value, key) => {
@@ -140,9 +137,8 @@ export class URLParserAdapter {
 
       // フォールバック: 正規表現による解析
       return this.parseSearchParamsWithRegex(url);
-
     } catch (error) {
-      console.warn('URLParserAdapter: Failed to parse search params:', url, error);
+      console.warn("URLParserAdapter: Failed to parse search params:", url, error);
       return {};
     }
   }
@@ -152,18 +148,17 @@ export class URLParserAdapter {
    */
   normalizeURL(url: string): string {
     try {
-      if (typeof window !== 'undefined' && window.URL) {
+      if (typeof window !== "undefined" && window.URL) {
         return new window.URL(url).href;
       }
 
-      if (typeof globalThis !== 'undefined' && globalThis.URL) {
+      if (typeof globalThis !== "undefined" && globalThis.URL) {
         return new globalThis.URL(url).href;
       }
 
       return url;
-
     } catch (error) {
-      console.warn('URLParserAdapter: Failed to normalize URL:', url, error);
+      console.warn("URLParserAdapter: Failed to normalize URL:", url, error);
       return url;
     }
   }
@@ -174,9 +169,9 @@ export class URLParserAdapter {
   private parseHostnameWithRegex(url: string): string {
     try {
       const match = url.match(/^https?:\/\/([^/?#]+)/);
-      return match ? match[1] : '';
+      return match ? match[1] : "";
     } catch {
-      return '';
+      return "";
     }
   }
 
@@ -186,9 +181,9 @@ export class URLParserAdapter {
   private parsePathnameWithRegex(url: string): string {
     try {
       const match = url.match(/^https?:\/\/[^/?#]+(\/[^?#]*)?/);
-      return match && match[1] ? match[1] : '/';
+      return match && match[1] ? match[1] : "/";
     } catch {
-      return '/';
+      return "/";
     }
   }
 
@@ -201,11 +196,11 @@ export class URLParserAdapter {
       const match = url.match(/\?([^#]*)/);
 
       if (match && match[1]) {
-        const pairs = match[1].split('&');
+        const pairs = match[1].split("&");
         for (const pair of pairs) {
-          const [key, value] = pair.split('=');
+          const [key, value] = pair.split("=");
           if (key) {
-            params[decodeURIComponent(key)] = value ? decodeURIComponent(value) : '';
+            params[decodeURIComponent(key)] = value ? decodeURIComponent(value) : "";
           }
         }
       }

@@ -4,7 +4,7 @@
  * 依存性逆転原則（DIP）に従い、UseCaseが依存するRepositoryの契約を定義
  */
 
-import { Settings } from '../../domain/entities/Settings';
+import { Settings } from "../../domain/entities/Settings";
 
 export interface SettingsValidationResult {
   isValid: boolean;

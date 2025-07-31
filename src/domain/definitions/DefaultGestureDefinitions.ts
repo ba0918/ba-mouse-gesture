@@ -1,26 +1,26 @@
 /**
  * DefaultGestureDefinitions
  * デフォルトジェスチャーの統一定義（ドメイン層）
- * 
+ *
  * Clean Architecture原則：
  * - ドメイン層で業務ルールを一元管理
  * - DRY原則：重複を排除し、単一の情報源（Single Source of Truth）を確立
  * - OCP原則：新しいジェスチャー追加時の既存コード変更を最小化
  */
 
-import { ActionName } from '../types';
+import { ActionName } from "../types";
 
 export interface GestureDefinition {
-  id: string;           // ジェスチャーID（内部管理用）
-  name: string;         // 表示名
-  pattern: string;      // パターン表示（矢印）
-  action: ActionName;   // アクション名（実行処理用）
-  category: string;     // カテゴリ
-  description: string;  // 説明
+  id: string; // ジェスチャーID（内部管理用）
+  name: string; // 表示名
+  pattern: string; // パターン表示（矢印）
+  action: ActionName; // アクション名（実行処理用）
+  category: string; // カテゴリ
+  description: string; // 説明
 }
 
 export interface GestureListItem extends GestureDefinition {
-  type: 'default' | 'custom';
+  type: "default" | "custom";
   enabled: boolean;
 }
 
@@ -34,97 +34,97 @@ export class DefaultGestureDefinitions {
   private static readonly GESTURE_DEFINITIONS: readonly GestureDefinition[] = [
     // 基本ジェスチャー（方向キーベース）
     {
-      id: 'left',
-      name: 'ブラウザの戻る',
-      pattern: '←',
-      action: 'back',
-      category: 'basic',
-      description: 'ブラウザの前のページに戻る'
+      id: "left",
+      name: "ブラウザの戻る",
+      pattern: "←",
+      action: "back",
+      category: "basic",
+      description: "ブラウザの前のページに戻る",
     },
     {
-      id: 'right',
-      name: 'ブラウザの進む',
-      pattern: '→',
-      action: 'forward',
-      category: 'basic',
-      description: 'ブラウザの次のページに進む'
+      id: "right",
+      name: "ブラウザの進む",
+      pattern: "→",
+      action: "forward",
+      category: "basic",
+      description: "ブラウザの次のページに進む",
     },
     {
-      id: 'up',
-      name: 'ページ最上部スクロール',
-      pattern: '↑',
-      action: 'scroll_top',
-      category: 'basic',
-      description: 'ページの最上部にスクロール'
+      id: "up",
+      name: "ページ最上部スクロール",
+      pattern: "↑",
+      action: "scroll_top",
+      category: "basic",
+      description: "ページの最上部にスクロール",
     },
     {
-      id: 'down',
-      name: 'ページ最下部スクロール',
-      pattern: '↓',
-      action: 'scroll_bottom',
-      category: 'basic',
-      description: 'ページの最下部にスクロール'
+      id: "down",
+      name: "ページ最下部スクロール",
+      pattern: "↓",
+      action: "scroll_bottom",
+      category: "basic",
+      description: "ページの最下部にスクロール",
     },
 
     // 複合ジェスチャー（組み合わせベース）
     {
-      id: 'downright',
-      name: 'タブを閉じる',
-      pattern: '↓→',
-      action: 'close_tab',
-      category: 'tab',
-      description: '現在のタブを閉じる'
+      id: "downright",
+      name: "タブを閉じる",
+      pattern: "↓→",
+      action: "close_tab",
+      category: "tab",
+      description: "現在のタブを閉じる",
     },
     {
-      id: 'upright',
-      name: '新しいタブを開く',
-      pattern: '↑→',
-      action: 'new_tab',
-      category: 'tab',
-      description: '新しいタブを開く'
+      id: "upright",
+      name: "新しいタブを開く",
+      pattern: "↑→",
+      action: "new_tab",
+      category: "tab",
+      description: "新しいタブを開く",
     },
     {
-      id: 'rightdown',
-      name: 'タブ複製',
-      pattern: '→↓',
-      action: 'duplicate_tab',
-      category: 'tab',
-      description: '現在のタブを複製'
+      id: "rightdown",
+      name: "タブ複製",
+      pattern: "→↓",
+      action: "duplicate_tab",
+      category: "tab",
+      description: "現在のタブを複製",
     },
     {
-      id: 'updown',
-      name: 'ページ更新',
-      pattern: '↑↓',
-      action: 'refresh',
-      category: 'page',
-      description: 'ページを更新'
+      id: "updown",
+      name: "ページ更新",
+      pattern: "↑↓",
+      action: "refresh",
+      category: "page",
+      description: "ページを更新",
     },
 
     // Phase 10 新機能（高度な機能）
     {
-      id: 'super_refresh',
-      name: 'スーパーリロード（キャッシュクリア付き）',
-      pattern: '↑↓↑',
-      action: 'super_refresh',
-      category: 'page',
-      description: 'キャッシュクリア付きリロード'
+      id: "super_refresh",
+      name: "スーパーリロード（キャッシュクリア付き）",
+      pattern: "↑↓↑",
+      action: "super_refresh",
+      category: "page",
+      description: "キャッシュクリア付きリロード",
     },
     {
-      id: 'prev_tab',
-      name: '前のタブに切り替え',
-      pattern: '←→',
-      action: 'prev_tab',
-      category: 'tab',
-      description: '前のタブに切り替え'
+      id: "prev_tab",
+      name: "前のタブに切り替え",
+      pattern: "←→",
+      action: "prev_tab",
+      category: "tab",
+      description: "前のタブに切り替え",
     },
     {
-      id: 'next_tab',
-      name: '次のタブに切り替え',
-      pattern: '→←',
-      action: 'next_tab',
-      category: 'tab',
-      description: '次のタブに切り替え'
-    }
+      id: "next_tab",
+      name: "次のタブに切り替え",
+      pattern: "→←",
+      action: "next_tab",
+      category: "tab",
+      description: "次のタブに切り替え",
+    },
   ] as const;
 
   /**
@@ -161,8 +161,8 @@ export class DefaultGestureDefinitions {
   static createGestureListItems(gestureStates: Record<string, boolean>): GestureListItem[] {
     return this.GESTURE_DEFINITIONS.map(definition => ({
       ...definition,
-      type: 'default' as const,
-      enabled: gestureStates[definition.id] !== false // デフォルトは有効
+      type: "default" as const,
+      enabled: gestureStates[definition.id] !== false, // デフォルトは有効
     }));
   }
 
