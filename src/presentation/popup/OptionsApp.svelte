@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { DebugSettingsEntity } from "../../domain/entities/DebugSettingsEntity";
+import { DebugSettings } from "../../domain/entities/DebugSettings";
 import type { GestureAction } from "../../domain/valueObjects/GestureAction";
 import { GesturePattern } from "../../domain/valueObjects/GesturePattern";
 import {
@@ -100,7 +100,7 @@ async function initializeSettings() {
         excludeList = settings.excludeList || [];
 
         // Clean Architecture準拠のデバッグ設定読み込み
-        const debugEntity = DebugSettingsEntity.fromPlainObject(
+        const debugEntity = DebugSettings.fromPlainObject(
           settings.debugSettings || {},
         );
         debugEnabled = debugEntity.enabled;

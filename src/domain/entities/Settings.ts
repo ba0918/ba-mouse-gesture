@@ -1,6 +1,6 @@
 import { DefaultGestureDefinitions } from "../definitions/DefaultGestureDefinitions";
 import { Threshold } from "../valueObjects/Threshold";
-import { DebugSettingsEntity } from "./DebugSettingsEntity";
+import { DebugSettings } from "./DebugSettings";
 
 /**
  * デフォルトジェスチャー状態の型定義
@@ -30,7 +30,7 @@ export interface SettingsConfig {
   gestureThreshold?: number;
   excludeList?: string[];
   defaultGestureStates?: Record<string, boolean>;
-  debugSettings?: Record<string, any>; // DebugSettingsEntityと互換性のため
+  debugSettings?: Record<string, any>; // DebugSettingsと互換性のため
 }
 
 /**
@@ -51,7 +51,7 @@ export class Settings {
   public gestureThreshold: number;
   public excludeList: string[];
   public defaultGestureStates: DefaultGestureStates;
-  public debugSettings: DebugSettingsEntity;
+  public debugSettings: DebugSettings;
   public readonly version: string;
   public lastModified: string;
 
@@ -73,10 +73,10 @@ export class Settings {
       ...config.defaultGestureStates,
     };
 
-    // デバッグ設定（DebugSettingsEntityに統一）
+    // デバッグ設定（DebugSettingsに統一）
     this.debugSettings = config.debugSettings
-      ? DebugSettingsEntity.fromPlainObject(config.debugSettings)
-      : DebugSettingsEntity.getDefault();
+      ? DebugSettings.fromPlainObject(config.debugSettings)
+      : DebugSettings.getDefault();
 
     // メタデータ
     this.version = "1.0.0";
@@ -234,7 +234,7 @@ export class Settings {
    * デバッグ設定を取得
    * @returns デバッグ設定のコピー
    */
-  getDebugSettings(): DebugSettingsEntity {
+  getDebugSettings(): DebugSettings {
     return this.debugSettings.clone();
   }
 

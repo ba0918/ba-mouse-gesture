@@ -47,8 +47,8 @@ interface StorageFormat {
   statusPosition: string;
 }
 
-export class DebugSettingsEntity {
-  private static _defaultInstance: DebugSettingsEntity | null = null;
+export class DebugSettings {
+  private static _defaultInstance: DebugSettings | null = null;
 
   public enabled: boolean;
   public logLevel: LogLevel;
@@ -131,8 +131,8 @@ export class DebugSettingsEntity {
   /**
    * 複数の設定を一括更新
    */
-  updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettingsEntity {
-    const updated = new DebugSettingsEntity({
+  updateSettings(newSettings: Partial<DebugSettingsData>): DebugSettings {
+    const updated = new DebugSettings({
       ...this.toPlainObject(),
       ...newSettings,
       updatedAt: new Date().toISOString(),
@@ -159,7 +159,7 @@ export class DebugSettingsEntity {
    * 🎯 新機能：popup-content script間の同期検証
    * 両方で同じ設定を持っているかを確認
    */
-  validateSyncConsistency(otherSettings: DebugSettingsEntity | DebugSettingsData | null): SyncConsistencyResult {
+  validateSyncConsistency(otherSettings: DebugSettings | DebugSettingsData | null): SyncConsistencyResult {
     if (!otherSettings) {
       return {
         isConsistent: false,
@@ -167,12 +167,12 @@ export class DebugSettingsEntity {
       };
     }
 
-    const other = otherSettings instanceof DebugSettingsEntity
+    const other = otherSettings instanceof DebugSettings
       ? otherSettings
-      : new DebugSettingsEntity(otherSettings);
+      : new DebugSettings(otherSettings);
 
     const inconsistencies: string[] = [];
-    const fields: (keyof DebugSettingsEntity)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
+    const fields: (keyof DebugSettings)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
 
     fields.forEach(field => {
       if (this[field] !== other[field]) {
@@ -191,7 +191,7 @@ export class DebugSettingsEntity {
    * 🎯 新機能：同期の必要性を判定
    * 設定変更時に同期が必要かどうかを判定
    */
-  requiresSync(otherSettings: DebugSettingsEntity | DebugSettingsData | null): boolean {
+  requiresSync(otherSettings: DebugSettings | DebugSettingsData | null): boolean {
     const validation = this.validateSyncConsistency(otherSettings);
     return !validation.isConsistent;
   }
@@ -246,13 +246,13 @@ export class DebugSettingsEntity {
   /**
    * 設定の変更点を取得
    */
-  getChanges(otherSettings: DebugSettingsEntity | DebugSettingsData): Record<string, ChangeRecord> {
+  getChanges(otherSettings: DebugSettings | DebugSettingsData): Record<string, ChangeRecord> {
     const changes: Record<string, ChangeRecord> = {};
-    const other = otherSettings instanceof DebugSettingsEntity
+    const other = otherSettings instanceof DebugSettings
       ? otherSettings
-      : new DebugSettingsEntity(otherSettings);
+      : new DebugSettings(otherSettings);
 
-    const fields: (keyof DebugSettingsEntity)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
+    const fields: (keyof DebugSettings)[] = ["enabled", "logLevel", "showStatus", "statusPosition"];
 
     fields.forEach(field => {
       if (this[field] !== other[field]) {
@@ -269,15 +269,15 @@ export class DebugSettingsEntity {
   /**
    * 設定の複製
    */
-  clone(): DebugSettingsEntity {
-    return new DebugSettingsEntity(this.toPlainObject());
+  clone(): DebugSettings {
+    return new DebugSettings(this.toPlainObject());
   }
 
   /**
    * 設定の比較
    */
-  equals(otherSettings: DebugSettingsEntity): boolean {
-    if (!(otherSettings instanceof DebugSettingsEntity)) {
+  equals(otherSettings: DebugSettings): boolean {
+    if (!(otherSettings instanceof DebugSettings)) {
       return false;
     }
 
@@ -294,7 +294,7 @@ export class DebugSettingsEntity {
    */
   getSyncInfo(): SyncInfo {
     return {
-      entity: "DebugSettingsEntity",
+      entity: "DebugSettings",
       enabled: this.enabled,
       logLevel: this.logLevel,
       showStatus: this.showStatus,
@@ -308,15 +308,15 @@ export class DebugSettingsEntity {
   /**
    * プレーンオブジェクトからエンティティを作成
    */
-  static fromPlainObject(obj: DebugSettingsData): DebugSettingsEntity {
-    return new DebugSettingsEntity(obj);
+  static fromPlainObject(obj: DebugSettingsData): DebugSettings {
+    return new DebugSettings(obj);
   }
 
   /**
    * デフォルト設定を取得
    */
-  static getDefault(): DebugSettingsEntity {
-    return new DebugSettingsEntity({
+  static getDefault(): DebugSettings {
+    return new DebugSettings({
       enabled: false, // 🎯 修正：デフォルトはfalse（prod環境対応）
       logLevel: 2 as LogLevel,
       showStatus: false, // 🎯 修正：デフォルトはfalse
@@ -328,7 +328,7 @@ export class DebugSettingsEntity {
    * 静的なログ制御（初期化前でも使用可能）
    * Chrome Storage API読み込み前の早期ログ制御のため
    */
-  static getDefaultInstance(): DebugSettingsEntity {
+  static getDefaultInstance(): DebugSettings {
     if (!this._defaultInstance) {
       this._defaultInstance = this.getDefault();
     }
@@ -358,6 +358,6 @@ export class DebugSettingsEntity {
    * 文字列表現（同期情報含む）
    */
   toString(): string {
-    return `DebugSettingsEntity(enabled=${this.enabled}, logLevel=${this.logLevel}, showStatus=${this.showStatus}, position=${this.statusPosition}, updated=${this.updatedAt})`;
+    return `DebugSettings(enabled=${this.enabled}, logLevel=${this.logLevel}, showStatus=${this.showStatus}, position=${this.statusPosition}, updated=${this.updatedAt})`;
   }
 }
