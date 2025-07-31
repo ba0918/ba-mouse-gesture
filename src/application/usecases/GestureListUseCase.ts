@@ -8,7 +8,7 @@ import { CustomGesture } from "../../domain/entities/CustomGesture";
 import type { GestureAction } from "../../domain/entities/Gesture";
 import { IGestureRepository, ISettingsRepository } from "../interfaces";
 
-export interface UIGesture {
+interface UIGesture {
   id: string;
   name: string;
   pattern: string;
@@ -22,7 +22,7 @@ export class GestureListUseCase {
   constructor(
     private gestureRepository: IGestureRepository,
     private settingsRepository: ISettingsRepository,
-  ) {}
+  ) { }
 
   async getAllGestures(): Promise<UIGesture[]> {
     // 設定から標準ジェスチャーの有効/無効状態を取得
