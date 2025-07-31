@@ -44,6 +44,9 @@
   let strokeWidth = $state(defaultSettings.strokeWidth);
   let gestureThreshold = $state(defaultSettings.gestureThreshold);
 
+  // デバウンス用のタイマー
+  let trackSettingsDebounceTimer: NodeJS.Timeout | null = null;
+
   // 除外サイト
   let excludeList = $state<string[]>([]);
   let newExcludeUrl = $state('');
@@ -254,36 +257,44 @@
   }
 
   async function handleTrackSettingsChange() {
-    try {
-      logger?.debug('🔄 Track settings change triggered:', {
-        strokeColor,
-        strokeWidth,
-        gestureThreshold,
-      });
-
-      const services = (window as any).services;
-      if (!services) {
-        logger?.warn('Services not available for track settings');
-        return;
-      }
-
-      const settingsManagementUseCase = services.settingsManagementUseCase;
-
-      logger?.debug('💾 Saving track settings individually...');
-
-      // 既存のメソッドを使用して個別に保存
-      await settingsManagementUseCase.updateStrokeSettings(strokeColor, strokeWidth);
-      logger?.debug('✅ Stroke settings saved:', { strokeColor, strokeWidth });
-
-      await settingsManagementUseCase.updateGestureThreshold(gestureThreshold);
-      logger?.debug('✅ Gesture threshold saved:', gestureThreshold);
-
-      logger?.info('✅ All track settings saved successfully');
-      showSaveStatus('軌跡設定を保存しました');
-    } catch (error) {
-      logger?.error('❌ 軌跡設定保存エラー:', error);
-      showSaveStatus('軌跡設定の保存に失敗しました', 'error');
+    // 既存のタイマーをクリア
+    if (trackSettingsDebounceTimer) {
+      clearTimeout(trackSettingsDebounceTimer);
     }
+
+    // デバウンス: 500ms後に保存処理を実行
+    trackSettingsDebounceTimer = setTimeout(async () => {
+      try {
+        logger?.debug('🔄 Track settings change triggered (debounced):', {
+          strokeColor,
+          strokeWidth,
+          gestureThreshold,
+        });
+
+        const services = (window as any).services;
+        if (!services) {
+          logger?.warn('Services not available for track settings');
+          return;
+        }
+
+        const settingsManagementUseCase = services.settingsManagementUseCase;
+
+        logger?.debug('💾 Saving track settings individually...');
+
+        // 既存のメソッドを使用して個別に保存
+        await settingsManagementUseCase.updateStrokeSettings(strokeColor, strokeWidth);
+        logger?.debug('✅ Stroke settings saved:', { strokeColor, strokeWidth });
+
+        await settingsManagementUseCase.updateGestureThreshold(gestureThreshold);
+        logger?.debug('✅ Gesture threshold saved:', gestureThreshold);
+
+        logger?.info('✅ All track settings saved successfully');
+        showSaveStatus('軌跡設定を保存しました');
+      } catch (error) {
+        logger?.error('❌ 軌跡設定保存エラー:', error);
+        showSaveStatus('軌跡設定の保存に失敗しました', 'error');
+      }
+    }, 500); // 500ms のデバウンス
   }
 
   async function addExcludeUrl() {
