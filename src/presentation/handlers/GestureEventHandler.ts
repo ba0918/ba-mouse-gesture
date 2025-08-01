@@ -89,6 +89,10 @@ export class GestureEventHandler {
     document.addEventListener('mouseup', this.onMouseUp.bind(this), true);
     document.addEventListener('contextmenu', this.onContextMenu.bind(this), true);
 
+    // ジェスチャー中断イベント（軌跡残り防止）
+    // mouseleaveは誤発火しやすいため削除し、visibilitychangeのみ使用
+    document.addEventListener('visibilitychange', this.onVisibilityChange.bind(this));
+
     // ウィンドウリサイズ対応
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
@@ -151,13 +155,13 @@ export class GestureEventHandler {
    * マウスアップイベント
    */
   private onMouseUp(e: MouseEvent): void {
-    if (!this.gestureState.isRecording || e.button !== 2) return;
+    if (!this.gestureState.isRecording) return;
 
     this.gestureState.isRecording = false;
     const trail = [...this.gestureState.trail];
     const totalDistance = this.calculateTrailDistance();
 
-    // コールバック実行
+    // コールバック実行（どのボタンでも軌跡をクリア）
     if (this.callbacks.onGestureEnd) {
       this.callbacks.onGestureEnd(trail, totalDistance);
     }
@@ -166,8 +170,8 @@ export class GestureEventHandler {
     const shouldPreventContext = this.gestureState.preventContextMenu;
     this.resetGestureState();
 
-    // コンテキストメニューイベント処理のために短時間フラグを保持
-    if (shouldPreventContext) {
+    // 右クリックの場合のみコンテキストメニュー制御フラグを保持
+    if (e.button === 2 && shouldPreventContext) {
       this.gestureState.preventContextMenu = true;
       setTimeout(() => {
         this.gestureState.preventContextMenu = false;
@@ -190,6 +194,24 @@ export class GestureEventHandler {
       }
 
       return false;
+    }
+  }
+
+  /**
+   * ページ可視性変更イベント
+   */
+  private onVisibilityChange(): void {
+    if (document.hidden && this.gestureState.isRecording) {
+      // ページが非表示になった場合のみジェスチャーをキャンセル
+      const trail = [...this.gestureState.trail];
+      const totalDistance = this.calculateTrailDistance();
+
+      // ジェスチャー終了コールバックを実行（軌跡をクリア）
+      if (this.callbacks.onGestureEnd) {
+        this.callbacks.onGestureEnd(trail, totalDistance);
+      }
+
+      this.resetGestureState();
     }
   }
 
@@ -267,6 +289,7 @@ export class GestureEventHandler {
       document.removeEventListener('mousemove', this.onMouseMove, true);
       document.removeEventListener('mouseup', this.onMouseUp, true);
       document.removeEventListener('contextmenu', this.onContextMenu, true);
+      document.removeEventListener('visibilitychange', this.onVisibilityChange);
       window.removeEventListener('resize', this.onWindowResize);
 
       this.resetGestureState();
