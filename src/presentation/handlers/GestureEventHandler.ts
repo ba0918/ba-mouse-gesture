@@ -90,8 +90,7 @@ export class GestureEventHandler {
     document.addEventListener('contextmenu', this.onContextMenu.bind(this), true);
 
     // ジェスチャー中断イベント（軌跡残り防止）
-    document.addEventListener('mouseleave', this.onGestureCancel.bind(this), true);
-    window.addEventListener('blur', this.onGestureCancel.bind(this));
+    // mouseleaveは誤発火しやすいため削除し、visibilitychangeのみ使用
     document.addEventListener('visibilitychange', this.onVisibilityChange.bind(this));
 
     // ウィンドウリサイズ対応
@@ -200,19 +199,34 @@ export class GestureEventHandler {
 
   /**
    * ジェスチャーキャンセル（軌跡残り防止）
+   * 真にページ外に出た場合のみ実行
    */
-  private onGestureCancel(): void {
-    if (this.gestureState.isRecording) {
-      const trail = [...this.gestureState.trail];
-      const totalDistance = this.calculateTrailDistance();
-
-      // ジェスチャー終了コールバックを実行（軌跡をクリア）
-      if (this.callbacks.onGestureEnd) {
-        this.callbacks.onGestureEnd(trail, totalDistance);
-      }
-
-      this.resetGestureState();
+  private onGestureCancel(e?: Event): void {
+    // ジェスチャー中でない場合は何もしない
+    if (!this.gestureState.isRecording) {
+      return;
     }
+
+    // mouseleaveイベントの場合、relatedTargetがnullの場合のみ（真にページ外に出た場合）
+    if (e && e.type === 'mouseleave') {
+      const mouseEvent = e as MouseEvent;
+      if (mouseEvent.relatedTarget !== null) {
+        // まだページ内の要素に移動しただけなのでキャンセルしない
+        return;
+      }
+    }
+
+    console.log('Gesture cancelled due to:', e?.type || 'unknown');
+
+    const trail = [...this.gestureState.trail];
+    const totalDistance = this.calculateTrailDistance();
+
+    // ジェスチャー終了コールバックを実行（軌跡をクリア）
+    if (this.callbacks.onGestureEnd) {
+      this.callbacks.onGestureEnd(trail, totalDistance);
+    }
+
+    this.resetGestureState();
   }
 
   /**
@@ -298,8 +312,6 @@ export class GestureEventHandler {
       document.removeEventListener('mousemove', this.onMouseMove, true);
       document.removeEventListener('mouseup', this.onMouseUp, true);
       document.removeEventListener('contextmenu', this.onContextMenu, true);
-      document.removeEventListener('mouseleave', this.onGestureCancel, true);
-      window.removeEventListener('blur', this.onGestureCancel);
       document.removeEventListener('visibilitychange', this.onVisibilityChange);
       window.removeEventListener('resize', this.onWindowResize);
 
