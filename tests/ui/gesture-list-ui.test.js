@@ -5,37 +5,37 @@
  */
 
 describe('ジェスチャー一覧UI', () => {
-  let mockOptionsManager
-  let mockElements
-  let mockCustomGestureManager
-  
+  let mockOptionsManager;
+  let mockElements;
+  let mockCustomGestureManager;
+
   beforeEach(() => {
     // DOM要素のモック
     mockElements = {
-      allGesturesList: { 
+      allGesturesList: {
         innerHTML: '',
         className: '',
-        addEventListener: jest.fn()
+        addEventListener: jest.fn(),
       },
-      gestureSearch: { 
+      gestureSearch: {
         value: '',
-        addEventListener: jest.fn()
+        addEventListener: jest.fn(),
       },
-      gestureFilter: { 
+      gestureFilter: {
         value: 'all',
-        addEventListener: jest.fn()
+        addEventListener: jest.fn(),
       },
-      toggleViewMode: { 
+      toggleViewMode: {
         textContent: 'リスト',
-        addEventListener: jest.fn()
-      }
-    }
-    
+        addEventListener: jest.fn(),
+      },
+    };
+
     // getElementById のモック
-    document.getElementById = jest.fn((id) => mockElements[id])
-    document.querySelectorAll = jest.fn(() => [])
-    document.querySelector = jest.fn(() => ({ scrollIntoView: jest.fn() }))
-    
+    document.getElementById = jest.fn((id) => mockElements[id]);
+    document.querySelectorAll = jest.fn(() => []);
+    document.querySelector = jest.fn(() => ({ scrollIntoView: jest.fn() }));
+
     // CustomGestureManager のモック
     mockCustomGestureManager = {
       getCustomGestures: jest.fn().mockReturnValue([
@@ -44,17 +44,17 @@ describe('ジェスチャー一覧UI', () => {
           name: 'カスタム戻る',
           pattern: 'LEFT_UP',
           action: 'back',
-          enabled: true
-        }
+          enabled: true,
+        },
       ]),
       addCustomGesture: jest.fn().mockResolvedValue({ success: true }),
       updateCustomGesture: jest.fn().mockResolvedValue(true),
-      deleteCustomGesture: jest.fn().mockResolvedValue(true)
-    }
-    
+      deleteCustomGesture: jest.fn().mockResolvedValue(true),
+    };
+
     // グローバルクラスのモック
-    global.CustomGestureManager = jest.fn(() => mockCustomGestureManager)
-    
+    global.CustomGestureManager = jest.fn(() => mockCustomGestureManager);
+
     // OptionsManager クラスの一部機能をモック
     mockOptionsManager = {
       currentViewMode: 'list',
@@ -76,7 +76,7 @@ describe('ジェスチャー一覧UI', () => {
           type: 'default',
           category: 'basic',
           description: '前のページに戻ります',
-          enabled: true
+          enabled: true,
         },
         {
           id: 'super_refresh',
@@ -87,8 +87,8 @@ describe('ジェスチャー一覧UI', () => {
           category: 'new',
           description: 'キャッシュをクリアしてページをリロードします',
           enabled: true,
-          isNew: true
-        }
+          isNew: true,
+        },
       ]),
       generateGestureItemHTML: jest.fn(),
       highlightSearchText: jest.fn((text) => text),
@@ -96,80 +96,80 @@ describe('ジェスチャー一覧UI', () => {
       toggleViewMode: jest.fn(),
       toggleGestureStatus: jest.fn(),
       editCustomGesture: jest.fn(),
-      deleteCustomGesture: jest.fn()
-    }
-    
+      deleteCustomGesture: jest.fn(),
+    };
+
     // chrome.storage のモック
     global.chrome = {
       storage: {
         sync: {
           get: jest.fn().mockResolvedValue({}),
-          set: jest.fn().mockResolvedValue()
-        }
-      }
-    }
-  })
-  
+          set: jest.fn().mockResolvedValue(),
+        },
+      },
+    };
+  });
+
   describe('初期化', () => {
     test('ジェスチャー一覧が正しく初期化される', async () => {
       // 実際のメソッド実装をテスト
       const initGesturesList = async function () {
-        this.currentViewMode = 'list'
-        this.currentFilter = 'all'
-        this.searchQuery = ''
-        await this.renderAllGesturesList()
-      }.bind(mockOptionsManager)
-      
-      await initGesturesList()
-      
-      expect(mockOptionsManager.currentViewMode).toBe('list')
-      expect(mockOptionsManager.currentFilter).toBe('all')
-      expect(mockOptionsManager.searchQuery).toBe('')
-    })
-    
+        this.currentViewMode = 'list';
+        this.currentFilter = 'all';
+        this.searchQuery = '';
+        await this.renderAllGesturesList();
+      }.bind(mockOptionsManager);
+
+      await initGesturesList();
+
+      expect(mockOptionsManager.currentViewMode).toBe('list');
+      expect(mockOptionsManager.currentFilter).toBe('all');
+      expect(mockOptionsManager.searchQuery).toBe('');
+    });
+
     test('イベントリスナーが正しく設定される', () => {
       const setupEventListeners = function () {
-        const searchInput = document.getElementById('gestureSearch')
-        const filterSelect = document.getElementById('gestureFilter')
-        const toggleViewBtn = document.getElementById('toggleViewMode')
-        
-        if (searchInput) searchInput.addEventListener('input', jest.fn())
-        if (filterSelect) filterSelect.addEventListener('change', jest.fn())
-        if (toggleViewBtn) toggleViewBtn.addEventListener('click', jest.fn())
-      }
-      
-      setupEventListeners()
-      
-      expect(mockElements.gestureSearch.addEventListener).toHaveBeenCalledWith('input', expect.any(Function))
-      expect(mockElements.gestureFilter.addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
-      expect(mockElements.toggleViewMode.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
-    })
-  })
-  
+        const searchInput = document.getElementById('gestureSearch');
+        const filterSelect = document.getElementById('gestureFilter');
+        const toggleViewBtn = document.getElementById('toggleViewMode');
+
+        if (searchInput) searchInput.addEventListener('input', jest.fn());
+        if (filterSelect) filterSelect.addEventListener('change', jest.fn());
+        if (toggleViewBtn) toggleViewBtn.addEventListener('click', jest.fn());
+      };
+
+      setupEventListeners();
+
+      expect(mockElements.gestureSearch.addEventListener).toHaveBeenCalledWith('input', expect.any(Function));
+      expect(mockElements.gestureFilter.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+      expect(mockElements.toggleViewMode.addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+    });
+  });
+
   describe('デフォルトジェスチャー表示', () => {
     test('基本ジェスチャーが正しく定義される', () => {
-      const defaultGestures = mockOptionsManager.getDefaultGestures()
-      
-      expect(defaultGestures).toHaveLength(2)
+      const defaultGestures = mockOptionsManager.getDefaultGestures();
+
+      expect(defaultGestures).toHaveLength(2);
       expect(defaultGestures[0]).toMatchObject({
         id: 'left',
         name: 'ブラウザの戻る',
         pattern: '←',
         type: 'default',
-        category: 'basic'
-      })
-    })
-    
+        category: 'basic',
+      });
+    });
+
     test('Phase 10新機能にNEWバッジが付く', () => {
-      const defaultGestures = mockOptionsManager.getDefaultGestures()
-      const newGesture = defaultGestures.find(g => g.isNew)
-      
-      expect(newGesture).toBeDefined()
-      expect(newGesture.pattern).toBe('↑↓↑')
-      expect(newGesture.category).toBe('new')
-    })
-  })
-  
+      const defaultGestures = mockOptionsManager.getDefaultGestures();
+      const newGesture = defaultGestures.find((g) => g.isNew);
+
+      expect(newGesture).toBeDefined();
+      expect(newGesture.pattern).toBe('↑↓↑');
+      expect(newGesture.category).toBe('new');
+    });
+  });
+
   describe('検索・フィルタリング', () => {
     beforeEach(() => {
       mockOptionsManager.allGestures = [
@@ -179,7 +179,7 @@ describe('ジェスチャー一覧UI', () => {
           pattern: '←',
           type: 'default',
           category: 'basic',
-          description: '前のページに戻ります'
+          description: '前のページに戻ります',
         },
         {
           id: 'super_refresh',
@@ -188,7 +188,7 @@ describe('ジェスチャー一覧UI', () => {
           type: 'default',
           category: 'new',
           isNew: true,
-          description: 'キャッシュをクリアしてページをリロードします'
+          description: 'キャッシュをクリアしてページをリロードします',
         },
         {
           id: 'custom1',
@@ -196,178 +196,188 @@ describe('ジェスチャー一覧UI', () => {
           pattern: '←↑',
           type: 'custom',
           category: 'custom',
-          description: 'カスタムの戻る動作'
-        }
-      ]
-    })
-    
+          description: 'カスタムの戻る動作',
+        },
+      ];
+    });
+
     test('検索クエリでフィルタリングされる', () => {
       const filterFunction = function (searchQuery) {
-        return this.allGestures.filter(gesture => 
-          gesture.name.toLowerCase().includes(searchQuery) ||
-          gesture.description.toLowerCase().includes(searchQuery) ||
-          gesture.pattern.includes(searchQuery)
-        )
-      }.bind(mockOptionsManager)
-      
-      const result = filterFunction('スーパー')
-      expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('スーパーリロード')
-    })
-    
+        return this.allGestures.filter(
+          (gesture) =>
+            gesture.name.toLowerCase().includes(searchQuery) ||
+            gesture.description.toLowerCase().includes(searchQuery) ||
+            gesture.pattern.includes(searchQuery),
+        );
+      }.bind(mockOptionsManager);
+
+      const result = filterFunction('スーパー');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('スーパーリロード');
+    });
+
     test('タイプでフィルタリングされる', () => {
       const filterFunction = function (filterType) {
-        return this.allGestures.filter(gesture => {
-          if (filterType === 'all') return true
-          if (filterType === 'default') return gesture.type === 'default'
-          if (filterType === 'custom') return gesture.type === 'custom'
-          if (filterType === 'new') return gesture.isNew
-          return false
-        })
-      }.bind(mockOptionsManager)
-      
-      expect(filterFunction('default')).toHaveLength(2)
-      expect(filterFunction('custom')).toHaveLength(1)
-      expect(filterFunction('new')).toHaveLength(1)
-    })
-  })
-  
+        return this.allGestures.filter((gesture) => {
+          if (filterType === 'all') return true;
+          if (filterType === 'default') return gesture.type === 'default';
+          if (filterType === 'custom') return gesture.type === 'custom';
+          if (filterType === 'new') return gesture.isNew;
+          return false;
+        });
+      }.bind(mockOptionsManager);
+
+      expect(filterFunction('default')).toHaveLength(2);
+      expect(filterFunction('custom')).toHaveLength(1);
+      expect(filterFunction('new')).toHaveLength(1);
+    });
+  });
+
   describe('表示モード', () => {
     test('表示モードが正しく切り替わる', () => {
       const toggleViewMode = function () {
-        const modes = ['list', 'compact', 'grid']
-        const currentIndex = modes.indexOf(this.currentViewMode)
-        this.currentViewMode = modes[(currentIndex + 1) % modes.length]
-        return this.currentViewMode
-      }.bind(mockOptionsManager)
-      
-      expect(toggleViewMode()).toBe('compact')
-      expect(toggleViewMode()).toBe('grid')
-      expect(toggleViewMode()).toBe('list')
-    })
-    
+        const modes = ['list', 'compact', 'grid'];
+        const currentIndex = modes.indexOf(this.currentViewMode);
+        this.currentViewMode = modes[(currentIndex + 1) % modes.length];
+        return this.currentViewMode;
+      }.bind(mockOptionsManager);
+
+      expect(toggleViewMode()).toBe('compact');
+      expect(toggleViewMode()).toBe('grid');
+      expect(toggleViewMode()).toBe('list');
+    });
+
     test('表示モードによってCSSクラスが変わる', () => {
-      mockOptionsManager.currentViewMode = 'grid'
-      
+      mockOptionsManager.currentViewMode = 'grid';
+
       const updateViewClass = function () {
-        const container = document.getElementById('allGesturesList')
+        const container = document.getElementById('allGesturesList');
         if (container) {
-          container.className = `all-gestures-container ${this.currentViewMode}-view`
+          container.className = `all-gestures-container ${this.currentViewMode}-view`;
         }
-      }.bind(mockOptionsManager)
-      
-      updateViewClass()
-      
-      expect(mockElements.allGesturesList.className).toBe('all-gestures-container grid-view')
-    })
-  })
-  
+      }.bind(mockOptionsManager);
+
+      updateViewClass();
+
+      expect(mockElements.allGesturesList.className).toBe('all-gestures-container grid-view');
+    });
+  });
+
   describe('ジェスチャー有効/無効切り替え', () => {
     test('カスタムジェスチャーの有効/無効が切り替わる', async () => {
-      mockOptionsManager.allGestures = [{
-        id: 'custom1',
-        name: 'テストジェスチャー',
-        type: 'custom',
-        enabled: true
-      }]
-      
+      mockOptionsManager.allGestures = [
+        {
+          id: 'custom1',
+          name: 'テストジェスチャー',
+          type: 'custom',
+          enabled: true,
+        },
+      ];
+
       const toggleGestureStatus = async function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId)
-        if (!gesture) return
-        
-        gesture.enabled = !gesture.enabled
-        
+        const gesture = this.allGestures.find((g) => g.id === gestureId);
+        if (!gesture) return;
+
+        gesture.enabled = !gesture.enabled;
+
         if (gesture.type === 'custom' && this.customGestureManager) {
-          await this.customGestureManager.updateCustomGesture(gestureId, gesture)
-          this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true)
+          await this.customGestureManager.updateCustomGesture(gestureId, gesture);
+          this.showSaveStatus(`${gesture.name}を${gesture.enabled ? '有効' : '無効'}にしました`, true);
         }
-      }.bind(mockOptionsManager)
-      
-      await toggleGestureStatus('custom1')
-      
-      expect(mockOptionsManager.allGestures[0].enabled).toBe(false)
-      expect(mockCustomGestureManager.updateCustomGesture).toHaveBeenCalledWith('custom1', expect.objectContaining({
-        enabled: false
-      }))
-      expect(mockOptionsManager.showSaveStatus).toHaveBeenCalledWith('テストジェスチャーを無効にしました', true)
-    })
-  })
-  
+      }.bind(mockOptionsManager);
+
+      await toggleGestureStatus('custom1');
+
+      expect(mockOptionsManager.allGestures[0].enabled).toBe(false);
+      expect(mockCustomGestureManager.updateCustomGesture).toHaveBeenCalledWith(
+        'custom1',
+        expect.objectContaining({
+          enabled: false,
+        }),
+      );
+      expect(mockOptionsManager.showSaveStatus).toHaveBeenCalledWith('テストジェスチャーを無効にしました', true);
+    });
+  });
+
   describe('カスタムジェスチャー操作', () => {
     test('カスタムジェスチャーが編集モードになる', () => {
-      mockOptionsManager.allGestures = [{
-        id: 'custom1',
-        name: 'テストジェスチャー',
-        pattern: '←↑',
-        action: 'back',
-        type: 'custom'
-      }]
-      
+      mockOptionsManager.allGestures = [
+        {
+          id: 'custom1',
+          name: 'テストジェスチャー',
+          pattern: '←↑',
+          action: 'back',
+          type: 'custom',
+        },
+      ];
+
       // DOM要素を追加
-      mockElements.gestureName = { value: '' }
-      mockElements.gesturePatternDisplay = { value: '' }
-      mockElements.gestureAction = { value: '' }
-      mockElements.addGestureBtn = { textContent: '' }
-      
+      mockElements.gestureName = { value: '' };
+      mockElements.gesturePatternDisplay = { value: '' };
+      mockElements.gestureAction = { value: '' };
+      mockElements.addGestureBtn = { textContent: '' };
+
       const editCustomGesture = function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
-        if (!gesture) return
-        
-        document.getElementById('gestureName').value = gesture.name
-        document.getElementById('gesturePatternDisplay').value = gesture.pattern
-        document.getElementById('gestureAction').value = gesture.action
-        
-        this.editingGestureId = gestureId
-        
-        const addBtn = document.getElementById('addGestureBtn')
+        const gesture = this.allGestures.find((g) => g.id === gestureId && g.type === 'custom');
+        if (!gesture) return;
+
+        document.getElementById('gestureName').value = gesture.name;
+        document.getElementById('gesturePatternDisplay').value = gesture.pattern;
+        document.getElementById('gestureAction').value = gesture.action;
+
+        this.editingGestureId = gestureId;
+
+        const addBtn = document.getElementById('addGestureBtn');
         if (addBtn) {
-          addBtn.textContent = 'ジェスチャーを更新'
+          addBtn.textContent = 'ジェスチャーを更新';
         }
-      }.bind(mockOptionsManager)
-      
-      editCustomGesture('custom1')
-      
-      expect(mockElements.gestureName.value).toBe('テストジェスチャー')
-      expect(mockElements.gesturePatternDisplay.value).toBe('←↑')
-      expect(mockElements.gestureAction.value).toBe('back')
-      expect(mockOptionsManager.editingGestureId).toBe('custom1')
-      expect(mockElements.addGestureBtn.textContent).toBe('ジェスチャーを更新')
-    })
-    
+      }.bind(mockOptionsManager);
+
+      editCustomGesture('custom1');
+
+      expect(mockElements.gestureName.value).toBe('テストジェスチャー');
+      expect(mockElements.gesturePatternDisplay.value).toBe('←↑');
+      expect(mockElements.gestureAction.value).toBe('back');
+      expect(mockOptionsManager.editingGestureId).toBe('custom1');
+      expect(mockElements.addGestureBtn.textContent).toBe('ジェスチャーを更新');
+    });
+
     test('カスタムジェスチャーが削除される', async () => {
-      mockOptionsManager.allGestures = [{
-        id: 'custom1',
-        name: 'テストジェスチャー',
-        type: 'custom'
-      }]
-      
+      mockOptionsManager.allGestures = [
+        {
+          id: 'custom1',
+          name: 'テストジェスチャー',
+          type: 'custom',
+        },
+      ];
+
       // confirmのモック
-      global.confirm = jest.fn(() => true)
-      
+      global.confirm = jest.fn(() => true);
+
       const deleteCustomGesture = async function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
-        if (!gesture) return
-        
+        const gesture = this.allGestures.find((g) => g.id === gestureId && g.type === 'custom');
+        if (!gesture) return;
+
         // eslint-disable-next-line no-alert
         if (!confirm(`"${gesture.name}"を削除しますか？この操作は元に戻せません。`)) {
-          return
+          return;
         }
-        
+
         if (this.customGestureManager) {
-          await this.customGestureManager.deleteCustomGesture(gestureId)
-          this.showSaveStatus(`${gesture.name}を削除しました`, true)
-          await this.renderAllGesturesList()
+          await this.customGestureManager.deleteCustomGesture(gestureId);
+          this.showSaveStatus(`${gesture.name}を削除しました`, true);
+          await this.renderAllGesturesList();
         }
-      }.bind(mockOptionsManager)
-      
-      await deleteCustomGesture('custom1')
-      
-      expect(global.confirm).toHaveBeenCalledWith('"テストジェスチャー"を削除しますか？この操作は元に戻せません。')
-      expect(mockCustomGestureManager.deleteCustomGesture).toHaveBeenCalledWith('custom1')
-      expect(mockOptionsManager.showSaveStatus).toHaveBeenCalledWith('テストジェスチャーを削除しました', true)
-    })
-  })
-  
+      }.bind(mockOptionsManager);
+
+      await deleteCustomGesture('custom1');
+
+      expect(global.confirm).toHaveBeenCalledWith('"テストジェスチャー"を削除しますか？この操作は元に戻せません。');
+      expect(mockCustomGestureManager.deleteCustomGesture).toHaveBeenCalledWith('custom1');
+      expect(mockOptionsManager.showSaveStatus).toHaveBeenCalledWith('テストジェスチャーを削除しました', true);
+    });
+  });
+
   describe('HTML生成', () => {
     test('ジェスチャーアイテムのHTMLが正しく生成される', () => {
       const gesture = {
@@ -377,210 +387,217 @@ describe('ジェスチャー一覧UI', () => {
         description: 'テスト用ジェスチャー',
         enabled: true,
         type: 'default',
-        isNew: true
-      }
-      
+        isNew: true,
+      };
+
       const generateHTML = function (gesture) {
-        const badges = []
+        const badges = [];
         if (gesture.isNew) {
-          badges.push('<span class="new-badge">New</span>')
+          badges.push('<span class="new-badge">New</span>');
         }
         if (gesture.type === 'custom') {
-          badges.push('<span class="custom-badge">Custom</span>')
+          badges.push('<span class="custom-badge">Custom</span>');
         }
-        
+
         return {
-          containsNewBadge: badges.some(badge => badge.includes('new-badge')),
-          containsCustomBadge: badges.some(badge => badge.includes('custom-badge')),
+          containsNewBadge: badges.some((badge) => badge.includes('new-badge')),
+          containsCustomBadge: badges.some((badge) => badge.includes('custom-badge')),
           gesturePattern: gesture.pattern,
-          gestureName: gesture.name
-        }
-      }
-      
-      const result = generateHTML(gesture)
-      
-      expect(result.containsNewBadge).toBe(true)
-      expect(result.containsCustomBadge).toBe(false)
-      expect(result.gesturePattern).toBe('↑↓')
-      expect(result.gestureName).toBe('テストジェスチャー')
-    })
-    
+          gestureName: gesture.name,
+        };
+      };
+
+      const result = generateHTML(gesture);
+
+      expect(result.containsNewBadge).toBe(true);
+      expect(result.containsCustomBadge).toBe(false);
+      expect(result.gesturePattern).toBe('↑↓');
+      expect(result.gestureName).toBe('テストジェスチャー');
+    });
+
     test('検索ハイライトが正しく適用される', () => {
       const highlightSearchText = function (text, searchQuery) {
-        if (!searchQuery) return text
-        const regex = new RegExp(`(${searchQuery})`, 'gi')
-        return text.replace(regex, '<span class="search-highlight">$1</span>')
-      }
-      
-      const result = highlightSearchText('スーパーリロード', 'スーパー')
-      expect(result).toBe('<span class="search-highlight">スーパー</span>リロード')
-    })
-  })
-  
+        if (!searchQuery) return text;
+        const regex = new RegExp(`(${searchQuery})`, 'gi');
+        return text.replace(regex, '<span class="search-highlight">$1</span>');
+      };
+
+      const result = highlightSearchText('スーパーリロード', 'スーパー');
+      expect(result).toBe('<span class="search-highlight">スーパー</span>リロード');
+    });
+  });
+
   describe('エラーハンドリング', () => {
     test('カスタムジェスチャー読み込みエラーが処理される', () => {
       const errorManager = {
         customGestureManager: {
-          getCustomGestures: jest.fn(() => { throw new Error('読み込みエラー') })
-        }
-      }
-      
+          getCustomGestures: jest.fn(() => {
+            throw new Error('読み込みエラー');
+          }),
+        },
+      };
+
       const renderWithError = function () {
-        const container = document.getElementById('allGesturesList')
-        if (!container) return
-        
+        const container = document.getElementById('allGesturesList');
+        if (!container) return;
+
         try {
-          this.customGestureManager.getCustomGestures()
+          this.customGestureManager.getCustomGestures();
         } catch (error) {
-          console.error('Failed to render gestures list:', error)
-          container.innerHTML = '<div style="padding: 32px; text-align: center; color: #ea4335;">ジェスチャー一覧の読み込みに失敗しました</div>'
+          console.error('Failed to render gestures list:', error);
+          container.innerHTML =
+            '<div style="padding: 32px; text-align: center; color: #ea4335;">ジェスチャー一覧の読み込みに失敗しました</div>';
         }
-      }.bind(errorManager)
-      
-      renderWithError()
-      
-      expect(mockElements.allGesturesList.innerHTML).toContain('ジェスチャー一覧の読み込みに失敗しました')
-    })
-    
+      }.bind(errorManager);
+
+      renderWithError();
+
+      expect(mockElements.allGesturesList.innerHTML).toContain('ジェスチャー一覧の読み込みに失敗しました');
+    });
+
     test('ジェスチャー状態変更エラーが処理される', async () => {
       const errorManager = {
         allGestures: [{ id: 'custom1', name: 'テスト', type: 'custom', enabled: true }],
         customGestureManager: {
-          updateCustomGesture: jest.fn().mockRejectedValue(new Error('更新エラー'))
+          updateCustomGesture: jest.fn().mockRejectedValue(new Error('更新エラー')),
         },
-        showSaveStatus: jest.fn()
-      }
-      
+        showSaveStatus: jest.fn(),
+      };
+
       const toggleWithError = async function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId)
-        if (!gesture) return
-        
-        const originalState = gesture.enabled
-        gesture.enabled = !gesture.enabled
-        
+        const gesture = this.allGestures.find((g) => g.id === gestureId);
+        if (!gesture) return;
+
+        const originalState = gesture.enabled;
+        gesture.enabled = !gesture.enabled;
+
         try {
-          await this.customGestureManager.updateCustomGesture(gestureId, gesture)
+          await this.customGestureManager.updateCustomGesture(gestureId, gesture);
         } catch (error) {
-          console.error('Failed to update gesture:', error)
-          this.showSaveStatus('ジェスチャーの更新に失敗しました', false)
-          gesture.enabled = originalState // ロールバック
+          console.error('Failed to update gesture:', error);
+          this.showSaveStatus('ジェスチャーの更新に失敗しました', false);
+          gesture.enabled = originalState; // ロールバック
         }
-      }.bind(errorManager)
-      
-      await toggleWithError('custom1')
-      
-      expect(errorManager.allGestures[0].enabled).toBe(true) // ロールバック確認
-      expect(errorManager.showSaveStatus).toHaveBeenCalledWith('ジェスチャーの更新に失敗しました', false)
-    })
-  })
+      }.bind(errorManager);
+
+      await toggleWithError('custom1');
+
+      expect(errorManager.allGestures[0].enabled).toBe(true); // ロールバック確認
+      expect(errorManager.showSaveStatus).toHaveBeenCalledWith('ジェスチャーの更新に失敗しました', false);
+    });
+  });
 
   describe('UI同期機能', () => {
-    let mockRefreshAllGestureDisplays
+    let mockRefreshAllGestureDisplays;
 
     beforeEach(() => {
-      mockRefreshAllGestureDisplays = jest.fn()
-      mockOptionsManager.refreshAllGestureDisplays = mockRefreshAllGestureDisplays
-    })
+      mockRefreshAllGestureDisplays = jest.fn();
+      mockOptionsManager.refreshAllGestureDisplays = mockRefreshAllGestureDisplays;
+    });
 
     test('カスタムジェスチャー追加時にrefreshAllGestureDisplaysが呼ばれる', async () => {
-      mockOptionsManager.currentPattern = ['UP']
-      mockOptionsManager.customGestureManager = mockCustomGestureManager
-      
+      mockOptionsManager.currentPattern = ['UP'];
+      mockOptionsManager.customGestureManager = mockCustomGestureManager;
+
       // DOM要素を追加
-      mockElements.gestureName = { value: 'テストジェスチャー' }
-      mockElements.gestureAction = { value: 'back' }
-      
+      mockElements.gestureName = { value: 'テストジェスチャー' };
+      mockElements.gestureAction = { value: 'back' };
+
       mockCustomGestureManager.addCustomGesture.mockResolvedValue({
         success: true,
-        id: 'test-sync-1'
-      })
-      
+        id: 'test-sync-1',
+      });
+
       const addCustomGesture = async function () {
-        const name = document.getElementById('gestureName').value.trim()
-        const action = document.getElementById('gestureAction').value
-        
-        if (!name || this.currentPattern.length === 0) return
-        
+        const name = document.getElementById('gestureName').value.trim();
+        const action = document.getElementById('gestureAction').value;
+
+        if (!name || this.currentPattern.length === 0) return;
+
         const result = await this.customGestureManager.addCustomGesture({
           name: name,
           pattern: [...this.currentPattern],
-          action: action
-        })
-        
+          action: action,
+        });
+
         if (result.success) {
-          await this.refreshAllGestureDisplays()
+          await this.refreshAllGestureDisplays();
         }
-      }.bind(mockOptionsManager)
-      
-      await addCustomGesture()
-      
-      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled()
-    })
+      }.bind(mockOptionsManager);
+
+      await addCustomGesture();
+
+      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled();
+    });
 
     test('カスタムジェスチャー削除時にrefreshAllGestureDisplaysが呼ばれる', async () => {
-      mockOptionsManager.allGestures = [{
-        id: 'test-sync-2',
-        name: '削除テスト',
-        type: 'custom'
-      }]
-      
+      mockOptionsManager.allGestures = [
+        {
+          id: 'test-sync-2',
+          name: '削除テスト',
+          type: 'custom',
+        },
+      ];
+
       // confirmのモック
-      const mockConfirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
-      
+      const mockConfirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
       const deleteCustomGesture = async function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId && g.type === 'custom')
-        if (!gesture) return
-        
+        const gesture = this.allGestures.find((g) => g.id === gestureId && g.type === 'custom');
+        if (!gesture) return;
+
         // eslint-disable-next-line no-alert
-        if (!confirm(`"${gesture.name}"を削除しますか？`)) return
-        
+        if (!confirm(`"${gesture.name}"を削除しますか？`)) return;
+
         if (this.customGestureManager) {
-          await this.customGestureManager.deleteCustomGesture(gestureId)
-          await this.refreshAllGestureDisplays()
+          await this.customGestureManager.deleteCustomGesture(gestureId);
+          await this.refreshAllGestureDisplays();
         }
-      }.bind(mockOptionsManager)
-      
-      await deleteCustomGesture('test-sync-2')
-      
-      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled()
-      mockConfirm.mockRestore()
-    })
+      }.bind(mockOptionsManager);
+
+      await deleteCustomGesture('test-sync-2');
+
+      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled();
+      mockConfirm.mockRestore();
+    });
 
     test('ジェスチャー状態切り替え時にrefreshAllGestureDisplaysが呼ばれる', async () => {
-      mockOptionsManager.allGestures = [{
-        id: 'test-sync-3',
-        name: '状態切り替えテスト',
-        type: 'custom',
-        enabled: true
-      }]
-      
+      mockOptionsManager.allGestures = [
+        {
+          id: 'test-sync-3',
+          name: '状態切り替えテスト',
+          type: 'custom',
+          enabled: true,
+        },
+      ];
+
       const toggleGestureStatus = async function (gestureId) {
-        const gesture = this.allGestures.find(g => g.id === gestureId)
-        if (!gesture) return
-        
-        gesture.enabled = !gesture.enabled
-        
+        const gesture = this.allGestures.find((g) => g.id === gestureId);
+        if (!gesture) return;
+
+        gesture.enabled = !gesture.enabled;
+
         if (gesture.type === 'custom' && this.customGestureManager) {
-          await this.customGestureManager.updateCustomGesture(gestureId, gesture)
-          await this.refreshAllGestureDisplays()
+          await this.customGestureManager.updateCustomGesture(gestureId, gesture);
+          await this.refreshAllGestureDisplays();
         }
-      }.bind(mockOptionsManager)
-      
-      await toggleGestureStatus('test-sync-3')
-      
-      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled()
-    })
+      }.bind(mockOptionsManager);
+
+      await toggleGestureStatus('test-sync-3');
+
+      expect(mockRefreshAllGestureDisplays).toHaveBeenCalled();
+    });
 
     test('カスタム確認ダイアログが正しく動作する', async () => {
       const showConfirm = function () {
         return new Promise((resolve) => {
           // モックで即座にtrueを返す
-          setTimeout(() => resolve(true), 10)
-        })
-      }
-      
-      const result = await showConfirm('テストメッセージ')
-      expect(result).toBe(true)
-    })
-  })
-})
+          setTimeout(() => resolve(true), 10);
+        });
+      };
+
+      const result = await showConfirm('テストメッセージ');
+      expect(result).toBe(true);
+    });
+  });
+});

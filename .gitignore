@@ -51,6 +51,9 @@ temp/
 *.tmp
 *.temp
 
+# Debug and development files
+debug/
+
 # Environment variables
 .env
 .env.local
@@ -73,3 +76,6 @@ playwright/.cache/
 
 # Cache
 .cache/
+
+# External tool configurations
+.serena/
