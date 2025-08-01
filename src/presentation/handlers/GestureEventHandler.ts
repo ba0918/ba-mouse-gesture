@@ -198,43 +198,20 @@ export class GestureEventHandler {
   }
 
   /**
-   * ジェスチャーキャンセル（軌跡残り防止）
-   * 真にページ外に出た場合のみ実行
-   */
-  private onGestureCancel(e?: Event): void {
-    // ジェスチャー中でない場合は何もしない
-    if (!this.gestureState.isRecording) {
-      return;
-    }
-
-    // mouseleaveイベントの場合、relatedTargetがnullの場合のみ（真にページ外に出た場合）
-    if (e && e.type === 'mouseleave') {
-      const mouseEvent = e as MouseEvent;
-      if (mouseEvent.relatedTarget !== null) {
-        // まだページ内の要素に移動しただけなのでキャンセルしない
-        return;
-      }
-    }
-
-    console.log('Gesture cancelled due to:', e?.type || 'unknown');
-
-    const trail = [...this.gestureState.trail];
-    const totalDistance = this.calculateTrailDistance();
-
-    // ジェスチャー終了コールバックを実行（軌跡をクリア）
-    if (this.callbacks.onGestureEnd) {
-      this.callbacks.onGestureEnd(trail, totalDistance);
-    }
-
-    this.resetGestureState();
-  }
-
-  /**
    * ページ可視性変更イベント
    */
   private onVisibilityChange(): void {
-    if (document.hidden) {
-      this.onGestureCancel();
+    if (document.hidden && this.gestureState.isRecording) {
+      // ページが非表示になった場合のみジェスチャーをキャンセル
+      const trail = [...this.gestureState.trail];
+      const totalDistance = this.calculateTrailDistance();
+
+      // ジェスチャー終了コールバックを実行（軌跡をクリア）
+      if (this.callbacks.onGestureEnd) {
+        this.callbacks.onGestureEnd(trail, totalDistance);
+      }
+
+      this.resetGestureState();
     }
   }
 
