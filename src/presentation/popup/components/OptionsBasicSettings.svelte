@@ -14,7 +14,7 @@
   <h2>基本設定</h2>
   <div class="setting-item">
     <div>
-      <div class="setting-label">マウスジェスチャーを有効にする</div>
+      <div class="setting-label">ジェスチャーを有効にする</div>
       <div class="setting-description">チェックを外すと全ての機能が無効になります</div>
     </div>
     <label class="switch">

@@ -11,8 +11,8 @@
     currentPattern: string[];
     customGestureError: string;
     isLoading: boolean;
-    onAddCustomGesture: () => Promise<void>;
-    onDeleteCustomGesture: (gestureId: string, gestureName: string) => Promise<void>;
+    onAddGesture: () => Promise<void>;
+    onDeleteGesture: (gestureId: string, gestureName: string) => Promise<void>;
     onToggleGesture: (gestureId: string, enabled: boolean) => Promise<void>;
     onAddDirection: (direction: string) => void;
     onClearPattern: () => void;
@@ -20,15 +20,15 @@
   }
 
   let {
-    customGestures = $bindable(),
+    customGestures,
     gestureName = $bindable(),
     gesturePatternDisplay = $bindable(),
     gestureAction = $bindable(),
     currentPattern = $bindable(),
     customGestureError = $bindable(),
     isLoading,
-    onAddCustomGesture,
-    onDeleteCustomGesture,
+    onAddGesture,
+    onDeleteGesture,
     onToggleGesture,
     onAddDirection,
     onClearPattern,
@@ -113,7 +113,14 @@
 
                     // 現在のカスタムジェスチャー状態を最新のリストから取得
                     const currentCustomGesture = customGestures.find((g) => g.id === gesture.id);
-                    const currentEnabled = currentCustomGesture?.enabled ?? false;
+
+                    // ジェスチャーが存在しない場合は処理を中止
+                    if (!currentCustomGesture) {
+                      console.warn('⚠️ Custom gesture not found in current list:', gesture.id);
+                      return;
+                    }
+
+                    const currentEnabled = currentCustomGesture.enabled;
                     const newEnabled = !currentEnabled;
 
                     console.log(
@@ -136,9 +143,17 @@
                   onclick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+
+                    // 現在のカスタムジェスチャーリストに存在するか確認
+                    const currentCustomGesture = customGestures.find((g) => g.id === gesture.id);
+                    if (!currentCustomGesture) {
+                      console.warn('⚠️ Custom gesture not found in current list, cannot delete:', gesture.id);
+                      return;
+                    }
+
                     // gestureIdが文字列であることを確認
                     const gestureId = String(gesture.id);
-                    await onDeleteCustomGesture(gestureId, gesture.name);
+                    await onDeleteGesture(gestureId, gesture.name);
                   }}
                 >
                   削除
@@ -210,7 +225,7 @@
           </div>
         {/if}
 
-        <button class="add-btn" onclick={onAddCustomGesture}> カスタムジェスチャーを追加 </button>
+        <button class="add-btn" onclick={onAddGesture}> カスタムジェスチャーを追加 </button>
       </div>
     </div>
   </div>
@@ -287,19 +302,26 @@
   }
 
   .gesture-visual {
-    width: 80px;
-    text-align: center;
+    display: flex;
+    align-items: center;
     margin-right: 16px;
     flex-shrink: 0;
   }
 
   .gesture-pattern-large {
-    font-size: 20px;
-    line-height: 1.2;
-    margin-bottom: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    color: #5f6368;
+    background: #f1f3f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-right: 8px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     word-break: break-all;
-    overflow-wrap: break-word;
-    max-width: 100%;
   }
 
   .gesture-details {

@@ -1,27 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { DebugSettings } from '../../domain/entities/DebugSettings';
   import type { ActionName } from '../../domain/types/ActionName';
-  import { GesturePattern } from '../../domain/valueObjects/GesturePattern';
-  import { DebugLogger, type LogLevel } from '../../infrastructure/adapters/DebugLogger';
-  import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
-  // UI用の型定義
-  interface UIGesture {
-    id: string;
-    name: string;
-    pattern: string;
-    action: ActionName;
-    description: string;
-    enabled: boolean;
-    type?: 'default' | 'custom';
-  }
+  // Stores
+  import { createUiStore } from './stores/uiStore.svelte';
+  import { createSettingsStore } from './stores/settingsStore.svelte';
+  import { createGesturesStore } from './stores/gesturesStore.svelte';
 
-  interface UICustomGesture extends UIGesture {
-    type: 'custom';
-  }
+  // Composables
+  import { useSettings } from './composables/useSettings';
+  import { useGestures } from './composables/useGestures';
 
-  // コンポーネントのインポート
+  // UI Components
   import OptionsBasicSettings from './components/OptionsBasicSettings.svelte';
   import OptionsCustomGestures from './components/OptionsCustomGestures.svelte';
   import OptionsDebugSettings from './components/OptionsDebugSettings.svelte';
@@ -29,643 +19,184 @@
   import OptionsGestureList from './components/OptionsGestureList.svelte';
   import OptionsTrackSettings from './components/OptionsTrackSettings.svelte';
 
-  // 状態管理
-  let isLoading = $state(true);
-  let saveStatus = $state('');
-  let saveStatusType = $state<'success' | 'error'>('success');
-  let saveStatusVisible = $state(false);
+  // Store instances
+  const uiStore = createUiStore();
+  const settingsStore = createSettingsStore();
+  const gesturesStore = createGesturesStore();
 
-  // 基本設定
-  let enabled = $state(true);
-
-  // 軌跡設定（デフォルト設定から取得）
-  const defaultSettings = GestureSettingsFactory.createDefaultSettings();
-  let strokeColor = $state(defaultSettings.strokeColor);
-  let strokeWidth = $state(defaultSettings.strokeWidth);
-  let gestureThreshold = $state(defaultSettings.gestureThreshold);
-
-  // デバウンス用のタイマー
-  let trackSettingsDebounceTimer: NodeJS.Timeout | null = null;
-
-  // 除外サイト
-  let excludeList = $state<string[]>([]);
-  let newExcludeUrl = $state('');
-
-  // デバッグ設定
-  let debugEnabled = $state(false);
-  let debugLogLevel = $state('2'); // 文字列型に変更
-  let debugShowStatus = $state(false);
-  let debugStatusPosition = $state('top-right');
-
-  // ジェスチャー関連
-  let gestures = $state<UIGesture[]>([]);
-  let customGestures = $state<UICustomGesture[]>([]);
-  let gestureSearch = $state('');
-  let gestureFilter = $state('all');
-
-  // カスタムジェスチャー追加フォーム
-  let gestureName = $state('');
-  let gesturePatternDisplay = $state('');
-  let gestureAction = $state('back');
-  let currentPattern = $state<string[]>([]);
-  let customGestureError = $state('');
-
-  // 確認ダイアログ
-  let confirmDialog = $state(false);
-  let confirmMessage = $state('');
-  let confirmCallback = $state<(() => void) | null>(null);
-
-  // デバッグロガー
-  let logger: DebugLogger | null = null;
+  // Composable instances
+  const settings = useSettings(settingsStore, uiStore);
+  const gestures = useGestures(gesturesStore, uiStore);
 
   onMount(async () => {
-    await initializeSettings();
+    await settings.initializeSettings();
+
+    // Load gestures data and update stores
+    const [loadedGestures, loadedCustomGestures] = await Promise.all([
+      settings.loadGestures(),
+      settings.loadCustomGestures(),
+    ]);
+
+    gesturesStore.setGestures(loadedGestures);
+    gesturesStore.setCustomGestures(loadedCustomGestures);
+
+    // Set logger for gestures composable
+    gestures.setLogger(settings.logger);
   });
 
-  async function initializeSettings() {
-    try {
-      // servicesが初期化されるまで待機（最大10秒）
-      let attempts = 0;
-      const maxAttempts = 100; // 10秒
-
-      while (attempts < maxAttempts) {
-        const services = (window as any).services;
-        if (services) {
-          const settingsManagementUseCase = services.settingsManagementUseCase;
-          const settings = await settingsManagementUseCase.getCurrentSettings();
-
-          // 設定値を読み込み
-          enabled = settings.enabled !== false;
-          strokeColor = settings.strokeColor || defaultSettings.strokeColor;
-          strokeWidth = settings.strokeWidth || defaultSettings.strokeWidth;
-          gestureThreshold = settings.gestureThreshold || defaultSettings.gestureThreshold;
-          excludeList = settings.excludeList || [];
-
-          // Clean Architecture準拠のデバッグ設定読み込み
-          const debugEntity = DebugSettings.fromPlainObject(settings.debugSettings || {});
-          debugEnabled = debugEntity.enabled;
-          debugLogLevel = debugEntity.logLevel.toString();
-          debugShowStatus = debugEntity.showStatus;
-          debugStatusPosition = debugEntity.statusPosition;
-
-          logger?.debug('🔍 Debug settings loaded via entity:', debugEntity.toString());
-
-          // DebugLoggerを初期化（debugEntityから直接設定）
-          const initialDebugSettings = {
-            logLevel: debugEntity.logLevel as LogLevel,
-            shouldLog: (level: LogLevel) => debugEntity.enabled && level <= debugEntity.logLevel,
-          };
-          logger = new DebugLogger(initialDebugSettings);
-
-          logger?.info('🔄 Settings initialization started');
-          logger?.info('✅ Services found, loading settings...');
-          logger?.info('Raw settings loaded from storage:', settings);
-          logger?.debug('Debug settings properties in raw data:', {
-            hasDebugEnabled: 'debugEnabled' in settings,
-            hasDebugLogLevel: 'debugLogLevel' in settings,
-            hasDebugShowStatus: 'debugShowStatus' in settings,
-            hasDebugStatusPosition: 'debugStatusPosition' in settings,
-            allKeys: Object.keys(settings),
-          });
-
-          logger?.info('Applied track settings:', {
-            strokeColor,
-            strokeWidth,
-            gestureThreshold,
-          });
-          logger?.info('Applied debug settings:', {
-            debugEnabled,
-            debugLogLevel,
-            debugShowStatus,
-            debugStatusPosition,
-            rawDebugEnabled: settings.debugEnabled,
-            rawDebugLogLevel: settings.debugLogLevel,
-            rawDebugShowStatus: settings.debugShowStatus,
-            rawDebugStatusPosition: settings.debugStatusPosition,
-            debugSettingsObject: debugEntity.toPlainObject(),
-            hasDebugSettings: 'debugSettings' in settings,
-          });
-
-          // ジェスチャー一覧を読み込み
-          await loadGestures();
-          await loadCustomGestures();
-
-          logger?.info('✅ Settings loaded successfully');
-          isLoading = false;
-          return;
-        }
-
-        // 100ms待機して再試行
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        attempts++;
-        // 初期化段階のログは必要最小限にする
-      }
-
-      // タイムアウト
-      throw new Error('Services initialization timeout');
-    } catch (error) {
-      logger?.error('❌ Settings initialization failed:', error);
-      showSaveStatus('設定の読み込みに失敗しました', 'error');
-      isLoading = false;
-    }
-  }
-
-  async function loadGestures() {
-    try {
-      const services = (window as any).services;
-      if (!services) {
-        logger?.warn('Services not available for loadGestures');
-        return;
-      }
-
-      const gestureListUseCase = services.gestureListUseCase;
-      const loadedGestures = await gestureListUseCase.getAllGestures();
-
-      // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
-      gestures = [...(loadedGestures || [])];
-      logger?.info('✅ Gestures loaded:', gestures.length);
-    } catch (error) {
-      logger?.error('❌ ジェスチャー読み込みエラー:', error);
-      gestures = [];
-    }
-  }
-
-  async function loadCustomGestures() {
-    try {
-      const services = (window as any).services;
-      if (!services) {
-        logger?.warn('Services not available for loadCustomGestures');
-        return;
-      }
-
-      // CustomGestureManagementUseCaseから統一されたデータを取得
-      const gestureListUseCase = services.gestureListUseCase;
-      const allGestures = await gestureListUseCase.getAllGestures();
-
-      // カスタムジェスチャーのみをフィルタリング
-      const customGestureData = allGestures
-        .filter((g: UIGesture) => g.type === 'custom')
-        .map((g: UIGesture) => ({
-          id: g.id,
-          name: g.name,
-          pattern: g.pattern, // 既に矢印形式に変換済み
-          action: g.action,
-          description: g.description, // 既に日本語表記に変換済み
-          enabled: g.enabled,
-        }));
-
-      // Svelte 5の$stateで配列の変更を確実に検出させるため、新しい配列を作成
-      customGestures = [...customGestureData];
-      logger?.info('✅ Custom gestures loaded:', customGestures.length);
-      logger?.debug('📊 Custom gesture data structure:', customGestures.slice(0, 2));
-      logger?.debug(
-        '🔍 Custom gesture full data:',
-        customGestures.map((g) => ({
-          id: g.id,
-          name: g.name,
-          action: g.action,
-          description: g.description,
-          pattern: g.pattern,
-          enabled: g.enabled,
-        })),
-      );
-    } catch (error) {
-      logger?.error('❌ カスタムジェスチャー読み込みエラー:', error);
-      customGestures = [];
-    }
-  }
-
-  function showSaveStatus(message: string, type: 'success' | 'error' = 'success') {
-    saveStatus = message;
-    saveStatusType = type;
-    saveStatusVisible = true;
-    setTimeout(() => {
-      saveStatusVisible = false;
-    }, 3000);
-  }
-
+  // Event handlers that delegate to composables
   async function handleEnabledChange() {
-    try {
-      const services = (window as any).services;
-      const settingsManagementUseCase = services.settingsManagementUseCase;
-      await settingsManagementUseCase.toggleExtension(enabled);
-      showSaveStatus(`マウスジェスチャーを${enabled ? '有効' : '無効'}にしました`);
-    } catch (error) {
-      logger?.error('設定保存エラー:', error);
-      showSaveStatus('設定の保存に失敗しました', 'error');
-    }
+    await settings.handleEnabledChange();
   }
 
   async function handleTrackSettingsChange() {
-    // 既存のタイマーをクリア
-    if (trackSettingsDebounceTimer) {
-      clearTimeout(trackSettingsDebounceTimer);
-    }
-
-    // デバウンス: 500ms後に保存処理を実行
-    trackSettingsDebounceTimer = setTimeout(async () => {
-      try {
-        logger?.debug('🔄 Track settings change triggered (debounced):', {
-          strokeColor,
-          strokeWidth,
-          gestureThreshold,
-        });
-
-        const services = (window as any).services;
-        if (!services) {
-          logger?.warn('Services not available for track settings');
-          return;
-        }
-
-        const settingsManagementUseCase = services.settingsManagementUseCase;
-
-        logger?.debug('💾 Saving track settings individually...');
-
-        // 既存のメソッドを使用して個別に保存
-        await settingsManagementUseCase.updateStrokeSettings(strokeColor, strokeWidth);
-        logger?.debug('✅ Stroke settings saved:', { strokeColor, strokeWidth });
-
-        await settingsManagementUseCase.updateGestureThreshold(gestureThreshold);
-        logger?.debug('✅ Gesture threshold saved:', gestureThreshold);
-
-        logger?.info('✅ All track settings saved successfully');
-        showSaveStatus('軌跡設定を保存しました');
-      } catch (error) {
-        logger?.error('❌ 軌跡設定保存エラー:', error);
-        showSaveStatus('軌跡設定の保存に失敗しました', 'error');
-      }
-    }, 500); // 500ms のデバウンス
+    await settings.handleTrackSettingsChange();
   }
 
   async function addExcludeUrl() {
-    if (!newExcludeUrl.trim()) return;
-
-    try {
-      const services = (window as any).services;
-      const settingsManagementUseCase = services.settingsManagementUseCase;
-      await settingsManagementUseCase.addExcludeSite(newExcludeUrl.trim());
-      excludeList = [...excludeList, newExcludeUrl.trim()];
-      newExcludeUrl = '';
-      showSaveStatus('除外サイトを追加しました');
-    } catch (error) {
-      logger?.error('除外サイト追加エラー:', error);
-      showSaveStatus('除外サイトの追加に失敗しました', 'error');
-    }
+    await settings.addExcludeUrl();
   }
 
   async function removeExcludeUrl(url: string) {
-    try {
-      const services = (window as any).services;
-      const settingsManagementUseCase = services.settingsManagementUseCase;
-      await settingsManagementUseCase.removeExcludeSite(url);
-      excludeList = excludeList.filter((item) => item !== url);
-      showSaveStatus('除外サイトを削除しました');
-    } catch (error) {
-      logger?.error('除外サイト削除エラー:', error);
-      showSaveStatus('除外サイトの削除に失敗しました', 'error');
-    }
+    await settings.removeExcludeUrl(url);
   }
 
   async function handleDebugSettingsChange() {
-    try {
-      const debugConfig = {
-        enabled: debugEnabled,
-        logLevel: parseInt(debugLogLevel, 10), // 文字列を数値に変換
-        showStatus: debugShowStatus,
-        statusPosition: debugStatusPosition,
-      };
-      logger?.debug('Saving debug settings:', debugConfig);
-
-      const services = (window as any).services;
-      const settingsManagementUseCase = services.settingsManagementUseCase;
-      await settingsManagementUseCase.updateDebugSettings(debugConfig);
-
-      // DebugLoggerの設定も更新
-      const logLevel = typeof debugLogLevel === 'string' ? parseInt(debugLogLevel) : debugLogLevel;
-      const updatedDebugSettings = {
-        logLevel: logLevel as LogLevel,
-        shouldLog: (level: LogLevel) => debugEnabled && level <= logLevel,
-      };
-      logger?.updateDebugSettings(updatedDebugSettings);
-
-      logger?.info('Debug settings saved successfully');
-      showSaveStatus('デバッグ設定を保存しました');
-    } catch (error) {
-      logger?.error('Debug settings save error:', error);
-      showSaveStatus('デバッグ設定の保存に失敗しました', 'error');
-    }
-  }
-
-  // カスタムジェスチャー用ハンドラー関数
-  function handleAddDirection(direction: string) {
-    currentPattern.push(direction);
-    // 既に矢印記法統一済みなので直接結合
-    gesturePatternDisplay = currentPattern.join('');
-    // エラーをクリア
-    clearCustomGestureError();
-  }
-
-  function handleClearPattern() {
-    currentPattern = [];
-    gesturePatternDisplay = '';
-  }
-
-  function handleClearCustomGestureError() {
-    customGestureError = '';
-  }
-
-  function clearCustomGestureError() {
-    customGestureError = '';
+    await settings.handleDebugSettingsChange();
   }
 
   async function addCustomGesture() {
-    // 前回のエラーをクリア
-    clearCustomGestureError();
-
-    if (!gestureName.trim() || !gesturePatternDisplay) {
-      customGestureError = 'ジェスチャー名とパターンを入力してください';
-      return;
-    }
-
-    try {
-      logger?.debug('Adding custom gesture:', {
-        name: gestureName,
-        displayPattern: gesturePatternDisplay,
-        currentPattern: currentPattern,
-        action: gestureAction,
-      });
-
-      const services = (window as any).services;
-      if (!services) {
-        throw new Error('Services not available');
-      }
-
-      const customGestureUseCase = services.customGestureManagementUseCase;
-
-      // 統一された矢印表記を直接使用
-      const gesturePattern = GesturePattern.fromString(gesturePatternDisplay);
-      const patternArray = gesturePattern.toArray();
-      logger?.debug('Pattern creation:', {
-        original: gesturePatternDisplay,
-        currentPattern: currentPattern,
-        directionArray: patternArray,
-      });
-
-      const gestureData = {
-        name: gestureName.trim(),
-        pattern: patternArray,
-        action: gestureAction,
-      };
-      logger?.debug('Sending gesture data:', gestureData);
-
-      await customGestureUseCase.addCustomGesture(gestureData);
-
-      // フォームをリセット
-      gestureName = '';
-      gesturePatternDisplay = '';
-      currentPattern = [];
-      gestureAction = 'back';
-      clearCustomGestureError();
-
-      // リスト更新（統一されたデータを取得）
-      await Promise.all([loadCustomGestures(), loadGestures()]);
-
-      logger?.info('Custom gesture added successfully');
-      showSaveStatus('カスタムジェスチャーを追加しました');
-    } catch (error) {
-      logger?.error('Custom gesture add error:', error);
-
-      // エラーの詳細情報を表示
-      let errorMessage = 'カスタムジェスチャーの追加に失敗しました';
-      if (error instanceof Error) {
-        logger?.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          originalError: (error as any).originalError,
-        });
-
-        // ユーザーフレンドリーなエラーメッセージ
-        if (error.message.includes('already exists')) {
-          errorMessage = '同じ名前のジェスチャーが既に存在します';
-        } else if (error.message.includes('similar')) {
-          errorMessage = '似たパターンのジェスチャーが既に存在します';
-        } else if (error.message.includes('Invalid')) {
-          errorMessage = 'ジェスチャーパターンが無効です';
-        }
-      }
-
-      customGestureError = errorMessage;
-    }
+    await gestures.addCustomGesture();
   }
-
-  // トグル処理中の重複防止（Promise管理）
-  let togglePromises = new Map<string, Promise<void>>();
 
   async function toggleGesture(gestureId: string, enabled: boolean) {
-    // 既に処理中の場合は既存のPromiseを返す
-    if (togglePromises.has(gestureId)) {
-      logger?.debug('🚫 Already toggling gesture, returning existing promise:', gestureId);
-      return togglePromises.get(gestureId);
-    }
-
-    logger?.debug('🔄 Starting toggle gesture:', gestureId, 'enabled:', enabled);
-
-    // 新しいPromiseを作成してマップに保存
-    const togglePromise = performToggle(gestureId, enabled);
-    togglePromises.set(gestureId, togglePromise);
-
-    try {
-      await togglePromise;
-    } finally {
-      // 処理完了後にPromiseを削除
-      togglePromises.delete(gestureId);
-      logger?.debug('🧹 Toggle promise completed for:', gestureId);
-    }
-  }
-
-  async function performToggle(gestureId: string, enabled: boolean) {
-    try {
-      const services = (window as any).services;
-      if (!services) {
-        logger?.warn('Services not available');
-        showSaveStatus('設定の更新に失敗しました', 'error');
-        return;
-      }
-
-      // 標準ジェスチャーかカスタムジェスチャーかを判定
-      // カスタムジェスチャーは必ず custom_ で始まるIDを持つ
-      const isCustomGesture = gestureId.startsWith('custom_');
-
-      logger?.debug('✅ Toggle gesture:', gestureId, 'enabled:', enabled);
-
-      if (isCustomGesture) {
-        const customGestureUseCase = services.customGestureManagementUseCase;
-        await customGestureUseCase.toggleCustomGesture(gestureId, enabled);
-        logger?.debug('✅ Custom gesture saved');
-      } else {
-        const settingsManagementUseCase = services.settingsManagementUseCase;
-        await settingsManagementUseCase.toggleGesture(gestureId, enabled);
-        logger?.debug('✅ Default gesture saved');
-      }
-
-      // 両方のリストを同期更新
-      await Promise.all([loadCustomGestures(), loadGestures()]);
-
-      showSaveStatus(`ジェスチャー「${gestureId}」を${enabled ? '有効' : '無効'}にしました`);
-    } catch (error) {
-      logger?.error('❌ Toggle gesture error:', error);
-      showSaveStatus('ジェスチャーの設定変更に失敗しました', 'error');
-    }
-  }
-
-  function handleConfirmOk() {
-    if (confirmCallback) {
-      confirmCallback();
-      confirmCallback = null;
-    }
-    confirmDialog = false;
-  }
-
-  function handleConfirmCancel() {
-    confirmCallback = null;
-    confirmDialog = false;
+    await gestures.toggleGesture(gestureId, enabled);
   }
 
   async function deleteCustomGesture(gestureId: string, gestureName: string) {
-    // 確認ダイアログを表示
-    confirmMessage = `カスタムジェスチャー「${gestureName}」を削除しますか？\n\nこの操作は取り消せません。`;
-    confirmCallback = async () => {
-      try {
-        logger?.debug('Deleting custom gesture:', gestureId, gestureName);
+    await gestures.deleteCustomGesture(gestureId, gestureName);
+  }
 
-        const services = (window as any).services;
-        if (!services) {
-          throw new Error('Services not available');
-        }
+  function showGestureHelp() {
+    uiStore.showSaveStatus('上：↑、下：↓、左：←、右：→の組み合わせでパターンを入力してください');
+  }
 
-        const customGestureUseCase = services.customGestureManagementUseCase;
-        await customGestureUseCase.deleteCustomGesture(gestureId);
+  function handleAddDirection(direction: string) {
+    gestures.handleAddDirection(direction);
+  }
 
-        // リスト更新
-        await Promise.all([loadCustomGestures(), loadGestures()]);
+  function handleClearPattern() {
+    gestures.handleClearPattern();
+  }
 
-        logger?.info('Custom gesture deleted successfully');
-        showSaveStatus(`カスタムジェスチャー「${gestureName}」を削除しました`);
-      } catch (error) {
-        logger?.error('Custom gesture delete error:', error);
+  function handleClearCustomGestureError() {
+    gestures.handleClearCustomGestureError();
+  }
 
-        let errorMessage = 'カスタムジェスチャーの削除に失敗しました';
-        if (error instanceof Error) {
-          logger?.error('Delete error details:', {
-            name: error.name,
-            message: error.message,
-            originalError: (error as any).originalError,
-          });
+  function executeConfirm() {
+    uiStore.executeConfirm();
+  }
 
-          if (error.message.includes('not found')) {
-            errorMessage = 'カスタムジェスチャーが見つかりませんでした';
-          }
-        }
-
-        showSaveStatus(errorMessage, 'error');
-      }
-    };
-
-    confirmDialog = true;
+  function cancelConfirm() {
+    uiStore.hideConfirmDialog();
   }
 </script>
 
-<div class="container">
-  <h1>🖱️ マウスジェスチャーツール - 設定</h1>
+<div class="app-container">
+  <header class="app-header">
+    <h1>マウスジェスチャー設定</h1>
+  </header>
 
-  <!-- ローディング状態 -->
-  {#if isLoading}
+  <!-- ローディング表示 -->
+  {#if uiStore.isLoading}
     <div class="loading">設定を読み込み中</div>
   {:else}
-    <!-- メインコンテンツ -->
-    <div id="mainContent">
+    <main class="app-main">
       <!-- 基本設定 -->
-      <OptionsBasicSettings bind:enabled {isLoading} onEnabledChange={handleEnabledChange} />
+      <OptionsBasicSettings
+        bind:enabled={settingsStore.enabled}
+        onEnabledChange={handleEnabledChange}
+        isLoading={uiStore.isLoading}
+      />
 
-      <!-- 軌跡カスタマイズ -->
+      <!-- 軌跡設定 -->
       <OptionsTrackSettings
-        bind:strokeColor
-        bind:strokeWidth
-        bind:gestureThreshold
-        {isLoading}
+        bind:strokeColor={settingsStore.strokeColor}
+        bind:strokeWidth={settingsStore.strokeWidth}
+        bind:gestureThreshold={settingsStore.gestureThreshold}
+        isLoading={uiStore.isLoading}
         onTrackSettingsChange={handleTrackSettingsChange}
-      />
-
-      <!-- ジェスチャー一覧 -->
-      <OptionsGestureList
-        bind:gestures
-        bind:gestureSearch
-        bind:gestureFilter
-        {isLoading}
-        onToggleGesture={toggleGesture}
-      />
-
-      <!-- カスタムジェスチャー -->
-      <OptionsCustomGestures
-        bind:customGestures
-        bind:gestureName
-        bind:gesturePatternDisplay
-        bind:gestureAction
-        bind:currentPattern
-        bind:customGestureError
-        {isLoading}
-        onAddCustomGesture={addCustomGesture}
-        onDeleteCustomGesture={deleteCustomGesture}
-        onToggleGesture={toggleGesture}
-        onAddDirection={handleAddDirection}
-        onClearPattern={handleClearPattern}
-        onClearCustomGestureError={handleClearCustomGestureError}
       />
 
       <!-- 除外サイト -->
       <OptionsExcludeList
-        bind:excludeList
-        bind:newExcludeUrl
-        {isLoading}
-        onAddExcludeUrl={addExcludeUrl}
-        onRemoveExcludeUrl={removeExcludeUrl}
+        excludeList={settingsStore.excludeList}
+        bind:newExcludeUrl={settingsStore.newExcludeUrl}
+        onAddUrl={addExcludeUrl}
+        onRemoveUrl={removeExcludeUrl}
+        isLoading={uiStore.isLoading}
+      />
+
+      <!-- デフォルトジェスチャー一覧 -->
+      <OptionsGestureList
+        gestures={gesturesStore.gestures}
+        bind:gestureSearch={gesturesStore.gestureSearch}
+        bind:gestureFilter={gesturesStore.gestureFilter}
+        onToggleGesture={toggleGesture}
+        isLoading={uiStore.isLoading}
+      />
+
+      <!-- カスタムジェスチャー -->
+      <OptionsCustomGestures
+        customGestures={gesturesStore.customGestures}
+        bind:gestureName={gesturesStore.gestureName}
+        bind:gesturePatternDisplay={gesturesStore.gesturePatternDisplay}
+        bind:gestureAction={gesturesStore.gestureAction}
+        bind:currentPattern={gesturesStore.currentPattern}
+        customGestureError={gesturesStore.customGestureError}
+        onAddGesture={addCustomGesture}
+        onDeleteGesture={deleteCustomGesture}
+        onToggleGesture={toggleGesture}
+        onAddDirection={handleAddDirection}
+        onClearPattern={handleClearPattern}
+        onClearCustomGestureError={handleClearCustomGestureError}
+        isLoading={uiStore.isLoading}
       />
 
       <!-- デバッグ設定 -->
       <OptionsDebugSettings
-        bind:debugEnabled
-        bind:debugLogLevel
-        bind:debugShowStatus
-        bind:debugStatusPosition
-        {isLoading}
+        bind:debugEnabled={settingsStore.debugEnabled}
+        bind:debugLogLevel={settingsStore.debugLogLevel}
+        bind:debugShowStatus={settingsStore.debugShowStatus}
+        bind:debugStatusPosition={settingsStore.debugStatusPosition}
         onDebugSettingsChange={handleDebugSettingsChange}
+        isLoading={uiStore.isLoading}
       />
+    </main>
+  {/if}
 
-      <!-- 保存ステータス -->
-      {#if saveStatusVisible}
-        <div class="save-status {saveStatusType}">
-          {saveStatus}
+  <!-- 保存ステータス表示（トースト） -->
+  {#if uiStore.saveStatusVisible}
+    <div class="save-status {uiStore.saveStatusType}">
+      {uiStore.saveStatus}
+    </div>
+  {/if}
+
+  <!-- 確認ダイアログ -->
+  {#if uiStore.confirmDialog}
+    <div class="confirm-dialog">
+      <div class="confirm-overlay"></div>
+      <div class="confirm-content">
+        <h3 class="confirm-title">確認</h3>
+        <p class="confirm-message">{uiStore.confirmMessage}</p>
+        <div class="confirm-buttons">
+          <button class="confirm-btn confirm-btn-cancel" onclick={cancelConfirm}>キャンセル</button>
+          <button class="confirm-btn confirm-btn-ok" onclick={executeConfirm}>OK</button>
         </div>
-      {/if}
+      </div>
     </div>
   {/if}
 </div>
-
-<!-- カスタム確認ダイアログ -->
-{#if confirmDialog}
-  <div class="confirm-dialog">
-    <div class="confirm-overlay"></div>
-    <div class="confirm-content">
-      <h3 class="confirm-title">確認</h3>
-      <p class="confirm-message">{confirmMessage}</p>
-      <div class="confirm-buttons">
-        <button class="confirm-btn confirm-btn-cancel" onclick={handleConfirmCancel}> キャンセル </button>
-        <button class="confirm-btn confirm-btn-ok" onclick={handleConfirmOk}> OK </button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 <style>
   :global(body) {
@@ -676,14 +207,19 @@
     background-color: #f8f9fa;
   }
 
-  .container {
+  .app-container {
     background: white;
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
-  h1 {
+  .app-header {
+    text-align: center;
+    margin-bottom: 0;
+  }
+
+  .app-header h1 {
     font-size: 24px;
     margin: 0 0 24px 0;
     color: #1a73e8;
@@ -692,216 +228,71 @@
     padding-bottom: 16px;
   }
 
-  .setting-item {
+  .app-main {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    padding: 8px 0;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .setting-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .setting-label {
-    font-weight: 500;
-    color: #202124;
-    flex: 1;
-  }
-
-  .setting-description {
-    font-size: 12px;
-    color: #5f6368;
-    margin-top: 4px;
-  }
-
-  .color-input,
-  .range-input {
-    padding: 8px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    width: 80px;
-  }
-
-  .range-input {
-    width: 120px;
-  }
-
-  .range-value {
-    margin-left: 8px;
-    font-weight: 500;
-    color: #1a73e8;
-    min-width: 30px;
-  }
-
-  .exclude-list {
-    margin-top: 12px;
-  }
-
-  .exclude-input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    margin-bottom: 8px;
-  }
-
-  .exclude-item {
-    display: flex;
-    align-items: center;
-    padding: 8px;
-    background: white;
-    border: 1px solid #e8eaed;
-    border-radius: 4px;
-    margin-bottom: 4px;
-  }
-
-  .exclude-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .exclude-url {
-    flex: 1;
-    font-family: monospace;
-    color: #5f6368;
-  }
-
-  .remove-btn {
-    background: #ea4335;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .remove-btn:hover {
-    background: #d33b2c;
-  }
-
-  .add-btn {
-    background: #34a853;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-  }
-
-  .add-btn:hover {
-    background: #2d8f3f;
-  }
-
-  .save-status {
+  /* ローディング表示 */
+  .loading {
     text-align: center;
-    padding: 12px;
-    border-radius: 4px;
-    margin-top: 16px;
+    padding: 20px;
+    color: #5f6368;
+  }
+
+  .loading::after {
+    content: '...';
+    animation: loading 1.4s infinite ease-in-out;
+  }
+
+  @keyframes loading {
+    0%,
+    80%,
+    100% {
+      opacity: 0;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+
+  /* 保存ステータス表示（トースト） */
+  .save-status {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 8px;
     font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    animation: slideDown 0.3s ease-out;
+    max-width: 90%;
+    text-align: center;
   }
 
   .save-status.success {
-    background: #e6f4ea;
-    color: #137333;
+    background: #34a853;
+    color: white;
   }
 
   .save-status.error {
-    background: #fce8e6;
-    color: #d33b2c;
+    background: #ea4335;
+    color: white;
   }
 
-  .preview-canvas {
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    margin-top: 8px;
-    background: white;
-  }
-
-  /* カスタムジェスチャー用スタイル */
-  .gesture-list-container {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e8eaed;
-    border-radius: 4px;
-    background: white;
-  }
-
-  .gesture-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    border-bottom: 1px solid #f1f3f4;
-  }
-
-  .gesture-item:last-child {
-    border-bottom: none;
-  }
-
-  .gesture-item.disabled {
-    opacity: 0.6;
-    background-color: #f8f9fa;
-  }
-
-  .gesture-info {
-    flex: 1;
-  }
-
-  .gesture-name {
-    font-weight: 500;
-    color: #202124;
-    margin-bottom: 4px;
-  }
-
-  .gesture-pattern {
-    font-family: monospace;
-    font-size: 14px;
-    color: #5f6368;
-    background: #f1f3f4;
-    padding: 2px 6px;
-    border-radius: 3px;
-    display: inline-block;
-    margin-right: 8px;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    word-break: break-all;
-  }
-
-  .gesture-action {
-    font-size: 12px;
-    color: #1a73e8;
-  }
-
-  .gesture-controls {
-    display: flex;
-    gap: 8px;
-  }
-
-  .gesture-toggle {
-    background: none;
-    border: 1px solid #dadce0;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .gesture-toggle.enabled {
-    background: #e8f5e8;
-    border-color: #34a853;
-    color: #137333;
-  }
-
-  .gesture-toggle.disabled {
-    background: #fce8e6;
-    border-color: #ea4335;
-    color: #d33b2c;
+  @keyframes slideDown {
+    from {
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
+    to {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
   }
 
   /* カスタム確認ダイアログ */
@@ -995,28 +386,5 @@
 
   .confirm-btn-ok:hover {
     background: #d33b2c;
-  }
-
-  /* ローディング状態 */
-  .loading {
-    text-align: center;
-    padding: 20px;
-    color: #5f6368;
-  }
-
-  .loading::after {
-    content: '...';
-    animation: loading 1.4s infinite ease-in-out;
-  }
-
-  @keyframes loading {
-    0%,
-    80%,
-    100% {
-      opacity: 0;
-    }
-    40% {
-      opacity: 1;
-    }
   }
 </style>

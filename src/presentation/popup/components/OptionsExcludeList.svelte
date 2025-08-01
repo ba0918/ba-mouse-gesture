@@ -4,21 +4,21 @@
     excludeList: string[];
     newExcludeUrl: string;
     isLoading: boolean;
-    onAddExcludeUrl: () => Promise<void>;
-    onRemoveExcludeUrl: (url: string) => Promise<void>;
+    onAddUrl: () => Promise<void>;
+    onRemoveUrl: (url: string) => Promise<void>;
   }
 
   let {
     excludeList = $bindable(),
     newExcludeUrl = $bindable(),
     isLoading,
-    onAddExcludeUrl,
-    onRemoveExcludeUrl,
+    onAddUrl,
+    onRemoveUrl,
   }: OptionsExcludeListProps = $props();
 
   async function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter') {
-      await onAddExcludeUrl();
+      await onAddUrl();
     }
   }
 </script>
@@ -39,12 +39,12 @@
           onkeydown={handleKeydown}
           disabled={isLoading}
         />
-        <button class="add-btn" onclick={onAddExcludeUrl} disabled={isLoading}> 追加 </button>
+        <button class="add-btn" onclick={onAddUrl} disabled={isLoading}> 追加 </button>
         <div>
           {#each excludeList as url (url)}
             <div class="exclude-item">
               <span class="exclude-url">{url}</span>
-              <button class="remove-btn" onclick={() => onRemoveExcludeUrl(url)} disabled={isLoading}> 削除 </button>
+              <button class="remove-btn" onclick={() => onRemoveUrl(url)} disabled={isLoading}> 削除 </button>
             </div>
           {/each}
           {#if excludeList.length === 0}

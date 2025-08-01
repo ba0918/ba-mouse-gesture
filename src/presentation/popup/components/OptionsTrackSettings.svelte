@@ -74,25 +74,23 @@
   </div>
   <div class="setting-item">
     <div class="setting-label">軌跡の太さ</div>
-    <div style="display: flex; align-items: center">
-      <input
-        type="range"
-        bind:value={strokeWidth}
-        class="range-input"
-        min="1"
-        max="10"
-        oninput={onTrackSettingsChange}
-        disabled={isLoading}
-      />
-      <span class="range-value">{strokeWidth}px</span>
-    </div>
+    <input
+      type="range"
+      bind:value={strokeWidth}
+      class="range-input"
+      min="1"
+      max="10"
+      oninput={onTrackSettingsChange}
+      disabled={isLoading}
+    />
+    <span class="range-value">{strokeWidth}px</span>
   </div>
-  <div class="setting-item">
+  <div class="setting-item setting-item-vertical">
     <div>
       <div class="setting-label">ジェスチャー感度</div>
       <div class="setting-description">ジェスチャーとして認識される最小移動距離（低いほど敏感）</div>
     </div>
-    <div style="display: flex; align-items: center">
+    <div class="setting-control">
       <input
         type="range"
         bind:value={gestureThreshold}
@@ -132,61 +130,73 @@
 
   .setting-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
-    border-bottom: 1px solid #f1f3f4;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 8px 0;
   }
 
   .setting-item:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
   }
 
   .setting-label {
-    font-size: 14px;
     font-weight: 500;
     color: #202124;
-    margin-bottom: 4px;
+    flex: 1;
   }
 
   .setting-description {
     font-size: 12px;
     color: #5f6368;
+    margin-top: 4px;
   }
 
-  .color-input {
-    width: 48px;
-    height: 32px;
+  .color-input,
+  .range-input {
+    padding: 8px;
     border: 1px solid #dadce0;
     border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .color-input:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    width: 80px;
   }
 
   .range-input {
-    width: 200px;
-    margin-right: 12px;
-  }
-
-  .range-input:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    width: 120px;
   }
 
   .range-value {
-    font-size: 14px;
-    color: #5f6368;
-    min-width: 40px;
+    margin-left: 8px;
+    font-weight: 500;
+    color: #1a73e8;
+    min-width: 30px;
+  }
+
+  .setting-item-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .setting-item-vertical .setting-control {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .setting-item-vertical .range-input {
+    flex: 1;
+    width: auto;
+  }
+
+  .setting-control {
+    display: flex;
+    align-items: center;
   }
 
   .preview-canvas {
-    margin-top: 8px;
-    border: 1px solid #e8eaed;
+    border: 1px solid #dadce0;
     border-radius: 4px;
+    margin-top: 8px;
     background: white;
   }
 </style>

@@ -51,8 +51,8 @@ export class GestureManager {
   // Application層UseCase
   private gestureUseCase: GestureExecutionUseCase | null = null;
 
-  // デバッグ要素（将来の拡張用）
-  // private debugElement: HTMLElement | null = null;
+  // デバッグ要素
+  private debugElement: HTMLElement | null = null;
 
   // 設定
   private settings: GestureSettings = GestureSettingsFactory.createDefaultSettings();
@@ -193,10 +193,10 @@ export class GestureManager {
 
         if (result.success) {
           console.log('Gesture executed successfully:', result.gestureType, result.action);
-          // TODO: デバッグメッセージ表示は将来的にDebugService経由で実装
+          this.showDebugMessage(`Gesture: ${result.gestureType} → ${result.action}`);
         } else {
           console.log('Gesture execution failed:', result.error);
-          // TODO: デバッグメッセージ表示は将来的にDebugService経由で実装
+          this.showDebugMessage(`Failed: ${result.error}`);
         }
       }
     } catch (error) {
@@ -262,6 +262,16 @@ export class GestureManager {
       this.settings = newSettings;
       this.updateComponentSettings();
       console.log('Settings updated:', newSettings);
+
+      // デバッグ表示の更新
+      if (newSettings.debugSettings?.enabled && newSettings.debugSettings?.showStatus) {
+        if (!this.debugElement) {
+          this.initializeDebugDisplay();
+        }
+      } else if (this.debugElement) {
+        this.debugElement.remove();
+        this.debugElement = null;
+      }
     });
   }
 
@@ -277,10 +287,74 @@ export class GestureManager {
    * デバッグ表示初期化
    */
   private initializeDebugDisplay(): void {
-    if (this.settings.debugSettings?.enabled) {
-      // デバッグ表示の初期化処理
-      console.log('Debug display initialized');
+    if (!this.settings.debugSettings?.enabled || !this.settings.debugSettings?.showStatus) {
+      return;
     }
+
+    this.debugElement = document.createElement('div');
+    this.debugElement.id = 'gesture-debug-display';
+    this.debugElement.style.cssText = `
+      position: fixed;
+      z-index: 999999;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      max-width: 300px;
+      max-height: 150px;
+      overflow-y: auto;
+      pointer-events: none;
+    `;
+
+    // 位置設定
+    const position = this.settings.debugSettings.statusPosition || 'top-right';
+    switch (position) {
+      case 'top-left':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'top-right':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+      case 'bottom-left':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'bottom-right':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+    }
+
+    document.body.appendChild(this.debugElement);
+    this.showDebugMessage('Debug display initialized');
+  }
+
+  /**
+   * デバッグメッセージ表示
+   */
+  private showDebugMessage(message: string): void {
+    if (!this.debugElement || !this.settings.debugSettings?.enabled || !this.settings.debugSettings?.showStatus) {
+      return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.textContent = `[${timestamp}] ${message}`;
+    entry.style.marginBottom = '4px';
+
+    this.debugElement.appendChild(entry);
+
+    // 最大20件までのメッセージを保持
+    while (this.debugElement.children.length > 20) {
+      this.debugElement.removeChild(this.debugElement.firstChild!);
+    }
+
+    // 自動スクロール
+    this.debugElement.scrollTop = this.debugElement.scrollHeight;
   }
 
   /**
@@ -290,6 +364,12 @@ export class GestureManager {
     if (this.eventHandler) {
       this.eventHandler.destroy();
       this.eventHandler = null;
+    }
+
+    // デバッグ要素を削除
+    if (this.debugElement) {
+      this.debugElement.remove();
+      this.debugElement = null;
     }
 
     this.messagingService.removeMessageListener();

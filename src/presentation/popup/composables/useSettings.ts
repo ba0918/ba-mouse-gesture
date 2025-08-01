@@ -5,8 +5,8 @@
 
 import { DebugSettings } from '../../../domain/entities/DebugSettings';
 import { DebugLogger } from '../../../infrastructure/adapters/DebugLogger';
-import type { SettingsStore } from '../stores/settingsStore';
-import type { UiStore } from '../stores/uiStore';
+import type { SettingsStore } from '../stores/settingsStore.svelte';
+import type { UiStore } from '../stores/uiStore.svelte';
 
 export function useSettings(settingsStore: SettingsStore, uiStore: UiStore) {
   let logger: DebugLogger | null = null;
@@ -86,8 +86,8 @@ export function useSettings(settingsStore: SettingsStore, uiStore: UiStore) {
         return;
       }
 
-      const gestureListUseCase = services.gestureListUseCase;
-      const loadedCustomGestures = await gestureListUseCase.getCustomGestures();
+      const customGestureManagementUseCase = services.customGestureManagementUseCase;
+      const loadedCustomGestures = await customGestureManagementUseCase.getAllCustomGestures();
 
       // This will be handled by gesturesStore in the main component
       return loadedCustomGestures || [];
@@ -160,8 +160,8 @@ export function useSettings(settingsStore: SettingsStore, uiStore: UiStore) {
       const services = (window as any).services;
       const settingsManagementUseCase = services.settingsManagementUseCase;
 
+      await settingsManagementUseCase.addExcludeSite(settingsStore.newExcludeUrl.trim());
       settingsStore.addExcludeUrl(settingsStore.newExcludeUrl);
-      await settingsManagementUseCase.updateExcludeList(settingsStore.excludeList);
 
       settingsStore.setNewExcludeUrl('');
       uiStore.showSaveStatus('除外サイトを追加しました');
@@ -176,8 +176,8 @@ export function useSettings(settingsStore: SettingsStore, uiStore: UiStore) {
       const services = (window as any).services;
       const settingsManagementUseCase = services.settingsManagementUseCase;
 
+      await settingsManagementUseCase.removeExcludeSite(url);
       settingsStore.removeExcludeUrl(url);
-      await settingsManagementUseCase.updateExcludeList(settingsStore.excludeList);
 
       uiStore.showSaveStatus('除外サイトを削除しました');
     } catch (error) {
@@ -204,12 +204,12 @@ export function useSettings(settingsStore: SettingsStore, uiStore: UiStore) {
       const settingsManagementUseCase = services.settingsManagementUseCase;
 
       // Clean Architecture準拠のデバッグ設定エンティティを作成
-      const debugEntity = new DebugSettings(
-        settingsStore.debugEnabled,
-        parseInt(settingsStore.debugLogLevel) as 0 | 1 | 2 | 3,
-        settingsStore.debugShowStatus,
-        settingsStore.debugStatusPosition as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
-      );
+      const debugEntity = new DebugSettings({
+        enabled: settingsStore.debugEnabled,
+        logLevel: parseInt(settingsStore.debugLogLevel) as 0 | 1 | 2 | 3,
+        showStatus: settingsStore.debugShowStatus,
+        statusPosition: settingsStore.debugStatusPosition as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
+      });
 
       logger?.debug('💾 Saving debug settings via entity...', debugEntity.toString());
 

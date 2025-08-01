@@ -3,16 +3,56 @@
  * カスタムジェスチャーの追加、削除、有効/無効切り替えを管理
  */
 
-import { GesturePattern } from '../../../domain/valueObjects/GesturePattern';
+import type { Direction } from '../../../domain/valueObjects/GesturePattern';
 import type { ActionName } from '../../../domain/types/ActionName';
-import type { GesturesStore, UICustomGesture } from '../stores/gesturesStore';
-import type { UiStore } from '../stores/uiStore';
+import type { GesturesStore } from '../stores/gesturesStore.svelte';
+import type { UiStore } from '../stores/uiStore.svelte';
 
 export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
   let logger: any = null; // Will be set from parent
 
   function setLogger(newLogger: any) {
     logger = newLogger;
+  }
+
+  // ストレージから最新のカスタムジェスチャーを再読み込みしてUIを同期
+  async function reloadCustomGesturesFromStorage() {
+    try {
+      const services = (window as any).services;
+      if (!services) {
+        logger?.warn('⚠️ Services not available, skipping custom gesture reload');
+        return; // サービスが無い場合は何もしない（UI状態を保持）
+      }
+
+      const customGestureManagementUseCase = services.customGestureManagementUseCase;
+      const latestCustomGestures = await customGestureManagementUseCase.getAllCustomGestures();
+
+      const uiCustomGestures = latestCustomGestures.map((gesture: any) => ({
+        id: gesture.id,
+        name: gesture.name,
+        pattern: gesture.pattern.toString(),
+        action: gesture.action,
+        description: `カスタムジェスチャー: ${gesture.name}`,
+        enabled: gesture.enabled,
+        type: 'custom' as const,
+      }));
+
+      gesturesStore.setCustomGestures(uiCustomGestures);
+
+      logger?.debug('🔄 Custom gestures reloaded from storage:', {
+        count: uiCustomGestures.length,
+        gestureIds: uiCustomGestures.map((g: any) => g.id),
+      });
+
+      // デバッグ用：現在のUI状態も確認
+      logger?.debug('🐛 [Debug] Current UI store state after reload:', {
+        uiStoreCount: gesturesStore.customGestures.length,
+        uiStoreIds: gesturesStore.customGestures.map((g: any) => g.id),
+      });
+    } catch (error) {
+      logger?.error('❌ Failed to reload custom gestures, keeping current UI state:', error);
+      // エラー時はUI状態を変更しない（重要：空配列にリセットしない）
+    }
   }
 
   async function addCustomGesture() {
@@ -40,40 +80,23 @@ export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
 
       const customGestureManagementUseCase = services.customGestureManagementUseCase;
 
-      // GesturePatternエンティティを作成
-      const gesturePattern = GesturePattern.fromDirections(gesturesStore.currentPattern);
+      // カスタムジェスチャーを追加（正しい引数形式）
+      const customGesture = await customGestureManagementUseCase.addCustomGesture({
+        name: gesturesStore.gestureName.trim(),
+        pattern: gesturesStore.currentPattern as Direction[],
+        action: gesturesStore.gestureAction as ActionName,
+        description: `カスタムジェスチャー: ${gesturesStore.gestureName.trim()}`,
+      });
 
-      // カスタムジェスチャーを追加
-      const result = await customGestureManagementUseCase.addCustomGesture(
-        gesturesStore.gestureName.trim(),
-        gesturePattern,
-        gesturesStore.gestureAction as ActionName,
-      );
+      logger?.info('✅ Custom gesture added successfully:', customGesture.name);
 
-      if (result.success) {
-        logger?.info('✅ Custom gesture added successfully:', result.gesture?.name);
+      // ストレージから最新データを再読み込みしてUIを同期
+      //await reloadCustomGesturesFromStorage();
+      gesturesStore.addCustomGesture(customGesture);
 
-        // UI更新用のジェスチャーオブジェクトを作成
-        if (result.gesture) {
-          const uiGesture: UICustomGesture = {
-            id: result.gesture.id,
-            name: result.gesture.name,
-            pattern: result.gesture.pattern.toDisplayString(),
-            action: result.gesture.action,
-            description: `カスタムジェスチャー: ${result.gesture.name}`,
-            enabled: result.gesture.enabled,
-            type: 'custom',
-          };
-
-          gesturesStore.addCustomGesture(uiGesture);
-        }
-
-        // フォームをクリア
-        gesturesStore.clearCustomGestureForm();
-        uiStore.showSaveStatus('カスタムジェスチャーを追加しました');
-      } else {
-        gesturesStore.setCustomGestureError(result.error || 'カスタムジェスチャーの追加に失敗しました');
-      }
+      // フォームをクリア
+      gesturesStore.clearCustomGestureForm();
+      uiStore.showSaveStatus('カスタムジェスチャーを追加しました');
     } catch (error) {
       logger?.error('❌ カスタムジェスチャー追加エラー:', error);
       gesturesStore.setCustomGestureError('カスタムジェスチャーの追加に失敗しました');
@@ -106,33 +129,35 @@ export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
       throw new Error('Services not available');
     }
 
-    // まずデフォルトジェスチャーを試行
-    try {
-      const gestureListUseCase = services.gestureListUseCase;
-      const result = await gestureListUseCase.toggleDefaultGesture(gestureId, enabled);
+    logger?.debug('🐛 [Debug] Gesture toggle request:', {
+      gestureId,
+      enabled,
+      gestureIdType: typeof gestureId,
+      gestureIdLength: gestureId?.length,
+      isCustomGesture: gestureId.startsWith('custom_'),
+    });
 
-      if (result.success) {
-        logger?.debug('✅ Default gesture toggled:', { gestureId, enabled });
-        return;
+    // 効率的な事前判定による適切なUseCase選択
+    if (gestureId.startsWith('custom_')) {
+      // カスタムジェスチャーの場合
+      try {
+        const customGestureManagementUseCase = services.customGestureManagementUseCase;
+        await customGestureManagementUseCase.toggleCustomGesture(gestureId, enabled);
+        logger?.debug('✅ Custom gesture toggled directly:', { gestureId, enabled });
+      } catch (error) {
+        logger?.error('❌ Custom gesture toggle failed:', error);
+        throw error;
       }
-    } catch (error) {
-      logger?.debug('Default gesture toggle failed, trying custom gesture:', error);
-    }
-
-    // デフォルトジェスチャーで失敗した場合、カスタムジェスチャーを試行
-    try {
-      const customGestureManagementUseCase = services.customGestureManagementUseCase;
-      const result = await customGestureManagementUseCase.toggleCustomGesture(gestureId, enabled);
-
-      if (result.success) {
-        logger?.debug('✅ Custom gesture toggled:', { gestureId, enabled });
-        return;
-      } else {
-        throw new Error(result.error || 'Custom gesture toggle failed');
+    } else {
+      // デフォルトジェスチャーの場合
+      try {
+        const settingsManagementUseCase = services.settingsManagementUseCase;
+        await settingsManagementUseCase.toggleGesture(gestureId, enabled);
+        logger?.debug('✅ Default gesture toggled directly:', { gestureId, enabled });
+      } catch (error) {
+        logger?.error('❌ Default gesture toggle failed:', error);
+        throw error;
       }
-    } catch (error) {
-      logger?.error('Both default and custom gesture toggle failed:', error);
-      throw error;
     }
   }
 
@@ -147,15 +172,27 @@ export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
         }
 
         const customGestureManagementUseCase = services.customGestureManagementUseCase;
-        const result = await customGestureManagementUseCase.deleteCustomGesture(gestureId);
 
-        if (result.success) {
-          gesturesStore.removeCustomGesture(gestureId);
-          logger?.info('✅ Custom gesture deleted successfully:', gestureName);
-          uiStore.showSaveStatus('カスタムジェスチャーを削除しました');
-        } else {
-          throw new Error(result.error || 'Delete failed');
-        }
+        // 削除前の状態をログ出力
+        const beforeDeletion = await customGestureManagementUseCase.getAllCustomGestures();
+        logger?.debug('🐛 [Debug] Before deletion:', {
+          total: beforeDeletion.length,
+          gestureIds: beforeDeletion.map((g: any) => g.id),
+          targetId: gestureId,
+        });
+
+        // 削除実行前にUIから即座に削除（楽観的削除で即座にUIを更新）
+        gesturesStore.removeCustomGesture(gestureId);
+        logger?.debug('🐛 [Debug] UI gesture removed immediately:', gestureId);
+
+        // バックエンドから削除実行
+        await customGestureManagementUseCase.deleteCustomGesture(gestureId);
+
+        // ストレージから最新データを再読み込みしてUIを完全同期
+        //await reloadCustomGesturesFromStorage();
+
+        logger?.info('✅ Custom gesture deleted successfully:', gestureName);
+        uiStore.showSaveStatus('カスタムジェスチャーを削除しました');
       } catch (error) {
         logger?.error('❌ カスタムジェスチャー削除エラー:', error);
         uiStore.showSaveStatus('カスタムジェスチャーの削除に失敗しました', 'error');
@@ -163,10 +200,26 @@ export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
     });
   }
 
+  function handleAddDirection(direction: string) {
+    gesturesStore.addDirection(direction);
+    gesturesStore.clearCustomGestureError();
+  }
+
+  function handleClearPattern() {
+    gesturesStore.clearPattern();
+  }
+
+  function handleClearCustomGestureError() {
+    gesturesStore.clearCustomGestureError();
+  }
+
   return {
     addCustomGesture,
     toggleGesture,
     deleteCustomGesture,
+    handleAddDirection,
+    handleClearPattern,
+    handleClearCustomGestureError,
     setLogger,
   };
 }
