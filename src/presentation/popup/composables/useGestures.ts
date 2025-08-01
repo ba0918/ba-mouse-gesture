@@ -16,6 +16,7 @@ export function useGestures(gesturesStore: GesturesStore, uiStore: UiStore) {
   }
 
   // ストレージから最新のカスタムジェスチャーを再読み込みしてUIを同期
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function reloadCustomGesturesFromStorage() {
     try {
       const services = (window as any).services;

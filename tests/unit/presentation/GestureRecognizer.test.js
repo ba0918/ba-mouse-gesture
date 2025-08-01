@@ -12,7 +12,7 @@ class MockGestureRecognizer {
     this.customGestureUseCase = null;
   }
 
-  async initialize() {
+  initialize() {
     // 初期化処理のモック
     this.gestureRecognizer = {
       recognizeGesture: jest.fn().mockReturnValue('RIGHT'),
@@ -275,7 +275,7 @@ describe('GestureRecognizer - ジェスチャー無効化チェック', () => {
         { x: 200, y: 100 },
       ];
 
-      const result = await gestureRecognizer.recognizeAndExecute(trail);
+      await gestureRecognizer.recognizeAndExecute(trail);
 
       expect(mockCustomGestureUseCase.matchPattern).toHaveBeenCalled();
       expect(mockSettingsService.isGestureEnabled).toHaveBeenCalled();

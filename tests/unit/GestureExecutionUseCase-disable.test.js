@@ -138,7 +138,7 @@ describe('GestureExecutionUseCase - ジェスチャー無効化チェック', ()
   let mockMessagingService;
   let useCase;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Chrome API のモック
     global.chrome = {
       runtime: {

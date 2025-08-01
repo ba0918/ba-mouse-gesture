@@ -14,39 +14,6 @@ interface CacheEntry {
   timestamp: number;
 }
 
-interface UsageStats {
-  id: string;
-  name: string;
-  totalUsage: number;
-  successRate: number;
-  enabled: boolean;
-}
-
-interface PerformanceStats {
-  totalCustomGestures: number;
-  enabledGestures: number;
-  totalUsage: number;
-  averageSuccessRate: number;
-  topPerformers: UsageStats[];
-}
-
-interface OptimizationResult {
-  beforeSize: number;
-  afterSize: number;
-  optimizations: string[];
-  error?: string;
-}
-
-interface RepositoryStatus {
-  isHealthy: boolean;
-  customGesturesCount?: number;
-  cacheSize?: number;
-  storage?: any;
-  error?: string;
-}
-
-type GestureChangeCallback = (changes: any) => void;
-
 export class GestureRepository implements IGestureRepository {
   private readonly storage: ChromeStorageAdapter;
   private readonly customGesturesKey: string = 'customGestures';
