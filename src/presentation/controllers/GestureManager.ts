@@ -181,12 +181,13 @@ export class GestureManager {
    * ジェスチャー終了時の処理
    */
   private async onGestureEnd(trail: Point[], totalDistance: number): Promise<void> {
-    if (!this.settings.enabled || !this.gestureUseCase) return;
+    if (!this.settings.enabled || !this.gestureUseCase) {
+      // 無効状態でも軌跡はクリア
+      this.renderingService.clearCanvasWithDelay(200);
+      return;
+    }
 
     try {
-      // Canvas遅延クリア
-      this.renderingService.clearCanvasWithDelay(200);
-
       // ジェスチャー認識・実行
       if (trail.length >= 2 && totalDistance >= this.settings.gestureThreshold) {
         const result = await this.gestureUseCase.executeGesture(trail);
@@ -194,13 +195,22 @@ export class GestureManager {
         if (result.success) {
           console.log('Gesture executed successfully:', result.gestureType, result.action);
           this.showDebugMessage(`Gesture: ${result.gestureType} → ${result.action}`);
+          // 成功時は少し遅延してクリア（視覚的フィードバック）
+          this.renderingService.clearCanvasWithDelay(200);
         } else {
           console.log('Gesture execution failed:', result.error);
           this.showDebugMessage(`Failed: ${result.error}`);
+          // 失敗時も即座にクリア
+          this.renderingService.clearCanvasWithDelay(100);
         }
+      } else {
+        // 閾値以下や軌跡が短い場合は即座にクリア
+        this.renderingService.clearCanvasWithDelay(100);
       }
     } catch (error) {
       console.error('Gesture execution failed:', error);
+      // エラー時も確実にクリア
+      this.renderingService.clearCanvasWithDelay(100);
     }
   }
 
