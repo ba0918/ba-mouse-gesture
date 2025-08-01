@@ -3,9 +3,9 @@
  * 2D座標点を表現する不変オブジェクト
  */
 export class Point {
-  private readonly _x: number
-  private readonly _y: number
-  private readonly _timestamp?: number
+  private readonly _x: number;
+  private readonly _y: number;
+  private readonly _timestamp?: number;
 
   /**
    * @param x - X座標
@@ -14,34 +14,34 @@ export class Point {
    */
   constructor(x: number, y: number, timestamp?: number) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      throw new Error('Point coordinates must be finite numbers')
+      throw new Error('Point coordinates must be finite numbers');
     }
-    
-    this._x = x
-    this._y = y
-    this._timestamp = timestamp
-    Object.freeze(this) // 不変性保証
+
+    this._x = x;
+    this._y = y;
+    this._timestamp = timestamp;
+    Object.freeze(this); // 不変性保証
   }
 
   /**
    * X座標を取得
    */
   get x(): number {
-    return this._x
+    return this._x;
   }
 
   /**
    * Y座標を取得
    */
   get y(): number {
-    return this._y
+    return this._y;
   }
 
   /**
    * タイムスタンプを取得
    */
   get timestamp(): number | undefined {
-    return this._timestamp
+    return this._timestamp;
   }
 
   /**
@@ -51,12 +51,12 @@ export class Point {
    */
   distanceTo(other: Point): number {
     if (!(other instanceof Point)) {
-      throw new Error('Argument must be a Point instance')
+      throw new Error('Argument must be a Point instance');
     }
-    
-    const dx = this._x - other._x
-    const dy = this._y - other._y
-    return Math.sqrt(dx * dx + dy * dy)
+
+    const dx = this._x - other._x;
+    const dy = this._y - other._y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
@@ -66,12 +66,12 @@ export class Point {
    */
   angleTo(other: Point): number {
     if (!(other instanceof Point)) {
-      throw new Error('Argument must be a Point instance')
+      throw new Error('Argument must be a Point instance');
     }
-    
-    const dx = other._x - this._x
-    const dy = other._y - this._y
-    return Math.atan2(dy, dx)
+
+    const dx = other._x - this._x;
+    const dy = other._y - this._y;
+    return Math.atan2(dy, dx);
   }
 
   /**
@@ -81,18 +81,18 @@ export class Point {
    */
   directionTo(other: Point): Point {
     if (!(other instanceof Point)) {
-      throw new Error('Argument must be a Point instance')
+      throw new Error('Argument must be a Point instance');
     }
-    
-    const dx = other._x - this._x
-    const dy = other._y - this._y
-    const distance = Math.sqrt(dx * dx + dy * dy)
-    
+
+    const dx = other._x - this._x;
+    const dy = other._y - this._y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
     if (distance === 0) {
-      return new Point(0, 0)
+      return new Point(0, 0);
     }
-    
-    return new Point(dx / distance, dy / distance)
+
+    return new Point(dx / distance, dy / distance);
   }
 
   /**
@@ -102,7 +102,7 @@ export class Point {
    * @returns 新しい点
    */
   translate(dx: number, dy: number): Point {
-    return new Point(this._x + dx, this._y + dy)
+    return new Point(this._x + dx, this._y + dy);
   }
 
   /**
@@ -111,13 +111,10 @@ export class Point {
    * @returns 新しい点
    */
   rotate(angle: number): Point {
-    const cos = Math.cos(angle)
-    const sin = Math.sin(angle)
-    
-    return new Point(
-      this._x * cos - this._y * sin,
-      this._x * sin + this._y * cos
-    )
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    return new Point(this._x * cos - this._y * sin, this._x * sin + this._y * cos);
   }
 
   /**
@@ -126,7 +123,7 @@ export class Point {
    * @returns 新しい点
    */
   scale(scale: number): Point {
-    return new Point(this._x * scale, this._y * scale)
+    return new Point(this._x * scale, this._y * scale);
   }
 
   /**
@@ -134,7 +131,7 @@ export class Point {
    * @returns 原点からの距離
    */
   magnitude(): number {
-    return Math.sqrt(this._x * this._x + this._y * this._y)
+    return Math.sqrt(this._x * this._x + this._y * this._y);
   }
 
   /**
@@ -142,11 +139,11 @@ export class Point {
    * @returns 正規化された点
    */
   normalize(): Point {
-    const mag = this.magnitude()
+    const mag = this.magnitude();
     if (mag === 0) {
-      return new Point(0, 0)
+      return new Point(0, 0);
     }
-    return new Point(this._x / mag, this._y / mag)
+    return new Point(this._x / mag, this._y / mag);
   }
 
   /**
@@ -157,11 +154,10 @@ export class Point {
    */
   equals(other: Point, epsilon: number = 1e-10): boolean {
     if (!(other instanceof Point)) {
-      return false
+      return false;
     }
-    
-    return Math.abs(this._x - other._x) < epsilon &&
-           Math.abs(this._y - other._y) < epsilon
+
+    return Math.abs(this._x - other._x) < epsilon && Math.abs(this._y - other._y) < epsilon;
   }
 
   /**
@@ -169,7 +165,7 @@ export class Point {
    * @returns 有効性
    */
   isValid(): boolean {
-    return Number.isFinite(this._x) && Number.isFinite(this._y)
+    return Number.isFinite(this._x) && Number.isFinite(this._y);
   }
 
   /**
@@ -177,7 +173,7 @@ export class Point {
    * @returns 四捨五入された点
    */
   round(): Point {
-    return new Point(Math.round(this._x), Math.round(this._y))
+    return new Point(Math.round(this._x), Math.round(this._y));
   }
 
   /**
@@ -185,7 +181,7 @@ export class Point {
    * @returns 切り捨てられた点
    */
   floor(): Point {
-    return new Point(Math.floor(this._x), Math.floor(this._y))
+    return new Point(Math.floor(this._x), Math.floor(this._y));
   }
 
   /**
@@ -193,7 +189,7 @@ export class Point {
    * @returns 切り上げられた点
    */
   ceil(): Point {
-    return new Point(Math.ceil(this._x), Math.ceil(this._y))
+    return new Point(Math.ceil(this._x), Math.ceil(this._y));
   }
 
   /**
@@ -201,7 +197,7 @@ export class Point {
    * @returns 文字列表現
    */
   toString(): string {
-    return `Point(${this._x}, ${this._y})`
+    return `Point(${this._x}, ${this._y})`;
   }
 
   /**
@@ -209,7 +205,7 @@ export class Point {
    * @returns JSON表現
    */
   toJSON(): { x: number; y: number } {
-    return { x: this._x, y: this._y }
+    return { x: this._x, y: this._y };
   }
 
   /**
@@ -217,7 +213,7 @@ export class Point {
    * @returns 配列表現
    */
   toArray(): [number, number] {
-    return [this._x, this._y]
+    return [this._x, this._y];
   }
 
   /**
@@ -226,7 +222,7 @@ export class Point {
    * @returns 復元されたPoint
    */
   static fromJSON(data: { x: number; y: number }): Point {
-    return new Point(data.x, data.y)
+    return new Point(data.x, data.y);
   }
 
   /**
@@ -236,9 +232,9 @@ export class Point {
    */
   static fromArray(array: [number, number]): Point {
     if (!Array.isArray(array) || array.length !== 2) {
-      throw new Error('Array must contain exactly 2 elements')
+      throw new Error('Array must contain exactly 2 elements');
     }
-    return new Point(array[0], array[1])
+    return new Point(array[0], array[1]);
   }
 
   /**
@@ -246,7 +242,7 @@ export class Point {
    * @returns 原点
    */
   static origin(): Point {
-    return new Point(0, 0)
+    return new Point(0, 0);
   }
 
   /**
@@ -256,7 +252,7 @@ export class Point {
    * @returns 中点
    */
   static midpoint(p1: Point, p2: Point): Point {
-    return new Point((p1._x + p2._x) / 2, (p1._y + p2._y) / 2)
+    return new Point((p1._x + p2._x) / 2, (p1._y + p2._y) / 2);
   }
 
   /**
@@ -266,6 +262,6 @@ export class Point {
    * @returns 距離
    */
   static distance(p1: Point, p2: Point): number {
-    return p1.distanceTo(p2)
+    return p1.distanceTo(p2);
   }
 }

@@ -5,18 +5,18 @@ global.chrome = {
   runtime: {
     id: 'test-extension-id',
     sendMessage: jest.fn((message, callback) => {
-      if (callback) callback({ success: true })
+      if (callback) callback({ success: true });
     }),
     onMessage: {
       addListener: jest.fn(),
-      removeListener: jest.fn()
+      removeListener: jest.fn(),
     },
     onInstalled: {
-      addListener: jest.fn()
+      addListener: jest.fn(),
     },
-    lastError: null
+    lastError: null,
   },
-  
+
   storage: {
     sync: {
       get: jest.fn((keys, callback) => {
@@ -24,23 +24,23 @@ global.chrome = {
           enabled: true,
           strokeColor: '#2196F3',
           strokeWidth: 3,
-          excludeList: []
-        }
+          excludeList: [],
+        };
         if (callback) {
-          callback(defaultValues)
+          callback(defaultValues);
         }
-        return Promise.resolve(defaultValues)
+        return Promise.resolve(defaultValues);
       }),
       set: jest.fn((items, callback) => {
-        if (callback) callback()
-        return Promise.resolve()
-      })
+        if (callback) callback();
+        return Promise.resolve();
+      }),
     },
     onChanged: {
-      addListener: jest.fn()
-    }
+      addListener: jest.fn(),
+    },
   },
-  
+
   tabs: {
     goBack: jest.fn(() => Promise.resolve()),
     goForward: jest.fn(() => Promise.resolve()),
@@ -49,21 +49,21 @@ global.chrome = {
     reload: jest.fn(() => Promise.resolve()),
     get: jest.fn(() => Promise.resolve({ url: 'https://example.com' })),
     sendMessage: jest.fn((tabId, message, callback) => {
-      if (callback) callback({ success: true })
-      return Promise.resolve({ success: true })
-    })
+      if (callback) callback({ success: true });
+      return Promise.resolve({ success: true });
+    }),
   },
-  
+
   scripting: {
-    executeScript: jest.fn(() => Promise.resolve())
-  }
-}
+    executeScript: jest.fn(() => Promise.resolve()),
+  },
+};
 
 // DOM のモック設定
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
-  value: jest.fn()
-})
+  value: jest.fn(),
+});
 
 // Canvas のモック
 HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
@@ -78,22 +78,22 @@ HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
   lineCap: 'round',
   lineJoin: 'round',
   fillStyle: '',
-  font: ''
-}))
+  font: '',
+}));
 
 // localStorage のモック
 const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
-  clear: jest.fn()
-}
-global.localStorage = localStorageMock
+  clear: jest.fn(),
+};
+global.localStorage = localStorageMock;
 
 // console メソッドのモック（必要に応じて）
 global.console = {
   ...console,
   log: jest.fn(),
   error: jest.fn(),
-  warn: jest.fn()
-}
+  warn: jest.fn(),
+};

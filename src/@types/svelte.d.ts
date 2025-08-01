@@ -2,33 +2,29 @@
  * Svelte コンポーネントの型定義
  */
 
-declare module "*.svelte" {
-  import type { ComponentType, SvelteComponentTyped } from "svelte";
-  
-  interface ComponentConstructorOptions<Props extends Record<string, any> = {}> {
-    target: Element | Document | ShadowRoot;
-    anchor?: Element;
-    props?: Props;
-    context?: Map<any, any>;
-    hydrate?: boolean;
-    intro?: boolean;
-  }
-  
+declare module '*.svelte' {
+  import type { ComponentType, SvelteComponentTyped } from 'svelte';
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface ComponentEvents {}
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface ComponentSlots {}
-  
-  const component: ComponentType<SvelteComponentTyped<any, ComponentEvents, ComponentSlots>>;
+
+  const component: ComponentType<SvelteComponentTyped<Record<string, unknown>, ComponentEvents, ComponentSlots>>;
   export default component;
 }
 
-declare module "../../../popup/OptionsApp.svelte" {
-  import type { ComponentType, SvelteComponentTyped } from "svelte";
-  
+declare module '../../../popup/OptionsApp.svelte' {
+  import type { ComponentType, SvelteComponentTyped } from 'svelte';
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Props {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Events {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Slots {}
-  
+
   const component: ComponentType<SvelteComponentTyped<Props, Events, Slots>>;
   export default component;
 }

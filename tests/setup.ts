@@ -12,14 +12,14 @@ global.chrome = {
     }),
     onMessage: {
       addListener: jest.fn(),
-      removeListener: jest.fn()
+      removeListener: jest.fn(),
     },
     onInstalled: {
-      addListener: jest.fn()
+      addListener: jest.fn(),
     },
-    lastError: null
+    lastError: null,
   },
-  
+
   storage: {
     sync: {
       get: jest.fn((keys: string | string[] | null, callback?: (result: any) => void) => {
@@ -27,7 +27,7 @@ global.chrome = {
           enabled: true,
           strokeColor: '#2196F3',
           strokeWidth: 3,
-          excludeList: []
+          excludeList: [],
         };
         if (callback) {
           callback(defaultValues);
@@ -37,13 +37,13 @@ global.chrome = {
       set: jest.fn((items: Record<string, any>, callback?: () => void) => {
         if (callback) callback();
         return Promise.resolve();
-      })
+      }),
     },
     onChanged: {
-      addListener: jest.fn()
-    }
+      addListener: jest.fn(),
+    },
   },
-  
+
   tabs: {
     goBack: jest.fn(() => Promise.resolve()),
     goForward: jest.fn(() => Promise.resolve()),
@@ -54,18 +54,18 @@ global.chrome = {
     sendMessage: jest.fn((tabId: number, message: any, callback?: (response: any) => void) => {
       if (callback) callback({ success: true });
       return Promise.resolve({ success: true });
-    })
+    }),
   },
-  
+
   scripting: {
-    executeScript: jest.fn(() => Promise.resolve())
-  }
+    executeScript: jest.fn(() => Promise.resolve()),
+  },
 } as any;
 
 // DOM のモック設定
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
-  value: jest.fn()
+  value: jest.fn(),
 });
 
 // Canvas のモック
@@ -83,7 +83,7 @@ HTMLCanvasElement.prototype.getContext = jest.fn((contextId: string) => {
       lineCap: 'round' as CanvasLineCap,
       lineJoin: 'round' as CanvasLineJoin,
       fillStyle: '',
-      font: ''
+      font: '',
     } as Partial<CanvasRenderingContext2D>;
   }
   return null;
@@ -96,7 +96,7 @@ const localStorageMock: Storage = {
   removeItem: jest.fn(),
   clear: jest.fn(),
   length: 0,
-  key: jest.fn()
+  key: jest.fn(),
 };
 global.localStorage = localStorageMock;
 
@@ -105,5 +105,5 @@ global.console = {
   ...console,
   log: jest.fn(),
   error: jest.fn(),
-  warn: jest.fn()
+  warn: jest.fn(),
 };

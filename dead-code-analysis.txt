@@ -1,0 +1,68 @@
+tsconfig tsconfig.json
+Project has 64 files. Found 2 entrypoint files
+export src/application/services/ServiceFactory.ts:652:0   'ServiceFactoryError'
+export src/application/services/ServiceFactory.ts:665:0   'createServiceFactory'
+export src/application/services/ServiceFactory.ts:674:0   'getServiceFactory'
+export src/application/services/GestureApplicationService.ts:519:0   'GestureExecutionResult'
+export src/application/services/GestureApplicationService.ts:571:0   'GestureApplicationServiceError'
+export src/domain/definitions/DefaultGestureDefinitions.ts:10:0    'GestureDefinition'
+export src/application/interfaces/IGestureService.ts:33:0    'GestureDTO'
+export src/application/interfaces/IGestureService.ts:67:0    'UsageStatisticsDTO'
+export src/application/interfaces/IGestureService.ts:119:0   'IGestureService'
+export src/domain/entities/index.ts:0:66    'SettingsConfig'
+export src/domain/entities/index.ts:0:87    'URLParserAdapter'
+export src/domain/entities/index.ts:1:9     'Gesture'
+export src/domain/entities/index.ts:2:24    'UsageStats'
+export src/domain/entities/index.ts:2:41    'CustomGestureMetadata'
+export src/domain/entities/Settings.ts:35:0    'DEFAULT_GESTURE_STATES'
+export src/domain/valueObjects/index.ts:1:25    'Direction'
+export src/domain/valueObjects/index.ts:2:20    'SensitivityLevel'
+export src/domain/valueObjects/index.ts:2:43    'MatchingLevel'
+export src/domain/valueObjects/index.ts:2:63    'DeviceInfo'
+file   src/application/interfaces/ISettingsService.ts
+file   src/application/interfaces/ISystemService.ts
+export src/application/interfaces/index.ts:6:0     'export * from './ISettingsService';'
+export src/application/interfaces/index.ts:7:0     'export * from './ISystemService';'
+file   src/application/services/SystemApplicationService.ts
+file   src/application/services/implementations/GestureServiceImpl.ts
+file   src/application/services/implementations/SettingsServiceImpl.ts
+file   src/application/services/implementations/SystemServiceImpl.ts
+file   src/application/tests/GestureRecognitionUseCase.test.ts
+file   src/application/usecases/index.ts
+file   src/domain/index.ts
+file   src/domain/entities/GestureEntity.ts
+file   src/domain/services/index.ts
+file   src/infrastructure/index.ts
+file   src/infrastructure/adapters/URLParserAdapter.ts
+file   src/infrastructure/adapters/index.ts
+export src/infrastructure/messaging/ChromeMessaging.ts:618:2   'ChromeMessagingOptions'
+export src/infrastructure/messaging/ChromeMessaging.ts:619:2   'MessageSendOptions'
+export src/infrastructure/messaging/ChromeMessaging.ts:620:2   'BroadcastOptions'
+export src/infrastructure/messaging/ChromeMessaging.ts:621:2   'MessageHandler'
+export src/infrastructure/messaging/ChromeMessaging.ts:622:2   'MessageStats'
+export src/infrastructure/messaging/ChromeMessaging.ts:623:2   'HealthCheckResult'
+file   src/infrastructure/repositories/index.ts
+export src/infrastructure/storage/ChromeStorage.ts:459:24  'ChromeStorageOptions'
+export src/infrastructure/storage/ChromeStorage.ts:459:51  'StorageArea'
+export src/infrastructure/storage/ChromeStorage.ts:459:69  'UsageStats'
+export src/infrastructure/storage/ChromeStorage.ts:459:86  'HealthCheckResult'
+file   src/infrastructure/storage/repositories/index.ts
+file   src/presentation/background/index.ts
+file   src/presentation/contentScripts/index.ts
+file   src/presentation/controllers/DebugSettingsController.ts
+file   src/presentation/controllers/GestureListController.ts
+export src/presentation/controllers/GesturePatternFormatter.ts:175:2   'Direction'
+export src/presentation/controllers/GesturePatternFormatter.ts:176:2   'Arrow'
+export src/presentation/controllers/GesturePatternFormatter.ts:177:2   'DirectionMap'
+export src/presentation/controllers/GesturePatternFormatter.ts:178:2   'ActionDisplayNames'
+export src/presentation/controllers/GesturePatternFormatter.ts:179:2   'LegacyGesturePattern'
+export src/presentation/controllers/GesturePatternFormatter.ts:180:2   'CategoryInfo'
+export src/presentation/controllers/GesturePatternFormatter.ts:181:2   'GestureCategories'
+export src/presentation/controllers/GesturePatternFormatter.ts:182:2   'ArrowMap'
+file   src/presentation/controllers/OptionsEventController.ts
+file   src/presentation/controllers/OptionsRenderController.ts
+export src/presentation/popup/ThinOptionsController.ts:569:9   'ThinOptionsController'
+export src/presentation/popup/ThinOptionsController.ts:569:32  'ThinOptionsControllerDependencies'
+export src/presentation/popup/ThinOptionsController.ts:569:72  'ExternalControllerOptions'
+file   tests/setup.ts
+✖ delete 23 files, remove 42 exports

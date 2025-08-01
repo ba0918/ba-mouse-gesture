@@ -76,3 +76,6 @@ playwright/.cache/
 
 # Cache
 .cache/
+
+# External tool configurations
+.serena/

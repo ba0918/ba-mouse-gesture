@@ -3,32 +3,25 @@
   "name": "Mouse Gesture Tool",
   "version": "1.0.0",
   "description": "Simple mouse gesture tool for Chrome",
-  
-  "permissions": [
-    "activeTab",
-    "storage",
-    "tabs",
-    "scripting"
-  ],
-  
+
+  "permissions": ["activeTab", "storage", "tabs", "scripting"],
+
   "background": {
     "service_worker": "background/background.js"
   },
-  
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": [
-        "content_scripts/gesture.js"
-      ],
+      "js": ["content_scripts/gesture.js"],
       "run_at": "document_end"
     }
   ],
-  
+
   "action": {
     "default_title": "Mouse Gesture Tool"
   },
-  
+
   "options_ui": {
     "page": "popup/options.html",
     "open_in_tab": false

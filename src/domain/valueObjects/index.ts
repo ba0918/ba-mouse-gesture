@@ -1,3 +1,3 @@
-export { Point } from './Point'
-export { GesturePattern, type Direction } from './GesturePattern'
-export { Threshold, type SensitivityLevel, type MatchingLevel, type DeviceInfo } from './Threshold'
+export { type Direction, GesturePattern } from './GesturePattern';
+export { Point } from './Point';
+export { type DeviceInfo, type MatchingLevel, type SensitivityLevel, Threshold } from './Threshold';

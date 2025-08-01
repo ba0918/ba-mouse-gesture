@@ -1,46 +1,20 @@
 /**
  * GestureManager
- * 全レイヤーを統合するPresentation層のメインコントローラー
+ * Clean Architecture準拠のGestureManager
+ * 依存性注入によるアダプターパターン適用
  */
 
+import { GestureExecutionUseCase } from '../../application/usecases/GestureExecutionUseCase.js';
+import { GestureRecognizer } from '../../domain/services/GestureRecognizer.js';
 import { GestureEventHandler } from '../handlers/GestureEventHandler.js';
-import { SimpleGestureUseCase } from '../../application/usecases/SimpleGestureUseCase.js';
-import { SimpleMessagingAdapter } from '../../infrastructure/adapters/SimpleMessagingAdapter.js';
-import { CanvasRendererAdapter } from '../../infrastructure/adapters/CanvasRendererAdapter.js';
-import { SimpleGestureRecognizer } from '../../domain/services/SimpleGestureRecognizer.js';
+
+// Application層インターフェース
+import { IMessagingService } from '../../application/interfaces/IMessagingService';
+import { DrawStyle, Point, RenderingService } from '../../application/interfaces/RenderingService';
+import { GestureSettings, SettingsService } from '../../application/interfaces/SettingsService';
+import { GestureSettingsFactory } from '../../domain/definitions/GestureConstants';
 
 // 型定義
-interface Settings {
-  enabled: boolean;
-  strokeColor: string;
-  strokeWidth: number;
-  gestureThreshold: number;
-  excludeList: string[];
-  defaultGestureStates?: Record<string, boolean>;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface DrawStyle {
-  color: string;
-  width: number;
-}
-
-interface DebugInfo {
-  isInitialized: boolean;
-  settings: Settings;
-  components: {
-    eventHandler?: any;
-    gestureUseCase?: any;
-    messagingAdapter?: any;
-    canvasRenderer?: any;
-  };
-  className: string;
-}
-
 interface GestureCallbacks {
   onGestureStart: (startPosition: Point) => void;
   onGestureMove: (currentPoint: Point, trail: Point[]) => void;
@@ -48,23 +22,55 @@ interface GestureCallbacks {
   onContextMenu: () => void;
 }
 
-export class GestureManager {
-  private eventHandler: GestureEventHandler | null = null;
-  private gestureUseCase: SimpleGestureUseCase | null = null;
-  private messagingAdapter: SimpleMessagingAdapter | null = null;
-  private canvasRenderer: CanvasRendererAdapter | null = null;
-  
-  private settings: Settings = {
-    enabled: true,
-    strokeColor: '#2196F3',
-    strokeWidth: 3,
-    gestureThreshold: 15,
-    excludeList: []
+interface DebugInfo {
+  isInitialized: boolean;
+  settings: GestureSettings;
+  components: {
+    eventHandler?: unknown;
+    gestureUseCase?: unknown;
+    messagingService?: unknown;
+    renderingService?: unknown;
+    settingsService?: unknown;
   };
-  
+  className: string;
+}
+
+/**
+ * Clean Architecture準拠のGestureManager
+ * 依存性注入により各層を疎結合で統合
+ */
+export class GestureManager {
+  // Application層サービス（依存性注入）
+  private messagingService: IMessagingService;
+  private renderingService: RenderingService;
+  private settingsService: SettingsService;
+
+  // Presentation層コンポーネント
+  private eventHandler: GestureEventHandler | null = null;
+
+  // Application層UseCase
+  private gestureUseCase: GestureExecutionUseCase | null = null;
+
+  // デバッグ要素
+  private debugElement: HTMLElement | null = null;
+
+  // 設定
+  private settings: GestureSettings = GestureSettingsFactory.createDefaultSettings();
+
   private isInitialized: boolean = false;
 
-  constructor() {}
+  /**
+   * コンストラクタ - 依存性注入
+   */
+  constructor(
+    messagingService: IMessagingService,
+    renderingService: RenderingService,
+    settingsService: SettingsService,
+  ) {
+    this.messagingService = messagingService;
+    this.renderingService = renderingService;
+    this.settingsService = settingsService;
+  }
 
   /**
    * 初期化
@@ -73,68 +79,55 @@ export class GestureManager {
   async initialize(): Promise<boolean> {
     try {
       console.log('🏗️ GestureManager: Initializing...');
-      
+
       // 設定を読み込み
       await this.loadSettings();
-      
+
       // 除外サイトチェック
-      if (this.isExcludedSite()) {
+      if (this.settingsService.isExcludedSite()) {
         console.log('Site excluded, disabling gestures');
         return false;
       }
-      
-      // Infrastructure層の初期化
-      const SimpleMessagingAdapterClass = (typeof window !== 'undefined' && (window as any).SimpleMessagingAdapter) || 
-        SimpleMessagingAdapter;
-      const CanvasRendererAdapterClass = (typeof window !== 'undefined' && (window as any).CanvasRendererAdapter) || 
-        CanvasRendererAdapter;
-      
-      this.messagingAdapter = new SimpleMessagingAdapterClass();
-      this.canvasRenderer = new CanvasRendererAdapterClass();
-      
-      // Canvas初期化
-      const canvasInitialized = this.canvasRenderer?.initializeCanvas();
-      if (!canvasInitialized) {
-        throw new Error('Canvas initialization failed');
+
+      // Rendering層の初期化
+      const renderingInitialized = this.renderingService.initializeCanvas();
+      if (!renderingInitialized) {
+        throw new Error('Rendering service initialization failed');
       }
-      
+
       // Domain層の初期化
-      const SimpleGestureRecognizerClass = (typeof window !== 'undefined' && (window as any).SimpleGestureRecognizer) || 
-        SimpleGestureRecognizer;
-      const gestureRecognizer = new SimpleGestureRecognizerClass(this.settings.gestureThreshold);
-      
+      const gestureRecognizer = new GestureRecognizer(this.settings.gestureThreshold);
+
       // Application層の初期化
-      const SimpleGestureUseCaseClass = (typeof window !== 'undefined' && (window as any).SimpleGestureUseCase) || 
-        SimpleGestureUseCase;
-      this.gestureUseCase = new SimpleGestureUseCaseClass(gestureRecognizer, this.messagingAdapter);
+      this.gestureUseCase = new GestureExecutionUseCase(gestureRecognizer, this.messagingService);
       this.gestureUseCase?.updateSettings(this.settings);
-      
+
       // Presentation層の初期化
-      const GestureEventHandlerClass = (typeof window !== 'undefined' && (window as any).GestureEventHandler) || 
-        GestureEventHandler;
-      this.eventHandler = new GestureEventHandlerClass();
+      this.eventHandler = new GestureEventHandler();
       this.eventHandler?.updateSettings(this.settings);
-      
+
       // イベントハンドラーのコールバック設定
       const callbacks: GestureCallbacks = {
         onGestureStart: this.onGestureStart.bind(this),
         onGestureMove: this.onGestureMove.bind(this),
         onGestureEnd: this.onGestureEnd.bind(this),
-        onContextMenu: this.onContextMenu.bind(this)
+        onContextMenu: this.onContextMenu.bind(this),
       };
-      
+
       this.eventHandler?.initialize(callbacks);
-      
+
       // メッセージリスナー設定
       this.setupMessageListener();
-      
+
       // 設定変更監視
       this.watchSettingsChanges();
-      
+
+      // デバッグ表示初期化
+      this.initializeDebugDisplay();
+
       this.isInitialized = true;
       console.log('✅ GestureManager: Initialization complete');
       return true;
-      
     } catch (error) {
       console.error('❌ GestureManager: Initialization failed:', error);
       this.isInitialized = false;
@@ -143,103 +136,11 @@ export class GestureManager {
   }
 
   /**
-   * ジェスチャー開始時の処理
-   * @param startPosition 開始位置
-   */
-  private onGestureStart(startPosition: Point): void {
-    if (!this.settings.enabled || !this.canvasRenderer) return;
-    
-    // Canvas描画スタイル更新
-    this.canvasRenderer.updateStyle({
-      color: this.settings.strokeColor,
-      width: this.settings.strokeWidth
-    });
-    
-    console.log('Gesture started at:', startPosition);
-  }
-
-  /**
-   * ジェスチャー移動時の処理
-   * @param currentPoint 現在位置
-   * @param trail 軌跡
-   */
-  private onGestureMove(currentPoint: Point, trail: Point[]): void {
-    if (!this.settings.enabled || !this.canvasRenderer) return;
-    
-    // 軌跡を描画
-    const style: DrawStyle = {
-      color: this.settings.strokeColor,
-      width: this.settings.strokeWidth
-    };
-    
-    this.canvasRenderer.drawTrail(trail, style);
-  }
-
-  /**
-   * ジェスチャー終了時の処理
-   * @param trail 軌跡
-   * @param totalDistance 総移動距離
-   */
-  private async onGestureEnd(trail: Point[], totalDistance: number): Promise<void> {
-    if (!this.settings.enabled || !this.canvasRenderer || !this.gestureUseCase) return;
-    
-    try {
-      // Canvas遅延クリア
-      this.canvasRenderer.clearCanvasWithDelay(200);
-      
-      // ジェスチャー認識・実行
-      if (trail.length >= 2 && totalDistance >= this.settings.gestureThreshold) {
-        const result = await this.gestureUseCase.executeGesture(trail);
-        
-        if (result.success) {
-          console.log('Gesture executed successfully:', result.gestureType, result.action);
-        } else {
-          console.log('Gesture execution failed:', result.error);
-        }
-      }
-      
-    } catch (error) {
-      console.error('Gesture end processing failed:', error);
-    }
-  }
-
-  /**
-   * コンテキストメニュー処理
-   */
-  private onContextMenu(): void {
-    // 既にpreventDefaultは実行済み
-    console.log('Context menu prevented');
-  }
-
-  /**
    * 設定を読み込み
    */
   private async loadSettings(): Promise<void> {
     try {
-      // Clean Architecture 対応: appSettings キーを使用
-      const result = await chrome.storage.sync.get(['appSettings', 'settings']);
-      let settingsData: any = null;
-      
-      // 新しい構成 (Clean Architecture) を優先
-      if (result.appSettings) {
-        settingsData = result.appSettings;
-        console.log('Settings loaded from appSettings (Clean Architecture)');
-      } else if (result.settings) {
-        // 後方互換性のために古い構成もサポート
-        settingsData = result.settings;
-        console.log('Settings loaded from settings (legacy)');
-      }
-      
-      if (settingsData) {
-        this.settings = {
-          enabled: settingsData.enabled ?? true,
-          strokeColor: settingsData.strokeColor || '#2196F3',
-          strokeWidth: settingsData.strokeWidth || 3,
-          gestureThreshold: settingsData.gestureThreshold || 15,
-          excludeList: settingsData.excludeList || [],
-          defaultGestureStates: settingsData.defaultGestureStates || {}
-        };
-      }
+      this.settings = await this.settingsService.loadSettings();
       console.log('Settings loaded:', this.settings);
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -247,42 +148,91 @@ export class GestureManager {
   }
 
   /**
-   * 除外サイトチェック
-   * @returns 除外対象かどうか
+   * ジェスチャー開始時の処理
    */
-  private isExcludedSite(): boolean {
-    const currentUrl = window.location.href;
-    const currentHost = window.location.hostname;
-    
-    return this.settings.excludeList.some(pattern => {
-      // 完全URL マッチ
-      if (pattern.includes('://')) {
-        return currentUrl.includes(pattern) || currentUrl.match(pattern.replace(/\*/g, '.*'));
-      }
-      // ホスト名マッチ
-      if (pattern.includes('*')) {
-        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-        return regex.test(currentHost);
-      }
-      // 部分マッチ
-      return currentHost.includes(pattern);
+  private onGestureStart(startPosition: Point): void {
+    if (!this.settings.enabled) return;
+
+    // 描画スタイル更新
+    this.renderingService.updateStyle({
+      color: this.settings.strokeColor,
+      width: this.settings.strokeWidth,
     });
+
+    console.log('Gesture started at:', startPosition);
   }
 
   /**
-   * backgroundスクリプトからのメッセージリスナー設定
+   * ジェスチャー移動時の処理
+   */
+  private onGestureMove(_currentPoint: Point, trail: Point[]): void {
+    if (!this.settings.enabled) return;
+
+    // 軌跡を描画
+    const style: DrawStyle = {
+      color: this.settings.strokeColor,
+      width: this.settings.strokeWidth,
+    };
+
+    this.renderingService.drawTrail(trail, style);
+  }
+
+  /**
+   * ジェスチャー終了時の処理
+   */
+  private async onGestureEnd(trail: Point[], totalDistance: number): Promise<void> {
+    if (!this.settings.enabled || !this.gestureUseCase) return;
+
+    try {
+      // Canvas遅延クリア
+      this.renderingService.clearCanvasWithDelay(200);
+
+      // ジェスチャー認識・実行
+      if (trail.length >= 2 && totalDistance >= this.settings.gestureThreshold) {
+        const result = await this.gestureUseCase.executeGesture(trail);
+
+        if (result.success) {
+          console.log('Gesture executed successfully:', result.gestureType, result.action);
+          this.showDebugMessage(`Gesture: ${result.gestureType} → ${result.action}`);
+        } else {
+          console.log('Gesture execution failed:', result.error);
+          this.showDebugMessage(`Failed: ${result.error}`);
+        }
+      }
+    } catch (error) {
+      console.error('Gesture execution failed:', error);
+    }
+  }
+
+  /**
+   * コンテキストメニュー処理
+   */
+  private onContextMenu(): void {
+    // 右クリックメニューの処理
+    console.log('Context menu');
+  }
+
+  /**
+   * メッセージリスナー設定
    */
   private setupMessageListener(): void {
-    if (this.messagingAdapter) {
-      this.messagingAdapter.onMessage((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-        if (message.type === 'scroll') {
-          this.handleScrollMessage(message.direction);
+    this.messagingService.addMessageListener(
+      (message: unknown, _sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => {
+        // 型チェック
+        if (!message || typeof message !== 'object') {
+          sendResponse({ success: false });
+          return true;
+        }
+
+        const typedMessage = message as { type: string; direction?: string };
+        if (typedMessage.type === 'scroll' && typedMessage.direction) {
+          this.handleScrollMessage(typedMessage.direction);
           sendResponse({ success: true });
           return true;
         }
         return false;
-      });
-    }
+      },
+    );
   }
 
   /**
@@ -294,9 +244,9 @@ export class GestureManager {
       if (direction === 'top') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (direction === 'bottom') {
-        window.scrollTo({ 
-          top: document.documentElement.scrollHeight, 
-          behavior: 'smooth' 
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth',
         });
       }
     } catch (error) {
@@ -305,84 +255,148 @@ export class GestureManager {
   }
 
   /**
-   * 設定変更の監視
+   * 設定変更監視
    */
   private watchSettingsChanges(): void {
-    try {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.onChanged.addListener((changes: Record<string, chrome.storage.StorageChange>, namespace: string) => {
-          // Clean Architecture 対応: appSettings と settings 両方を監視
-          if (namespace === 'sync' && (changes.appSettings || changes.settings)) {
-            console.log('Settings changed, reloading...');
-            const settingsChange = changes.appSettings || changes.settings;
-            this.updateSettings(settingsChange.newValue);
-          }
-        });
+    this.settingsService.watchSettingsChanges((newSettings) => {
+      this.settings = newSettings;
+      this.updateComponentSettings();
+      console.log('Settings updated:', newSettings);
+
+      // デバッグ表示の更新
+      if (newSettings.debugSettings?.enabled && newSettings.debugSettings?.showStatus) {
+        if (!this.debugElement) {
+          this.initializeDebugDisplay();
+        }
+      } else if (this.debugElement) {
+        this.debugElement.remove();
+        this.debugElement = null;
       }
-    } catch (error) {
-      console.error('Failed to setup settings watching:', error);
-    }
+    });
   }
 
   /**
-   * 設定を更新
-   * @param newSettings 新しい設定
+   * コンポーネント設定更新
    */
-  private updateSettings(newSettings: Partial<Settings>): void {
-    this.settings = { ...this.settings, ...newSettings };
-    
-    // 各コンポーネントに設定を伝播
-    if (this.eventHandler) {
-      this.eventHandler.updateSettings(this.settings);
-    }
-    if (this.gestureUseCase) {
-      this.gestureUseCase.updateSettings(this.settings);
-    }
-    
-    console.log('Settings updated:', this.settings);
+  private updateComponentSettings(): void {
+    this.eventHandler?.updateSettings(this.settings);
+    this.gestureUseCase?.updateSettings(this.settings);
   }
 
   /**
-   * 破棄処理
+   * デバッグ表示初期化
+   */
+  private initializeDebugDisplay(): void {
+    if (!this.settings.debugSettings?.enabled || !this.settings.debugSettings?.showStatus) {
+      return;
+    }
+
+    this.debugElement = document.createElement('div');
+    this.debugElement.id = 'gesture-debug-display';
+    this.debugElement.style.cssText = `
+      position: fixed;
+      z-index: 999999;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      max-width: 300px;
+      max-height: 150px;
+      overflow-y: auto;
+      pointer-events: none;
+    `;
+
+    // 位置設定
+    const position = this.settings.debugSettings.statusPosition || 'top-right';
+    switch (position) {
+      case 'top-left':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'top-right':
+        this.debugElement.style.top = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+      case 'bottom-left':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.left = '10px';
+        break;
+      case 'bottom-right':
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.right = '10px';
+        break;
+    }
+
+    document.body.appendChild(this.debugElement);
+    this.showDebugMessage('Debug display initialized');
+  }
+
+  /**
+   * デバッグメッセージ表示
+   */
+  private showDebugMessage(message: string): void {
+    if (!this.debugElement || !this.settings.debugSettings?.enabled || !this.settings.debugSettings?.showStatus) {
+      return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.textContent = `[${timestamp}] ${message}`;
+    entry.style.marginBottom = '4px';
+
+    this.debugElement.appendChild(entry);
+
+    // 最大20件までのメッセージを保持
+    while (this.debugElement.children.length > 20) {
+      this.debugElement.removeChild(this.debugElement.firstChild!);
+    }
+
+    // 自動スクロール
+    this.debugElement.scrollTop = this.debugElement.scrollHeight;
+  }
+
+  /**
+   * リソース解放
    */
   destroy(): void {
     if (this.eventHandler) {
       this.eventHandler.destroy();
       this.eventHandler = null;
     }
-    
-    if (this.canvasRenderer) {
-      this.canvasRenderer.removeCanvas();
-      this.canvasRenderer = null;
+
+    // デバッグ要素を削除
+    if (this.debugElement) {
+      this.debugElement.remove();
+      this.debugElement = null;
     }
-    
+
+    this.messagingService.removeMessageListener();
+
+    // Clean Architecture: サービス層のクリーンアップは各サービス自身の責任
+    // ここではプレゼンテーション層のリソースのみ解放
     this.gestureUseCase = null;
-    this.messagingAdapter = null;
     this.isInitialized = false;
-    
+
     console.log('GestureManager destroyed');
   }
 
   /**
    * デバッグ情報を取得
-   * @returns デバッグ情報
    */
   getDebugInfo(): DebugInfo {
     return {
       isInitialized: this.isInitialized,
       settings: this.settings,
       components: {
-        eventHandler: this.eventHandler?.getDebugInfo(),
-        gestureUseCase: this.gestureUseCase?.getDebugInfo(),
-        messagingAdapter: this.messagingAdapter?.getDebugInfo(),
-        canvasRenderer: this.canvasRenderer?.getDebugInfo()
+        eventHandler: this.eventHandler,
+        gestureUseCase: this.gestureUseCase,
+        messagingService: this.messagingService,
+        renderingService: this.renderingService,
+        settingsService: this.settingsService,
       },
-      className: 'GestureManager'
+      className: 'GestureManager',
     };
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).GestureManager = GestureManager;
 }

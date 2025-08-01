@@ -1,8 +1,9 @@
 /**
- * Application layer interfaces
- * TypeScript interface definitions for clean architecture boundaries
+ * Application Interfaces - Clean Architecture
+ * UseCaseが依存するインターフェースの統一エクスポート
  */
 
-export * from './IGestureService'
-export * from './ISettingsService'
-export * from './ISystemService'
+export * from './IGestureRepository';
+export * from './ILogger';
+export * from './IMessagingService';
+export * from './ISettingsRepository';

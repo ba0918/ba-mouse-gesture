@@ -1,9 +1,11 @@
 /**
  * SettingsRepository
  * 設定データの永続化を担当するリポジトリ
+ * Clean Architecture - Infrastructure層
  */
 
-import { Settings, DefaultGestureStates } from '../../../domain/entities/Settings';
+import { ISettingsRepository, SettingsValidationResult } from '../../../application/interfaces';
+import { Settings } from '../../../domain/entities/Settings';
 
 // 型定義
 interface CacheEntry {
@@ -14,32 +16,14 @@ interface CacheEntry {
 interface Storage {
   get(key: string): Promise<Record<string, any>>;
   set(data: Record<string, any>): Promise<void>;
-  onChanged(callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void, namespace: string): () => void;
+  onChanged(
+    callback: (changes: Record<string, chrome.storage.StorageChange>, namespace: string) => void,
+    namespace: string,
+  ): () => void;
   getUsageStats?(): Promise<{ sync?: any }>;
 }
 
-interface BackupData {
-  timestamp: string;
-  version: string;
-  settings: any;
-}
-
-interface RepositoryStatus {
-  isHealthy: boolean;
-  settingsLoaded?: boolean;
-  cacheSize?: number;
-  storage?: any;
-  lastModified?: string | null;
-  error?: string;
-}
-
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-export class SettingsRepository {
+export class SettingsRepository implements ISettingsRepository {
   private storage: Storage;
   private settingsKey: string = 'appSettings';
   private cache: Map<string, CacheEntry> = new Map();
@@ -60,21 +44,21 @@ export class SettingsRepository {
     // キャッシュチェック
     const cachedData = this.cache.get(this.settingsKey);
     if (cachedData && Date.now() - cachedData.timestamp < this.cacheTimeout) {
-      return this.deserializeSettings(cachedData.data);
+      return Settings.fromJSON(cachedData.data);
     }
 
     try {
       const result = await this.storage.get(this.settingsKey);
       const settingsData = result[this.settingsKey];
-      
+
       if (settingsData) {
         // キャッシュに保存
         this.cache.set(this.settingsKey, {
           data: settingsData,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
-        
-        return this.deserializeSettings(settingsData);
+
+        return Settings.fromJSON(settingsData);
       } else {
         // デフォルト設定を返す
         return this.getDefaultSettings();
@@ -96,15 +80,14 @@ export class SettingsRepository {
         throw new Error('Invalid settings object');
       }
 
-      const serializedData = this.serializeSettings(settings);
+      const serializedData = settings.toJSON();
       await this.storage.set({ [this.settingsKey]: serializedData });
-      
+
       // キャッシュ更新
       this.cache.set(this.settingsKey, {
         data: serializedData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-      
     } catch (error) {
       console.error('Failed to save settings:', error);
       throw new SettingsRepositoryError('Failed to save settings', error);
@@ -119,7 +102,7 @@ export class SettingsRepository {
    */
   async updateSetting(key: string, value: any): Promise<Settings> {
     const settings = await this.getSettings();
-    
+
     // 設定値を更新
     if (key in settings) {
       (settings as any)[key] = value;
@@ -129,7 +112,7 @@ export class SettingsRepository {
     } else {
       throw new Error(`Setting key '${key}' does not exist`);
     }
-    
+
     return settings;
   }
 
@@ -141,7 +124,22 @@ export class SettingsRepository {
    */
   async updateGestureState(gestureId: string, enabled: boolean): Promise<Settings> {
     const settings = await this.getSettings();
-    settings.setGestureEnabled(gestureId as keyof DefaultGestureStates, enabled);
+    console.log('🔍 Debug - Before gesture state update:', {
+      gestureId,
+      enabled,
+      currentState: settings.defaultGestureStates[gestureId],
+      allStates: settings.defaultGestureStates,
+    });
+
+    settings.setGestureEnabled(gestureId, enabled);
+
+    console.log('🔍 Debug - After gesture state update:', {
+      gestureId,
+      enabled,
+      newState: settings.defaultGestureStates[gestureId],
+      allStates: settings.defaultGestureStates,
+    });
+
     await this.saveSettings(settings);
     return settings;
   }
@@ -203,24 +201,24 @@ export class SettingsRepository {
   async updateDebugSettings(debugConfig: any): Promise<Settings> {
     console.log('🔧 [Debug] SettingsRepository.updateDebugSettings called:', {
       debugConfig: debugConfig,
-      logLevel: debugConfig.logLevel
+      logLevel: debugConfig.logLevel,
     });
-    
+
     const settings = await this.getSettings();
     console.log('🔧 [Debug] Current settings before update:', {
       currentDebugSettings: (settings as any).debugSettings,
-      currentLogLevel: (settings as any).debugSettings?.logLevel
+      currentLogLevel: (settings as any).debugSettings?.logLevel,
     });
-    
+
     settings.setDebugSettings(debugConfig);
     console.log('🔧 [Debug] Settings after setDebugSettings:', {
       updatedDebugSettings: (settings as any).debugSettings,
-      updatedLogLevel: (settings as any).debugSettings?.logLevel
+      updatedLogLevel: (settings as any).debugSettings?.logLevel,
     });
-    
+
     await this.saveSettings(settings);
     console.log('🔧 [Debug] Settings saved successfully');
-    
+
     return settings;
   }
 
@@ -235,71 +233,24 @@ export class SettingsRepository {
   }
 
   /**
-   * 設定データのバックアップを作成
-   * @returns バックアップデータ
-   */
-  async createBackup(): Promise<BackupData> {
-    const settings = await this.getSettings();
-    return {
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      settings: this.serializeSettings(settings)
-    };
-  }
-
-  /**
-   * バックアップから設定を復元
-   * @param backup - バックアップデータ
-   * @returns 復元された設定
-   */
-  async restoreFromBackup(backup: BackupData): Promise<Settings> {
-    if (!backup.settings) {
-      throw new Error('Invalid backup data');
-    }
-    
-    const settings = this.deserializeSettings(backup.settings);
-    await this.saveSettings(settings);
-    return settings;
-  }
-
-  /**
    * 設定変更を監視
    * @param callback - 変更時コールバック
    * @returns リスナー削除関数
    */
-  onSettingsChanged(callback: (newSettings: Settings, oldSettings: Settings | null) => void): () => void {
+  onSettingsChanged(callback: (newSettings: Settings, oldSettings?: Settings) => void): () => void {
     return this.storage.onChanged((changes: Record<string, chrome.storage.StorageChange>, namespace: string) => {
       if (namespace === 'sync' && changes[this.settingsKey]) {
         // キャッシュを無効化
         this.cache.delete(this.settingsKey);
-        
-        const newSettings = this.deserializeSettings(changes[this.settingsKey].newValue);
-        const oldSettings = changes[this.settingsKey].oldValue ? 
-          this.deserializeSettings(changes[this.settingsKey].oldValue) : null;
-        
+
+        const newSettings = Settings.fromJSON(changes[this.settingsKey].newValue);
+        const oldSettings = changes[this.settingsKey].oldValue
+          ? Settings.fromJSON(changes[this.settingsKey].oldValue)
+          : undefined;
+
         callback(newSettings, oldSettings);
       }
     }, 'sync');
-  }
-
-  /**
-   * 設定データをシリアライズ
-   * @param settings 設定エンティティ
-   * @returns シリアライズされたデータ
-   */
-  private serializeSettings(settings: Settings): any {
-    return settings.toJSON();
-  }
-
-  /**
-   * 設定データをデシリアライズ
-   * @param data シリアライズされたデータ
-   * @returns 設定エンティティ
-   */
-  private deserializeSettings(data: any): Settings {
-    // Settings クラスの動的インポート
-    const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-    return SettingsClass.fromJSON(data);
   }
 
   /**
@@ -307,8 +258,7 @@ export class SettingsRepository {
    * @returns デフォルト設定
    */
   private getDefaultSettings(): Settings {
-    const SettingsClass = (typeof window !== 'undefined' && (window as any).Settings) || Settings;
-    return SettingsClass.getDefaults();
+    return Settings.getDefaults();
   }
 
   /**
@@ -319,72 +269,46 @@ export class SettingsRepository {
   }
 
   /**
-   * リポジトリの状態確認
-   * @returns リポジトリの状態
-   */
-  async getRepositoryStatus(): Promise<RepositoryStatus> {
-    try {
-      const settings = await this.getSettings();
-      const storageStats = this.storage.getUsageStats ? await this.storage.getUsageStats() : { sync: {} };
-      
-      return {
-        isHealthy: true,
-        settingsLoaded: Boolean(settings),
-        cacheSize: this.cache.size,
-        storage: storageStats.sync || {},
-        lastModified: (settings as any).lastModified || null
-      };
-    } catch (error) {
-      return {
-        isHealthy: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        cacheSize: this.cache.size
-      };
-    }
-  }
-
-  /**
    * 設定の整合性チェック
    * @returns バリデーション結果
    */
-  async validateSettings(): Promise<ValidationResult> {
-    const validation: ValidationResult = {
+  async validateSettings(): Promise<SettingsValidationResult> {
+    const validation: SettingsValidationResult = {
       isValid: true,
       errors: [],
-      warnings: []
+      warnings: [],
     };
-    
+
     try {
       const settings = await this.getSettings();
-      
+
       // 基本バリデーション
       if (!settings.isValid()) {
         validation.isValid = false;
         validation.errors.push('Settings object is invalid');
       }
-      
+
       // 閾値範囲チェック
       if ((settings as any).gestureThreshold < 5 || (settings as any).gestureThreshold > 100) {
         validation.warnings.push('Gesture threshold is outside recommended range (5-100)');
       }
-      
+
       // 除外リストチェック
       const excludeList = settings.getExcludeList();
       if (excludeList.length > 20) {
         validation.warnings.push('Exclude list is very long (>20 items)');
       }
-      
+
       // 色設定チェック
       if (!settings.isValidColor((settings as any).strokeColor)) {
         validation.errors.push('Invalid stroke color format');
         validation.isValid = false;
       }
-      
     } catch (error) {
       validation.isValid = false;
       validation.errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
+
     return validation;
   }
 }
@@ -392,7 +316,7 @@ export class SettingsRepository {
 /**
  * SettingsRepository専用エラークラス
  */
-export class SettingsRepositoryError extends Error {
+class SettingsRepositoryError extends Error {
   public originalError: any;
 
   constructor(message: string, originalError?: any) {
@@ -400,10 +324,4 @@ export class SettingsRepositoryError extends Error {
     this.name = 'SettingsRepositoryError';
     this.originalError = originalError;
   }
-}
-
-// ブラウザ環境対応
-if (typeof window !== 'undefined') {
-  (window as any).SettingsRepository = SettingsRepository;
-  (window as any).SettingsRepositoryError = SettingsRepositoryError;
 }
